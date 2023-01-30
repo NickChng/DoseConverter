@@ -1,0 +1,9 @@
+\\spvaimapcn\data$\Apps\PluginLauncher\ESAPIWorker\obj\Debug\ESAPI.csproj.AssemblyReference.cache
+\\spvaimapcn\data$\Apps\PluginLauncher\ESAPIWorker\obj\Debug\ESAPI.csproj.CoreCompileInputs.cache
+\\spvaimapcn\data$\Apps\PluginLauncher\ESAPIWorker\bin\Debug\ESAPIWorker.dll
+\\spvaimapcn\data$\Apps\PluginLauncher\ESAPIWorker\bin\Debug\ESAPIWorker.pdb
+\\spvaimapcn\data$\Apps\PluginLauncher\ESAPIWorker\bin\Debug\VMS.TPS.Common.Model.API.dll
+\\spvaimapcn\data$\Apps\PluginLauncher\ESAPIWorker\bin\Debug\VMS.TPS.Common.Model.Types.dll
+\\spvaimapcn\data$\Apps\PluginLauncher\ESAPIWorker\obj\Debug\ESAPI.csproj.CopyComplete
+\\spvaimapcn\data$\Apps\PluginLauncher\ESAPIWorker\obj\Debug\ESAPIWorker.dll
+\\spvaimapcn\data$\Apps\PluginLauncher\ESAPIWorker\obj\Debug\ESAPIWorker.pdb

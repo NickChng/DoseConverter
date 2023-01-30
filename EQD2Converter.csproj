@@ -8,11 +8,12 @@
     <OutputType>library</OutputType>
     <RootNamespace>EQD2Converter</RootNamespace>
     <AssemblyName>EQD2Converter.esapi</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -88,12 +89,15 @@
     <Compile Include="DVHWindow.xaml.cs">
       <DependentUpon>DVHWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="EQD2ConverterConfig.cs" />
     <Compile Include="HelpWindow.xaml.cs">
       <DependentUpon>HelpWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Model.cs" />
+    <Compile Include="ObservableObject.cs" />
     <Compile Include="PlanNameWindow.xaml.cs">
       <DependentUpon>PlanNameWindow.xaml</DependentUpon>
     </Compile>
@@ -101,6 +105,7 @@
       <DependentUpon>PreviewWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Script.cs" />
+    <Compile Include="ViewModel.cs" />
     <Compile Include="WaitingWindow.xaml.cs">
       <DependentUpon>WaitingWindow.xaml</DependentUpon>
     </Compile>
@@ -160,6 +165,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="image_asc6.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="ESAPIWorker\ESAPI.csproj">
+      <Project>{c23a4a64-db11-4eec-a740-e363642b7115}</Project>
+      <Name>ESAPI</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

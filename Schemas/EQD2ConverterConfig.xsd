@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="ExampleEnum" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="UNDEFINED" />
+      <xs:enumeration value="option1" />
+      <xs:enumeration value="option2" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ExampleUnitPresentation">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Relative" />
+      <xs:enumeration value="Absolute" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="PositiveDouble">
+    <xs:restriction base="xs:double">
+      <xs:minInclusive value="0"/>
+      <xs:maxInclusive value="20"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="EQD2ConverterConfig">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="version">
+          <xs:complexType>
+            <xs:attribute name="number" type="xs:string"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Defaults">
+          <xs:complexType>
+            <xs:attribute name="AlphaBetaRatio" type="PositiveDouble" use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Structures" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Aliases">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Alias" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:attribute name="StructureId" type="xs:string"/>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="StructureLabel" type="xs:string" use="required" />
+            <xs:attribute name="AlphaBetaRatio" type="PositiveDouble" use="required" />
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

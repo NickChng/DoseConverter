@@ -25,27 +25,15 @@ namespace EQD2Converter
         private ScriptContext scriptcontext;
         private List<string> ExistingPlanNames;
 
-        public PlanNameWindow(ScriptContext scriptcontext, string planName)
+        public PlanNameWindow(string planName, List<string> existingPlanNames)
         {
             InitializeComponent();
 
             this.PlanName = planName;
-            this.scriptcontext = scriptcontext;
-
-            CollectPlanNames();
-
+            ExistingPlanNames = existingPlanNames;
             this.PlanNameTextBox.Text = planName;
         }
 
-        private void CollectPlanNames()
-        {
-            List<string> plannames = new List<string>() { };
-            foreach(var plan in this.scriptcontext.Course.PlanSetups)
-            {
-                plannames.Add(plan.Id);
-            }
-            this.ExistingPlanNames = plannames;
-        }
 
         private void IsPlanNameAvailable(object sender, TextChangedEventArgs e)
         {
