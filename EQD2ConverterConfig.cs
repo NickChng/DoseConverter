@@ -28,7 +28,7 @@ namespace EQD2Converter {
         
         private EQD2ConverterConfigDefaults defaultsField;
         
-        private EQD2ConverterConfigStructures[] structuresField;
+        private EQD2ConverterConfigStructure[] structuresField;
         
         /// <remarks/>
         public EQD2ConverterConfigVersion version {
@@ -51,8 +51,8 @@ namespace EQD2Converter {
         }
         
         /// <remarks/>
-        [System.Xml.Serialization.XmlElementAttribute("Structures")]
-        public EQD2ConverterConfigStructures[] Structures {
+        [System.Xml.Serialization.XmlArrayItemAttribute("Structure", IsNullable=false)]
+        public EQD2ConverterConfigStructure[] Structures {
             get {
                 return this.structuresField;
             }
@@ -112,9 +112,9 @@ namespace EQD2Converter {
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
-    public partial class EQD2ConverterConfigStructures {
+    public partial class EQD2ConverterConfigStructure {
         
-        private EQD2ConverterConfigStructuresAlias[] aliasesField;
+        private EQD2ConverterConfigStructureAlias[] aliasesField;
         
         private string structureLabelField;
         
@@ -122,7 +122,7 @@ namespace EQD2Converter {
         
         /// <remarks/>
         [System.Xml.Serialization.XmlArrayItemAttribute("Alias", IsNullable=false)]
-        public EQD2ConverterConfigStructuresAlias[] Aliases {
+        public EQD2ConverterConfigStructureAlias[] Aliases {
             get {
                 return this.aliasesField;
             }
@@ -160,7 +160,7 @@ namespace EQD2Converter {
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
-    public partial class EQD2ConverterConfigStructuresAlias {
+    public partial class EQD2ConverterConfigStructureAlias {
         
         private string structureIdField;
         

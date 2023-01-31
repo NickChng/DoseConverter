@@ -11,20 +11,79 @@ using System.Windows.Input;
 using System.Windows;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
+using ESAPIScript;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace EQD2Converter
 {
     public class Model
     {
         private EQD2ConverterConfig _config;
-        public Dictionary<string, double> AlphaBetaMapping { get; set; }
+        public Dictionary<string, double> AlphaBetaMapping { get; set; } = new Dictionary<string, double>();
         public double DefaultAlphaBeta { get; private set; }
+        public List<string> StructureList { get; private set; } = new List<string>();
 
-        public Model(EQD2ConverterConfig config, List<string> structureIds)
+        public int[,,] originalArray { get; private set; }
+
+        private EsapiWorker _ew;
+
+        public double scaling;
+        public double scaling2;
+        public double scaling3;
+
+        public HashSet<Tuple<int, int, int>> existingIndexes = new HashSet<Tuple<int, int, int>>() { }; // reset!
+
+        public double doseMax;
+        public double doseMin;
+
+        public async Task<int[,,]> GetConvertedDose(string newPlanName)
+        {
+            ExternalPlanSetup newPlan = (ExternalPlanSetup)null;
+            int[,,] outputDose = null;
+            await _ew.AsyncRunPlanContext((p, pl) =>
+            {
+                try
+                {
+                    newPlan = pl.Course.AddExternalPlanSetupAsVerificationPlan(pl.StructureSet, (ExternalPlanSetup)pl);
+                    newPlan.Id = newPlanName;
+                }
+                catch
+                {
+                    MessageBox.Show("Cannot create plan " + newPlanName + ".", "Error");
+                    return;
+                }
+                try
+                {
+                    outputDose = ConvertDose(newPlan, pl, false);
+                }
+                catch (Exception f)
+                {
+                    //waitWindow.Close();
+                    //this.Cursor = null;
+                    MessageBox.Show(f.Message + "\n" + f.StackTrace, "Error");
+                }
+            });
+            return outputDose;
+        }
+
+        public Model(EQD2ConverterConfig config, EsapiWorker ew)
         {
             _config = config;
-            DefaultAlphaBeta = config.Defaults.AlphaBetaRatio;
-            foreach (string structureId in structureIds)
+            _ew = ew;
+            DefaultAlphaBeta = _config.Defaults.AlphaBetaRatio;
+        }
+
+        public async Task<bool> InitializeModel()
+        {
+            await _ew.AsyncRunStructureContext((pat, ss) =>
+            {
+                foreach (string structureId in ss.Structures.Select(x => x.Id))
+                {
+                    StructureList.Add(structureId);
+                }
+            });
+            foreach (string structureId in StructureList)
             {
                 var matchingStructure = _config.Structures.FirstOrDefault(x => x.Aliases.Select(y => y.StructureId).Contains(structureId, StringComparer.OrdinalIgnoreCase));
                 if (matchingStructure != null)
@@ -34,58 +93,47 @@ namespace EQD2Converter
                 else
                     AlphaBetaMapping.Add(structureId, DefaultAlphaBeta);
             }
+            return true;
         }
 
-        public void Start(object sender, RoutedEventArgs e)
+        public async Task<string> GetStructureLabel(string StructureId)
         {
-            PlanNameWindow planNameWindow = new PlanNameWindow(this.scriptcontext, this.scriptcontext.ExternalPlanSetup.Id + "_" + this.ComboBox2.SelectedValue.ToString());
-            planNameWindow.ShowDialog();
-
-            string newPlanName = planNameWindow.PlanName;
-            ExternalPlanSetup newPlan = (ExternalPlanSetup)null;
-
-            if (planNameWindow.DialogResult.HasValue && planNameWindow.DialogResult.Value)
+            string Label = "Unset";
+            await _ew.AsyncRunPlanContext((p, pl) =>
             {
-
-                try
+                var matchingStructure = pl.StructureSet.Structures.FirstOrDefault(x=>string.Equals(x.Id, StructureId, StringComparison.InvariantCultureIgnoreCase));
+                if (matchingStructure != null)
                 {
-                    newPlan = this.scriptcontext.Course.AddExternalPlanSetupAsVerificationPlan(this.scriptcontext.StructureSet, this.scriptcontext.ExternalPlanSetup);
-                    newPlan.Id = newPlanName;
+                    var CodeInfo = matchingStructure.StructureCodeInfos.FirstOrDefault();
+                    if (CodeInfo != null)
+                    {
+                        Label = CodeInfo.Code;
+                    }
                 }
-                catch
-                {
-                    MessageBox.Show("Cannot create plan " + newPlanName + ".", "Error");
-                    return;
-                }
+            });
+            return Label;
+        }
 
-                // Add a waiting window here
-                this.Cursor = Cursors.Wait;
-                var waitWindow = new WaitingWindow();
-                waitWindow.Show();
+        public async void Start(string newPlanName)
+        {
 
-                try
-                {
-                    ConvertDose(newPlan, false);
-                }
-                catch (Exception f)
-                {
-                    waitWindow.Close();
-                    this.Cursor = null;
-                    MessageBox.Show(f.Message + "\n" + f.StackTrace, "Error");
-                }
+           
 
-                waitWindow.Close();
-                this.Cursor = null;
 
-                MessageBox.Show("A new verification plan was created with a modified dose distribution.\n\n" +
-                        "Voxel value to dose scaling factor (original dose): " + this.scaling.ToString() + "\n" +
-                        "Voxel value to dose scaling factor (evaluation dose): " + this.scaling2.ToString() + "\n" +
-                        "Voxel value to voxel value scaling factor (evaluation dose): " + this.scaling3.ToString(), "Message");
-            }
-            else
-            {
-                return;
-            }
+
+
+            //// Add a waiting window here
+            //this.Cursor = Cursors.Wait;
+            //var waitWindow = new WaitingWindow();
+            //waitWindow.Show();
+
+
+
+            //waitWindow.Close();
+            //this.Cursor = null;
+
+          
+
         }
 
 
@@ -138,9 +186,10 @@ namespace EQD2Converter
             return maxDoseVal;
         }
 
-        public int[,,] ConvertDose(ExternalPlanSetup newPlan, bool preview = false)
+        private int[,,] ConvertDose(ExternalPlanSetup newPlan, PlanSetup thisPlan, bool preview = false)
         {
-            Dose dose = this.scriptcontext.ExternalPlanSetup.Dose;
+            ExternalPlanSetup epl = (ExternalPlanSetup)thisPlan;
+            Dose dose = epl.Dose;
 
             int Xsize = dose.XSize;
             int Ysize = dose.YSize;
@@ -157,68 +206,66 @@ namespace EQD2Converter
             VVector doseOrigin = dose.Origin;
 
             int[,,] doseMatrix = GetDoseVoxelsFromDose(dose);
+            originalArray = GetDoseVoxelsFromDose(dose); // a copy
 
-            this.originalArray = GetDoseVoxelsFromDose(dose); // a copy
+            double maxDoseVal = GetMaxDoseVal(dose, epl);
 
-            double maxDoseVal = GetMaxDoseVal(dose, this.scriptcontext.ExternalPlanSetup);
+            Tuple<int, int> minMaxDose = Helpers.GetMinMaxValues(doseMatrix, Xsize, Ysize, Zsize);
 
-            Tuple<int, int> minMaxDose = GetMinMaxValues(doseMatrix, Xsize, Ysize, Zsize);
+            scaling = maxDoseVal / minMaxDose.Item2;
 
-            double scaling = maxDoseVal / minMaxDose.Item2;
-            this.scaling = scaling;
+            doseMin = minMaxDose.Item1 * scaling;
+            doseMax = minMaxDose.Item2 * scaling;
 
-            this.doseMin = minMaxDose.Item1 * scaling;
-            this.doseMax = minMaxDose.Item2 * scaling;
+            //Dictionary<Structure, double> structureDict = new Dictionary<Structure, double>() { };
 
-            Dictionary<Structure, double> structureDict = new Dictionary<Structure, double>() { };
+            //foreach (var row in this.DataGridStructuresList)
+            //{
+            //    if (row.AlphaBeta != null && row.AlphaBeta != "" && ConvertTextToDouble(row.AlphaBeta) != Double.NaN)
+            //    {
+            //        Structure structure = this.scriptcontext.StructureSet.Structures.First(id => id.Id == row.Structure);
+            //        double alphabeta = ConvertTextToDouble(row.AlphaBeta);
 
-            foreach (var row in this.DataGridStructuresList)
-            {
-                if (row.AlphaBeta != null && row.AlphaBeta != "" && ConvertTextToDouble(row.AlphaBeta) != Double.NaN)
-                {
-                    Structure structure = this.scriptcontext.StructureSet.Structures.First(id => id.Id == row.Structure);
-                    double alphabeta = ConvertTextToDouble(row.AlphaBeta);
+            //        structureDict.Add(structure, alphabeta);
+            //    }
+            //}
 
-                    structureDict.Add(structure, alphabeta);
-                }
-            }
+            //IOrderedEnumerable<KeyValuePair<Structure, double>> sortedDict;
 
-            IOrderedEnumerable<KeyValuePair<Structure, double>> sortedDict;
-
-            if (this.ComboBox.SelectedValue.ToString() == "Descending")
-            {
-                sortedDict = from entry in structureDict orderby entry.Value descending select entry;
-            }
-            else
-            {
-                sortedDict = from entry in structureDict orderby entry.Value ascending select entry;
-            }
+            //if (this.ComboBox.SelectedValue.ToString() == "Descending")
+            //{
+            //    sortedDict = from entry in structureDict orderby entry.Value descending select entry;
+            //}
+            //else
+            //{
+            //    sortedDict = from entry in structureDict orderby entry.Value ascending select entry;
+            //}
 
             // If forced edge conversion is on, add margin to structure on a seperate structureset
-            if ((bool)this.ForceConversionCheckBox.IsChecked)
-            {
-                if (!this.WasStructureSetCreated)
-                {
-                    this.AuxStructureSet = this.scriptcontext.Image.CreateNewStructureSet();
-                    this.WasStructureSetCreated = true;
-                }
-            }
+            //if ((bool)this.ForceConversionCheckBox.IsChecked)
+            //{
+            //    if (!this.WasStructureSetCreated)
+            //    {
+            //        this.AuxStructureSet = this.scriptcontext.Image.CreateNewStructureSet();
+            //        this.WasStructureSetCreated = true;
+            //    }
+            //}
 
-            foreach (var str in sortedDict)
+            foreach (var str in AlphaBetaMapping.Keys)
             {
-                Structure structure = str.Key;
-                double alphabeta = str.Value;
+                Structure structure = epl.StructureSet.Structures.FirstOrDefault(x => string.Equals(x.Id, str, StringComparison.InvariantCultureIgnoreCase));
+                double alphabeta = AlphaBetaMapping[str];
 
                 // transfer structure to auxiliary structure set and add margin:
-                if ((bool)this.ForceConversionCheckBox.IsChecked)
-                {
-                    Structure newStructure = this.AuxStructureSet.AddStructure(structure.DicomType, structure.Id);
-                    double margin = ConvertTextToDouble(this.ForceConversionMargin.Text);
-                    var segmVolMargin = structure.SegmentVolume.Margin(margin);
+                //if ((bool)this.ForceConversionCheckBox.IsChecked)
+                //{
+                //    Structure newStructure = this.AuxStructureSet.AddStructure(structure.DicomType, structure.Id);
+                //    double margin = ConvertTextToDouble(this.ForceConversionMargin.Text);
+                //    var segmVolMargin = structure.SegmentVolume.Margin(margin);
 
-                    newStructure.SegmentVolume = segmVolMargin;
-                    structure = newStructure;
-                }
+                //    newStructure.SegmentVolume = segmVolMargin;
+                //    structure = newStructure;
+                //}
 
                 if (structure.IsEmpty)
                 {
@@ -226,36 +273,36 @@ namespace EQD2Converter
                     continue;
                 }
 
-                if (this.ComboBox2.SelectedValue.ToString() == "EQD2")
-                {
-                    OverridePixels(structure, alphabeta, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQD2);
-                }
-                else if (this.ComboBox2.SelectedValue.ToString() == "BED")
-                {
-                    OverridePixels(structure, alphabeta, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateBED);
-                }
-                else
-                {
-                    OverridePixels(structure, alphabeta, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, MultiplyByAlphaBeta);
-                }
+                //if (this.ComboBox2.SelectedValue.ToString() == "EQD2")
+                //{
+                OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                     Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQD2);
+                //}
+                //else if (this.ComboBox2.SelectedValue.ToString() == "BED")
+                //{
+                //    OverridePixels(structure, alphabeta, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                //         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateBED);
+                //}
+                //else
+                //{
+                //    OverridePixels(structure, alphabeta, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                //         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, MultiplyByAlphaBeta);
+                //}
 
-                if ((bool)this.ForceConversionCheckBox.IsChecked)
-                {
-                    if (this.AuxStructureSet.CanRemoveStructure(structure))
-                    {
-                        this.AuxStructureSet.RemoveStructure(structure);
-                    }
-                }
+                //if ((bool)this.ForceConversionCheckBox.IsChecked)
+                //{
+                //    if (this.AuxStructureSet.CanRemoveStructure(structure))
+                //    {
+                //        this.AuxStructureSet.RemoveStructure(structure);
+                //    }
+                //}
             }
 
-            this.existingIndexes = new HashSet<Tuple<int, int, int>>() { }; // reset!
+            existingIndexes = new HashSet<Tuple<int, int, int>>() { }; // reset!
 
             if (!preview)
             {
-                CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan);
+                CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, epl);
                 return new int[0, 0, 0];
             }
             else
@@ -264,15 +311,16 @@ namespace EQD2Converter
             }
         }
 
-        public void CreatePlanAndAddDose(int Xsize, int Ysize, int Zsize, int[,,] doseMatrix, double doseMaxOriginal, ExternalPlanSetup newPlan)
+        public void CreatePlanAndAddDose(int Xsize, int Ysize, int Zsize, int[,,] doseMatrix, double doseMaxOriginal, ExternalPlanSetup newPlan, ExternalPlanSetup thisPlan)
         {
-            int fractions = (int)this.scriptcontext.ExternalPlanSetup.NumberOfFractions;
-            DoseValue dosePerFraction = this.scriptcontext.ExternalPlanSetup.DosePerFraction;
-            double treatPercentage = this.scriptcontext.ExternalPlanSetup.TreatmentPercentage;
+
+            int fractions = (int)thisPlan.NumberOfFractions;
+            DoseValue dosePerFraction = thisPlan.DosePerFraction;
+            double treatPercentage = thisPlan.TreatmentPercentage;
 
             newPlan.SetPrescription(fractions, dosePerFraction, treatPercentage);
 
-            double normalization = this.scriptcontext.ExternalPlanSetup.PlanNormalizationValue;
+            double normalization = thisPlan.PlanNormalizationValue;
             if (!Double.IsNaN(normalization))
             {
                 newPlan.PlanNormalizationValue = normalization;
@@ -282,22 +330,21 @@ namespace EQD2Converter
                 newPlan.PlanNormalizationValue = 100;
             }
 
-            EvaluationDose evalDose = newPlan.CopyEvaluationDose(this.scriptcontext.ExternalPlanSetup.Dose);
+            EvaluationDose evalDose = newPlan.CopyEvaluationDose(thisPlan.Dose);
 
             double maxDoseVal = GetMaxDoseVal(evalDose, newPlan);
 
-            Tuple<int, int> minMaxDoseInt = GetMinMaxValues(GetDoseVoxelsFromDose(evalDose), Xsize, Ysize, Zsize);
+            Tuple<int, int> minMaxDoseInt = Helpers.GetMinMaxValues(GetDoseVoxelsFromDose(evalDose), Xsize, Ysize, Zsize);
             int maxInt = minMaxDoseInt.Item2;
 
-            double scaling2 = maxDoseVal / maxInt;
-            this.scaling2 = scaling2;
+            scaling2 = maxDoseVal / maxInt;
+
 
             // scaling2 is used when a plan is imported into eclipse. In this case, the voxel values are correctly set,
             // however the internal scaling factor differes from the original one after Evaluation dose is copied. Don't know why exactly.
             // I solved this by introducing an additional scaling factor that in normal cases should equal 1.
             // This factor is used to renormalize the voxels so that if no conversion is done, the result is equal to the original.
-            double scaling3 = doseMaxOriginal / maxDoseVal;
-            this.scaling3 = scaling3;
+            scaling3 = doseMaxOriginal / maxDoseVal;
 
             if (maxInt * scaling3 > 2147483647.0)
             {
@@ -321,39 +368,50 @@ namespace EQD2Converter
         }
 
 
-        public Tuple<int, int> GetMinMaxValues(int[,,] array, int Xsize, int Ysize, int Zsize)
-        {
-            int min = Int32.MaxValue;
-            int max = 0;
-
-            for (int i = 0; i < Xsize; i++)
-            {
-                for (int j = 0; j < Ysize; j++)
-                {
-                    for (int k = 0; k < Zsize; k++)
-                    {
-                        int temp = array[k, i, j];
-
-                        if (temp > max)
-                        {
-                            max = temp;
-                        }
-                        else if (temp < min)
-                        {
-                            min = temp;
-                        }
-                    }
-                }
-            }
-            return Tuple.Create(min, max);
-        }
+      
 
         public int GetIndexFromCoordinate(double coord, double origin, double direction, double res)
         {
             return Convert.ToInt32((coord - origin) / (direction * res));
         }
 
-        public void OverridePixels(Structure structure, double alphabeta, int[,,] doseMatrix, double scaling, int Xsize, int Ysize, int Zsize,
+
+        private void ForceConversionCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            //if ((bool)this.ForceConversionCheckBox.IsChecked)
+            //{
+            //    this.ForcedConversionLabel.Text = "Warning. An auxiliary structure set will be created. The plan and the original structure set" +
+            //        " will be left untouched. After conversion you must manually delete the new structure set/image.";
+            //    this.ForcedConversionLabel.Foreground = Brushes.Red;
+            //    this.ForceConversionMarginStackPanel.Visibility = Visibility.Visible;
+            //}
+            //else
+            //{
+            //    this.ForcedConversionLabel.Text = "";
+            //    this.ForceConversionMarginStackPanel.Visibility = Visibility.Hidden;
+            //}
+        }
+
+        private void ForceConversionMargin_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox txt = sender as TextBox;
+            int ind = txt.CaretIndex;
+            txt.Text = txt.Text.Replace(",", ".");
+            txt.CaretIndex = ind;
+        }
+
+        public void DetermineMargin()
+        {
+            ////determine margin for structures from dose voxel size
+            //double dx = this.scriptcontext.ExternalPlanSetup.Dose.XRes;
+            //double dy = this.scriptcontext.ExternalPlanSetup.Dose.YRes;
+            //double dz = this.scriptcontext.ExternalPlanSetup.Dose.ZRes;
+            //this.ForceConversionMargin.Text = new List<double>() { dx, dy, dz }.Max().ToString();
+        }
+
+        public delegate int calculateFunction(int dose, double alphabeta, double scaling, short numberOfFractions);
+
+        public void OverridePixels(Structure structure, double alphabeta, short numFractions, int[,,] doseMatrix, double scaling, int Xsize, int Ysize, int Zsize,
             double Xres, double Yres, double Zres, VVector Xdir, VVector Ydir, VVector Zdir, VVector doseOrigin, calculateFunction functionCalculate)
         {
             // The following is valid only for HFS, HFP, FFS, FFP orientations that do not mix x,y,z
@@ -455,7 +513,7 @@ namespace EQD2Converter
                         if (profilePoints[p] && this.existingIndexes.Contains(newIndices) == false)
                         {
                             int dose = doseMatrix[k, imin + p, j];
-                            doseMatrix[k, imin + p, j] = functionCalculate(dose, alphabeta, scaling);
+                            doseMatrix[k, imin + p, j] = functionCalculate(dose, alphabeta, scaling, numFractions);
 
                             this.existingIndexes.Add(newIndices);
                         }
@@ -465,14 +523,14 @@ namespace EQD2Converter
         }
 
 
-        public int CalculateEQD2(int dose, double alphabeta, double scaling)
+        public int CalculateEQD2(int dose, double alphabeta, double scaling, short numberOfFractions)
         {
-            return Convert.ToInt32((dose * (alphabeta + dose * scaling / this.numberOfFractions) / (alphabeta + 2.0)));
+            return Convert.ToInt32((dose * (alphabeta + dose * scaling / numberOfFractions) / (alphabeta + 2.0)));
         }
 
-        public int CalculateBED(int dose, double alphabeta, double scaling)
+        public int CalculateBED(int dose, double alphabeta, double scaling, short numberOfFractions)
         {
-            return Convert.ToInt32(dose * (1 + dose * scaling / (this.numberOfFractions * alphabeta)));
+            return Convert.ToInt32(dose * (1 + dose * scaling / (numberOfFractions * alphabeta)));
         }
 
         public int MultiplyByAlphaBeta(int dose, double alphabeta, double scaling)

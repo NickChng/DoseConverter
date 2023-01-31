@@ -32,23 +32,29 @@
             <xs:attribute name="AlphaBetaRatio" type="PositiveDouble" use="required"/>
           </xs:complexType>
         </xs:element>
-        <xs:element name="Structures" maxOccurs="unbounded">
+        <xs:element name="Structures" >
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="Aliases">
+              <xs:element name="Structure" maxOccurs="unbounded">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element name="Alias" maxOccurs="unbounded">
+                    <xs:element name="Aliases">
                       <xs:complexType>
-                        <xs:attribute name="StructureId" type="xs:string"/>
+                        <xs:sequence>
+                          <xs:element name="Alias" maxOccurs="unbounded">
+                            <xs:complexType>
+                              <xs:attribute name="StructureId" type="xs:string"/>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
                       </xs:complexType>
                     </xs:element>
                   </xs:sequence>
+                  <xs:attribute name="StructureLabel" type="xs:string" use="required" />
+                  <xs:attribute name="AlphaBetaRatio" type="PositiveDouble" use="required" />
                 </xs:complexType>
               </xs:element>
             </xs:sequence>
-            <xs:attribute name="StructureLabel" type="xs:string" use="required" />
-            <xs:attribute name="AlphaBetaRatio" type="PositiveDouble" use="required" />
           </xs:complexType>
         </xs:element>
       </xs:sequence>
