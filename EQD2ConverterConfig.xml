@@ -3,10 +3,25 @@
   <version number="0.1"/>
   <Defaults AlphaBetaRatio="3"/>
   <Structures>
+    <Structure AlphaBetaRatio="3" StructureLabel="External">
+      <Aliases>
+        <Alias StructureId="BODY"/>
+      </Aliases>
+    </Structure>
+    <Structure AlphaBetaRatio="10" StructureLabel="PTV High Risk">
+      <Aliases>
+        <Alias StructureId="SpinalCordPRV"/>
+      </Aliases>
+    </Structure>
+    <Structure AlphaBetaRatio="10" StructureLabel="PTV High Risk">
+      <Aliases>
+        <Alias StructureId="SpinalCordPRV"/>
+      </Aliases>
+    </Structure>
     <Structure AlphaBetaRatio="2" StructureLabel="">
       <Aliases>
         <Alias StructureId="SpinalCordPRV"/>
       </Aliases>
     </Structure> 
-  </Structures>
+ </Structures>
 </EQD2ConverterConfig>

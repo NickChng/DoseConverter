@@ -23,7 +23,10 @@ namespace EQD2Converter
             public static void Initialize(string user = "RunFromLauncher")
             {
                 var SessionTimeStart = DateTime.Now;
-                var AssemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                var AssemblyLocation = Assembly.GetExecutingAssembly().Location;
+                if (string.IsNullOrEmpty(AssemblyLocation))
+                    AssemblyLocation = AppDomain.CurrentDomain.BaseDirectory;
+                var AssemblyPath = Path.GetDirectoryName(AssemblyLocation);
                 var directory = Path.Combine(AssemblyPath, @"Logs");
                 var logpath = Path.Combine(directory, string.Format(@"log_{0}_{1}_{2}.txt", SessionTimeStart.ToString("dd-MMM-yyyy"), SessionTimeStart.ToString("hh-mm-ss"), user.Replace(@"\", @"_")));
                 Log.Logger = new LoggerConfiguration().WriteTo.File(logpath, Serilog.Events.LogEventLevel.Information,

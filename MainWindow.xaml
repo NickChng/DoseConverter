@@ -4,10 +4,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:EQD2Converter"
+        xmlns:dd="urn:gong-wpf-dragdrop"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:ViewModel, IsDesignTimeCreatable=True}"
-        Title="EQD2Converter" Height="600" Width="800" Background="AliceBlue" WindowStartupLocation="CenterScreen">
+        Title="EQD2Converter v1.0" Height="600" Width="800" Background="AliceBlue" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize">
     <Window.Resources>
+        <local:EnumDescriptionConverter x:Key="EnumDescriptionConverter" />
+        <local:VisibilityConverter x:Key="VisibilityConverter" />
         <Style x:Key="ColumnElementStyle" TargetType="TextBlock">
             <Setter Property="Margin" Value="10,0,10,0" />
         </Style>
@@ -24,7 +27,6 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
         <Style TargetType="{x:Type Button}"/>
         <Style TargetType="{x:Type Label}"/>
         <Style TargetType="{x:Type Border}"/>
@@ -38,81 +40,446 @@
         <Style TargetType="{x:Type TabControl}"/>
         <Style TargetType="{x:Type TabItem}"/>
         <Style TargetType="{x:Type TextBox}"/>
+        <Style x:Key="ButtonStyle_Small" TargetType="Button">
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="0,0,0,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="Width" Value="25"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="border" BorderThickness="1" Padding="3,2" BorderBrush="Transparent" CornerRadius="3" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="CornFlowerBlue" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <ControlTemplate x:Key="ProgressBarNC" TargetType="{x:Type ProgressBar}">
+            <Grid x:Name="TemplateRoot" SnapsToDevicePixels="True">
+                <Rectangle Fill="AliceBlue" RadiusY="2" RadiusX="2"/>
+                <Border CornerRadius="2" Margin="1">
+                    <Border.Background>
+                        <LinearGradientBrush EndPoint="0,1" StartPoint="0,0">
+                            <GradientStop Color="#50FFFFFF" Offset="0.5385"/>
+                            <GradientStop Color="Transparent" Offset="0.5385"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+                <Border BorderBrush="AliceBlue" BorderThickness="1,0,1,1" Margin="1">
+                    <Border.Background>
+                        <LinearGradientBrush EndPoint="0,1" StartPoint="0,0">
+                            <GradientStop Color="#80FFFFFF" Offset="0.05"/>
+                            <!--<GradientStop Color="SteelBlue" Offset="0.05"/>-->
+                            <GradientStop Color="Transparent" Offset="0.25"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+                <Rectangle x:Name="PART_Track" Margin="1"/>
+                <Decorator x:Name="PART_Indicator" HorizontalAlignment="Left" Margin="1">
+                    <Grid x:Name="Foreground">
+                        <Rectangle x:Name="Indicator" Fill="{TemplateBinding Foreground}"/>
+                        <Grid x:Name="Animation" ClipToBounds="True">
+                            <Rectangle x:Name="GR" HorizontalAlignment="Left" Margin="0,0,0,0" Width="80">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush EndPoint="1,0" StartPoint="0,0">
+                                        <GradientStop Color="Transparent" Offset="0"/>
+                                        <GradientStop Color="LightSteelBlue" Offset="0.4"/>
+                                        <GradientStop Color="LightSteelBlue" Offset="0.6"/>
+                                        <GradientStop Color="Transparent" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                        </Grid>
+                        <Grid x:Name="Overlay">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition MaxWidth="15"/>
+                                <ColumnDefinition Width="0.1*"/>
+                                <ColumnDefinition MaxWidth="15"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <Rectangle x:Name="LeftDark" Margin="1,1,0,1" RadiusY="1" RadiusX="1" Grid.RowSpan="2">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush EndPoint="1,0" StartPoint="0,0">
+                                        <GradientStop Color="#0C000000" Offset="0"/>
+                                        <GradientStop Color="SteelBlue" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                            <Rectangle x:Name="RightDark" Grid.Column="2" Margin="0,1,1,1" RadiusY="1" RadiusX="1" Grid.RowSpan="2">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush EndPoint="1,0" StartPoint="0,0">
+                                        <GradientStop Color="SteelBlue" Offset="0"/>
+                                        <GradientStop Color="SteelBlue" Offset="0.7"/>
+                                        <!--<GradientStop Color="#0C000000" Offset="1"/>-->
+                                        <GradientStop Color="SteelBlue" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                            <Rectangle x:Name="LeftLight" Grid.Column="0" Grid.Row="2">
+                                <Rectangle.Fill>
+                                    <RadialGradientBrush RadiusY="1" RadiusX="1">
+                                        <RadialGradientBrush.RelativeTransform>
+                                            <MatrixTransform Matrix="1,0,0,1,0.5,0.5"/>
+                                        </RadialGradientBrush.RelativeTransform>
+                                        <!--<GradientStop Color="#60FFFFC4" Offset="0"/>
+                                        <GradientStop Color="#00FFFFC4" Offset="1"/>-->
+                                        <GradientStop Color="SteelBlue" Offset="0"/>
+                                        <GradientStop Color="SteelBlue" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                            <Rectangle x:Name="CenterLight" Grid.Column="1" Grid.Row="2">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush EndPoint="0,0" StartPoint="0,1">
+                                        <GradientStop Color="#60FFFFC4" Offset="0"/>
+                                        <GradientStop Color="#00FFFFC4" Offset="1"/>
+                                        <!--<GradientStop Color="SteelBlue" Offset="0"/>
+                                        <GradientStop Color="SteelBlue" Offset="1"/>-->
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                            <Rectangle x:Name="RightLight" Grid.Column="2" Grid.Row="2">
+                                <Rectangle.Fill>
+                                    <RadialGradientBrush RadiusY="1" RadiusX="1">
+                                        <RadialGradientBrush.RelativeTransform>
+                                            <MatrixTransform Matrix="1,0,0,1,-0.5,0.5"/>
+                                        </RadialGradientBrush.RelativeTransform>
+                                        <GradientStop Color="#60FFFFC4" Offset="0"/>
+                                        <GradientStop Color="#00FFFFC4" Offset="1"/>
+                                        <!--<GradientStop Color="SteelBlue" Offset="0"/>
+                                        <GradientStop Color="SteelBlue" Offset="1"/>-->
+
+                                    </RadialGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                            <Border x:Name="Highlight1" Grid.ColumnSpan="3" Grid.RowSpan="2">
+                                <Border.Background>
+                                    <LinearGradientBrush EndPoint="0,1" StartPoint="0,0">
+                                        <GradientStop Color="#90FFFFFF" Offset="0.5385"/>
+                                        <!--<GradientStop Color="SteelBlue" Offset="0.5385"/>-->
+                                        <GradientStop Color="Transparent" Offset="0.5385"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                            <Border x:Name="Highlight2" Grid.ColumnSpan="3" Grid.RowSpan="2">
+                                <Border.Background>
+                                    <LinearGradientBrush EndPoint="0,1" StartPoint="0,0">
+                                        <GradientStop Color="#80FFFFFF" Offset="0.05"/>
+                                        <!--<GradientStop Color="SteelBlue" Offset="0.05"/>-->
+                                        <GradientStop Color="Transparent" Offset="0.25"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Decorator>
+                <Border BorderBrush="AliceBlue" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2"/>
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="Orientation" Value="Vertical">
+                    <Setter Property="LayoutTransform" TargetName="TemplateRoot">
+                        <Setter.Value>
+                            <RotateTransform Angle="-90"/>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+                <Trigger Property="IsIndeterminate" Value="True">
+                    <Setter Property="Visibility" TargetName="LeftDark" Value="Collapsed"/>
+                    <Setter Property="Visibility" TargetName="RightDark" Value="Collapsed"/>
+                    <Setter Property="Visibility" TargetName="LeftLight" Value="Collapsed"/>
+                    <Setter Property="Visibility" TargetName="CenterLight" Value="Collapsed"/>
+                    <Setter Property="Visibility" TargetName="RightLight" Value="Collapsed"/>
+                    <Setter Property="Visibility" TargetName="Indicator" Value="Collapsed"/>
+                </Trigger>
+                <Trigger Property="IsIndeterminate" Value="True">
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard RepeatBehavior="Forever">
+                                <ThicknessAnimationUsingKeyFrames BeginTime="0:0:0" Duration="0:0:2" Storyboard.TargetName="GR" Storyboard.TargetProperty="Margin">
+                                    <ThicknessAnimationUsingKeyFrames.KeyFrames>
+                                        <LinearThicknessKeyFrame KeyTime="0:0:0" Value="-10,0,0,0"/>
+                                        <LinearThicknessKeyFrame KeyTime="0:0:1" Value="100,0,0,0"/>
+                                        <LinearThicknessKeyFrame KeyTime="0:0:2" Value="-10,0,0,0"/>
+                                    </ThicknessAnimationUsingKeyFrames.KeyFrames>
+                                </ThicknessAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+        <Style x:Key="DraggableListViewItemStyle" TargetType="ListViewItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <!-- Trun off default selection-->
+                    <ControlTemplate TargetType="{x:Type ListViewItem}">
+                        <Grid Background="Transparent">
+                            <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" 
+                                Margin="0,2,2,2"
+                                CornerRadius="5,5,5,5"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}" 
+                            SnapsToDevicePixels="true">
+                            </Border>
+                            <ContentPresenter Name="CP" 
+                                Margin="0,2,2,2"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                                <Setter Property="Background" Value="AliceBlue"></Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <!--<MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorLevel=3, AncestorType=Grid}, Path=IsMouseOver}" Value="false"/>
+                        <Condition Binding="{Binding ElementName=AutoPlanner, Path=DataContext.DragSelected}" Value="false"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="IsSelected" Value="false"></Setter>
+                </MultiDataTrigger>
+                <DataTrigger Binding="{Binding Path=Pinned, UpdateSourceTrigger=PropertyChanged}" Value="True">
+                    <Setter Property="FontWeight" Value="Bold" />
+                </DataTrigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="FontWeight" Value="Bold" />
+                </Trigger>-->
+
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
     <Grid HorizontalAlignment="Stretch" Margin="10,10,10,10">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="33"/>
+            <RowDefinition Height="50"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="33"/>
         </Grid.RowDefinitions>
-
-        <StackPanel Orientation="Horizontal" Grid.Row="0">
-            <Label Content="Alpha/Beta order:" VerticalAlignment="Center"></Label>
-            <ComboBox x:Name="ComboBox" Width="100" Height="30" VerticalAlignment="Center" VerticalContentAlignment="Center"/>
-            <Label Content="Convert to:" VerticalAlignment="Center"></Label>
-            <ComboBox x:Name="ComboBox2" Width="80" Height="30" VerticalAlignment="Center" VerticalContentAlignment="Center"/>
-            <Button Margin="10,0,0,0"  Height="30" Width="200" Content="Create plan..." Command="{Binding button1Command}"></Button>
-            <Button Margin="10,0,0,0"  Height="30" Width="100" Content="Preview" ></Button>
-            <Button Margin="10,0,0,0"  Height="30" Width="60" Content="Help" HorizontalAlignment="Right" Command="{Binding buttonHelpCommand}"></Button>
-        </StackPanel>
-
-        <Grid Grid.Row="1" HorizontalAlignment="Stretch" Margin="0,10,0,0">
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Label Grid.Column="0" Content="Alpha/Beta order:" VerticalAlignment="Center"></Label>
+            <ComboBox Grid.Column="1" x:Name="ComboBox" Width="100" Height="30" VerticalAlignment="Center" VerticalContentAlignment="Center" ItemsSource="{Binding AlphaBetaSortFormatOptions}" 
+                      SelectedItem="{Binding SelectedAlphaBetaSortFormat, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Path=., Converter={StaticResource EnumDescriptionConverter}}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Label Grid.Column="2" Content="Convert to:" VerticalAlignment="Center" Margin="10,0,0,0"></Label>
+            <ComboBox Grid.Column="3" Width="70" Height="30" VerticalAlignment="Center" VerticalContentAlignment="Center" ItemsSource="{Binding DoseOutputFormatOptions}" SelectedItem="{Binding SelectedOutputFormat, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Path=., Converter={StaticResource EnumDescriptionConverter}}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Center" Visibility="{Binding IsEQDNSelected, FallbackValue=true, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource VisibilityConverter}}" VerticalAlignment="Stretch" >
+                <Label Content="n:" VerticalAlignment="Center"/>
+                <TextBox Text="{Binding DosePerFraction, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, FallbackValue=2}" HorizontalAlignment="Center" VerticalAlignment="Stretch" VerticalContentAlignment="Center" Padding="5,0,5,0"/>
+                <Label Content="Gy/fx" VerticalAlignment="Center" Margin="2,0,0,0"/>
+            </StackPanel>
+            <Label Grid.Column="5" Content="Eval Plan Name:" VerticalAlignment="Center" Margin="10,0,0,0" />
+            <TextBox Grid.Column="6" Text="{Binding ConvertedPlanName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="110" Margin="0,0,10,0" Padding="5,0,5,0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"/>
+            <Button Grid.Column="7" Margin="10,0,0,0"  Height="30" Width="100" Command="{Binding button1Command}" Background="Transparent" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    BorderThickness="0">
+                <Border Background="PaleGreen" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" CornerRadius="4,4,4,4" Padding="2,2,2,2">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="2"
+                                              ShadowDepth="2"
+                                              Direction="225"
+                                              Color="Black"
+                                              Opacity="0.4" />
+                    </Border.Effect>
+                    <TextBlock Text = "Create Plan" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="5,0,5,0">
+                        <TextBlock.Style>
+                            <Style>
+                                <Style.Triggers>
+                                    <Trigger Property="TextBlock.IsMouseOver" Value="True">
+                                        <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Border>
+            </Button>
+            <!--<Button Margin="10,0,0,0"  Height="30" Width="60" Content="Help" HorizontalAlignment="Right" Command="{Binding buttonHelpCommand}"></Button>-->
+        </Grid>
+        <Grid Grid.Row="1" Margin="0,0,0,0" VerticalAlignment="Center">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
+            <Label Grid.Column="0" Content="Conversion is only performed on included structures, prioritizing those on top in the case of overlap." FontStyle="Italic" VerticalAlignment="Center"/>
+            <GroupBox Grid.Column="1" VerticalContentAlignment="Stretch" Header="Status">
+                <Grid Width="200" VerticalAlignment="Center" Margin="0,0,0,0">
+                    <ProgressBar  Name="ProgressBar" Height="25" Margin="0,0,0,0" VerticalAlignment="Center"  HorizontalAlignment="Stretch" Template="{StaticResource ProgressBarNC}" IsIndeterminate="True" 
+                Visibility="{Binding Working,UpdateSourceTrigger=PropertyChanged, FallbackValue=true, Converter={StaticResource VisibilityConverter}}" />
+                    <Border VerticalAlignment="Stretch" CornerRadius="4,4,4,4" BorderBrush="{Binding StatusColor, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" BorderThickness="2">
+                        <TextBlock HorizontalAlignment="Stretch" VerticalAlignment="Center" FontSize="13" Text="{Binding StatusMessage, FallbackValue=StatusMessage, UpdateSourceTrigger=PropertyChanged}" Margin="10,3,10,3"/>
+                    </Border>
+                </Grid>
+            </GroupBox>
+        </Grid>
+        <Grid Grid.Row="2" HorizontalAlignment="Stretch" Margin="0,10,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid Grid.Row="0">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="90"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="1.2*"/>
-                    <ColumnDefinition Width="3*"/>
                 </Grid.ColumnDefinitions>
                 <Border Grid.Column="0" Background="CornflowerBlue" CornerRadius="4" Margin="5,0,5,0">
-                    <TextBlock Text="StructureId" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
+                    <TextBlock Text="Include" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
                 </Border>
                 <Border Grid.Column="1" Background="CornflowerBlue" CornerRadius="4" Margin="5,0,5,0">
-                    <TextBlock Text="Alpha/Beta Ratio" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
+                    <TextBlock Text="Priority" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
                 </Border>
                 <Border Grid.Column="2" Background="CornflowerBlue" CornerRadius="4" Margin="5,0,5,0">
+                    <TextBlock Text="Structure Id" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
+                </Border>
+                <Border Grid.Column="3" Background="CornflowerBlue" CornerRadius="4" Margin="5,0,5,0">
+                    <TextBlock Text="Alpha/Beta" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold" Margin="5,0,5,0"/>
+                </Border>
+                <Border Grid.Column="4" Background="CornflowerBlue" CornerRadius="4" Margin="5,0,5,0">
                     <TextBlock Text="Structure Label" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
                 </Border>
             </Grid>
-            
-            <ListView Grid.Column="0" Grid.Row="1" ItemsSource="{Binding AlphaBetaMappings, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedMapping, UpdateSourceTrigger=PropertyChanged}"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+            <ListView Name="StructureListView" Grid.Column="0" Grid.Row="1" ItemsSource="{Binding AlphaBetaMappings, UpdateSourceTrigger=PropertyChanged}" 
+                      SelectedItem="{Binding SelectedMapping, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding SelectedIndex}"
+                      HorizontalAlignment="Stretch" dd:DragDrop.IsDragSource="True" HorizontalContentAlignment="Stretch" AlternationCount="2" ItemContainerStyle="{StaticResource DraggableListViewItemStyle}" 
+                      DragDrop.DragOver="DragConstraint_ListView_DragOver" DragDrop.Drop="DragConstraint_Drop" MouseLeave="Constraint_ListView_MouseLeave">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Grid HorizontalAlignment="Stretch">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="90"/>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="1.2*"/>
-                                <ColumnDefinition Width="3*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{Binding StructureId}"/>
-                            <TextBlock Grid.Column="1" Text="{Binding AlphaBetaRatio}" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Column="2" Text="{Binding StructureLabel}"/>
+                            <Button Grid.Column="0" Command="{Binding ToggleIncludeCommand}" Style="{StaticResource ButtonStyle_Small}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    ToolTip="Click to toggle inclusion/exclusion">
+                                <Image>
+                                    <Image.Style>
+                                        <Style TargetType="Image">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="false">
+                                                    <Setter Property="Source" Value="Resources/x.png"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="true">
+                                                    <Setter Property="Source" Value="Resources/check.png"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                            </Button>
+                            <Grid Grid.Column="1">
+                                <Image Name ="DragImage" Grid.Column="0" Height="20" Width="18" Stretch="Fill" RenderOptions.BitmapScalingMode="HighQuality" ToolTip="Drag to up or down to change priority" VerticalAlignment="Center"
+                                                               HorizontalAlignment="Center" MouseDown="DragConstraint_MouseDown">
+                                    <Image.Style>
+                                        <Style TargetType="Image">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="false">
+                                                    <Setter Property="Source" Value="Resources/align_grey.png"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="true">
+                                                    <Setter Property="Source" Value="Resources/align.png"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                            </Grid>
+                            <TextBlock Grid.Column="2" Text="{Binding StructureId}" VerticalAlignment="Center" Margin="5,0,0,0">
+                                <TextBlock.Style>
+                                    <Style>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
+                                                <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
+                                                <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBox Grid.Column="3" Text="{Binding AlphaBetaRatio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Include, UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="5,0,5,0"  HorizontalAlignment="Center" Margin="0,0,10,0" VerticalAlignment="Center">
+                                <TextBox.Style>
+                                    <Style>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
+                                                <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
+                                                <Setter Property="TextBlock.FontWeight" Value="Normal"></Setter>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
+                                                <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBox.Style>
+                            </TextBox>
+                            <TextBlock Grid.Column="4" Text="{Binding StructureLabel}"  VerticalAlignment="Center" Margin="5,0,0,0">
+                                <TextBlock.Style>
+                                    <Style>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
+                                                <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
+                                                <Setter Property="TextBlock.FontWeight" Value="Normal"></Setter>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
+                                                <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
-
-            <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="1" Margin="0,10,10,10" HorizontalAlignment="Stretch">
-                <CheckBox x:Name="ForceConversionCheckBox" Content="Force edge conversion?" Height="20" VerticalAlignment="Top" IsChecked="{Binding ForceConversionCheckBox_Checked, UpdateSourceTrigger=PropertyChanged}"/>
-                <TextBlock TextWrapping="Wrap" x:Name="ForcedConversionLabel" Width="250" HorizontalAlignment="Stretch"/>
-                <StackPanel x:Name="ForceConversionMarginStackPanel" Orientation="Horizontal" Visibility="Hidden" HorizontalAlignment="Left">
-                    <Label Content="Margin: " HorizontalAlignment="Left"></Label>
-                    <TextBox x:Name="ForceConversionMargin" Width="50" Height="20" VerticalContentAlignment="Center" HorizontalAlignment="Left"></TextBox>
-                    <Label Content=" mm" HorizontalAlignment="Left"></Label>
-                </StackPanel>
-            </StackPanel>
-            
         </Grid>
     </Grid>
 </Window>

@@ -12,7 +12,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("EQD2Converter")]
-[assembly: AssemblyCopyright("Copyright © Denis Brojan 2021")]
+[assembly: AssemblyCopyright("Copyright © Nick Chng 2023")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -51,4 +51,4 @@ using System.Windows;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.0.6")]
+[assembly: AssemblyVersion("1.0.0.8")]

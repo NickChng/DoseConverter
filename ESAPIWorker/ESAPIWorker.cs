@@ -28,6 +28,7 @@ namespace ESAPIScript
         {
             _p = p;
             _pl = pl;
+            _ss = pl.StructureSet;
             Dispatcher = Dispatcher.CurrentDispatcher;
         }
     
@@ -39,7 +40,7 @@ namespace ESAPIScript
         }
         public async Task<bool> AsyncRunPlanContext(Action<Patient, PlanSetup> a)
         {
-            await Dispatcher.BeginInvoke(a, _pl, _ss);
+            await Dispatcher.BeginInvoke(a, _p, _pl);
             return true;
         }
     }
