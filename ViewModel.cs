@@ -16,63 +16,32 @@ using System.Windows.Threading;
 using System.Xml.Serialization;
 using VMS.TPS.Common.Model.API;
 using GongSolutions;
-using System.Windows.Documents;
-using HTMLConverter;
-using System.Windows.Controls;
 
 namespace EQD2Converter
 {
-
-    public static class HtmlTextBoxProperties
-    {
-        public static string GetHtmlText(TextBlock wb)
-        {
-            return wb.GetValue(HtmlTextProperty) as string;
-        }
-        public static void SetHtmlText(TextBlock wb, string html)
-        {
-            wb.SetValue(HtmlTextProperty, html);
-        }
-        public static readonly DependencyProperty HtmlTextProperty =
-            DependencyProperty.RegisterAttached("HtmlText", typeof(string), typeof(HtmlTextBoxProperties), new UIPropertyMetadata("", OnHtmlTextChanged));
-
-        private static void OnHtmlTextChanged(
-            DependencyObject depObj, DependencyPropertyChangedEventArgs e)
-        {
-            // Go ahead and return out if we set the property
-            //on something other than a textblock, or set a value that is not a string.
-            var txtBox = depObj as TextBlock;
-            if (txtBox == null)
-                return;
-            if (!(e.NewValue is string))
-                return;
-            var html = e.NewValue as string;
-            string xaml;
-            InlineCollection xamLines;
-            try
-            {
-                xaml = HtmlToXamlConverter.ConvertHtmlToXaml(html,false);
-                xamLines = ((Paragraph)((Section)System.Windows.Markup.XamlReader.Parse(xaml)).Blocks.FirstBlock).Inlines;
-            }
-            catch
-            { 
-                // There was a problem parsing the html, return out. 
-                return;
-            }
-            // Create a copy of the Inlines and add them to the TextBlock.
-            Inline[] newLines = new Inline[xamLines.Count];
-            xamLines.CopyTo(newLines, 0);
-            txtBox.Inlines.Clear();
-            foreach (var l in newLines)
-            {
-                txtBox.Inlines.Add(l);
-            }
-        }
-    }
     public class DescriptionViewModel
     {
         public string Id { get; set; }
         public string Description { get; set; } = "Default Description";
+
+        public DescriptionViewModel(string id, string description)
+        {
+            Id = id;
+            Description = description;
+        }
+        public DescriptionViewModel(OnlineHelpDefinitionsDefinition definition)
+        {
+            if (definition != null)
+            {
+                Id = definition.DefinitionId;
+                Description = definition.Text;
+            }
+            else
+            {
+                Description = "No online help";
+            }
+
+        }
 
     }
     public class PlanSelectionView : ObservableObject
@@ -105,6 +74,7 @@ namespace EQD2Converter
     }
     public enum DoseFormat
     {
+        [Description("None")] None,
         [Description("EQD2")] EQD2,
         [Description("BED")] BED,
         [Description("EQDd")] EQDd,
@@ -123,6 +93,7 @@ namespace EQD2Converter
         private string _dataPath = string.Empty;
         private Model _model;
         private EQD2ConverterConfig _scriptConfig;
+        private OnlineHelpDefinitions _onlineHelpDefinitions;
         public AlphaBetaMapping SelectedMapping { get; set; } = new AlphaBetaMapping() { StructureId = "Design", AlphaBetaRatio = 3, StructureLabel = "Design" };
         public ObservableCollection<AlphaBetaMapping> AlphaBetaMappings { get; private set; } = new ObservableCollection<AlphaBetaMapping>() { new AlphaBetaMapping() { StructureId = "Design", AlphaBetaRatio = 3, StructureLabel = "Design" } };
 
@@ -177,9 +148,8 @@ namespace EQD2Converter
                 {
                     UpdateMapping(_selectedInputOption.SsId);
                     DoseOutputFormatOptions.Clear();
-                    DoseOutputFormatOptions.Add(DoseFormat.EQD2);
                     DoseOutputFormatOptions.Add(DoseFormat.Base);
-                    SelectedOutputFormat = DoseFormat.EQD2;
+                    SelectedOutputFormat = DoseFormat.Base;
                 }
                 else
                 {
@@ -188,19 +158,20 @@ namespace EQD2Converter
                     {
                         DoseOutputFormatOptions.Add(format);
                     }
-                    SelectedOutputFormat = DoseFormat.EQD2;
+                    SelectedOutputFormat = DoseFormat.None;
                 }
-
+                RaisePropertyChangedEvent(nameof(SelectedOutputFormat));
             }
         }
         public bool DesignTime { get; private set; } = true;
 
+        public string ConversionInputWarning { get; private set; } = "Design";
         public bool isDoseSelectionInfoOpen { get; set; } = false;
 
         public bool isConvertToInfoOpen { get; set; } = false;
 
-        public DescriptionViewModel DoseDescriptionViewModel { get; private set; } = new DescriptionViewModel() { Id = "Select source dose distribution", Description = "Select the source dose distribution to convert from. If there are multiple relevant prior courses, convert each to EQD and create a sum in Eclipse before generating a BASE distribution" };
-        public DescriptionViewModel ConvertToDescriptionViewModel { get; private set; } = new DescriptionViewModel() { Id = "Convert to", Description = "Select the output distribution:<br><br><b>EQD2</b> and <b>BED</b> are as traditionally defined, for an source physical dose distribution with a given fractionation.<br><br><b>BEDn2</b> is the BED-equivalent physical dose output in the # of fractions specified by the user, for an source physical dose distribution with a given fractionation.<br><br>The <b>BASE</b> option outputs a dose distribution that, when used as a base dose for optimizing a new plan with the # of fractions specified, will result in the EQD2 constraint for each included structure (defined below) being exceeded only if the <u>optimization</u> exceeds that EQD2 in the fractionation of the new plan. The input for BASE <u>must be a BED distribution</u>. The fractionation of the source distribution is ignored.<br><br>Note that the output dose will be zero in any region not covered by an included contour." };
+        public DescriptionViewModel DoseDescriptionViewModel { get; private set; } = new DescriptionViewModel("Default", "Design");
+        public DescriptionViewModel ConvertToDescriptionViewModel { get; private set; } = new DescriptionViewModel("Default", "Design");
 
         public Visibility ShowN2Fractions
         {
@@ -221,6 +192,16 @@ namespace EQD2Converter
             }
         }
 
+        public Visibility StartButtonVisibility
+        {
+            get
+            {
+                if (_selectedInputOption != null && _selectedOutputFormat != DoseFormat.None && !string.IsNullOrEmpty(ConvertedPlanName))
+                    return Visibility.Visible;
+                else 
+                    return Visibility.Collapsed;
+            }
+        }
         public Visibility ShowMaxEQD2
         {
             get
@@ -253,10 +234,11 @@ namespace EQD2Converter
                         _convParameter = Convert.ToUInt32(value);
                         break;
                 }
+                RaisePropertyChangedEvent(nameof(StartButtonVisibility));
             }
         }
 
-        private DoseFormat _selectedOutputFormat = DoseFormat.EQD2;
+        private DoseFormat _selectedOutputFormat = DoseFormat.None;
         public DoseFormat SelectedOutputFormat
         {
             get { return _selectedOutputFormat; }
@@ -267,7 +249,21 @@ namespace EQD2Converter
                 {
                     SetDefaultPlanName();
                 }
+                switch (_selectedOutputFormat)
+                {
+                    case DoseFormat.BEDn2:
+                        ConversionInputWarning = "Ensure source distribution has units of physical dose. Plan fractionation will be used to determined BEDn2.";
+                        break;
+                    case DoseFormat.EQD2:
+                        ConversionInputWarning = "Ensure source distribution has units of physical dose. Plan fractionation will be used to determined EQD2.";
+                        break;
+                    case DoseFormat.Base:
+                        ConversionInputWarning = "Ensure source distribution has units of EQD2. Input plan fractionation and total dose is ignored.";
+                        _convParameter = Convert.ToUInt32(value);
+                        break;
+                }
                 RaisePropertyChangedEvent(nameof(ShowN2Fractions));
+                RaisePropertyChangedEvent(nameof(StartButtonVisibility));
             }
         }
 
@@ -277,6 +273,9 @@ namespace EQD2Converter
 
         public string StatusMessage { get; set; } = "Loading...";
         public SolidColorBrush StatusColor { get; set; } = new SolidColorBrush(Colors.PapayaWhip);
+        public Visibility SuccessVisibility { get; private set; } = Visibility.Collapsed;
+        public Visibility ErrorVisibility { get; private set; } = Visibility.Collapsed;
+
         public ViewModel() { }
         public ViewModel(EsapiWorker ew = null)
         {
@@ -333,6 +332,7 @@ namespace EQD2Converter
                 _dataPath = AssemblyPath;
                 GetScriptConfigFromXML(); // note this will fail unless this config file is defined
                                           // Initialize other GUI settings
+                InitializeOnlineHelp();
                 _model = new Model(_scriptConfig, _ew);
                 await _model.InitializeModel();
                 // Get structures in plan
@@ -360,6 +360,36 @@ namespace EQD2Converter
             catch (Exception ex)
             {
                 Helpers.SeriLog.LogError(string.Format("{0}\r\n{1}\r\n{2}", ex.Message, ex.InnerException, ex.StackTrace));
+                MessageBox.Show(string.Format("{0}\r\n{1}\r\n{2}", ex.Message, ex.InnerException, ex.StackTrace));
+            }
+        }
+
+        private void InitializeOnlineHelp()
+        {
+            try
+            {
+                XmlSerializer Ser = new XmlSerializer(typeof(OnlineHelpDefinitions));
+                var helpFile = Path.Combine(_dataPath, @"OnlineHelp.xml");
+                using (StreamReader help = new StreamReader(helpFile))
+                {
+                    try
+                    {
+                        _onlineHelpDefinitions = (OnlineHelpDefinitions)Ser.Deserialize(help);
+                    }
+                    catch (Exception ex)
+                    {
+                        Helpers.SeriLog.LogFatal(string.Format("Unable to deserialize online help file: {0}\r\n", helpFile), ex);
+                        MessageBox.Show(string.Format("Unable to read online help file {0}\r\n\r\nDetails: {1}", helpFile, ex.InnerException));
+
+                    }
+                }
+
+                DoseDescriptionViewModel = new DescriptionViewModel(_onlineHelpDefinitions.Definitions.FirstOrDefault(x => string.Equals(x.DefinitionId, "Source dose", StringComparison.OrdinalIgnoreCase)));
+                ConvertToDescriptionViewModel = new DescriptionViewModel(_onlineHelpDefinitions.Definitions.FirstOrDefault(x => string.Equals(x.DefinitionId, "Convert to", StringComparison.OrdinalIgnoreCase)));
+            }
+            catch (Exception ex)
+            {
+                Helpers.SeriLog.LogFatal(string.Format("Unable to find/open online help file"), ex);
                 MessageBox.Show(string.Format("{0}\r\n{1}\r\n{2}", ex.Message, ex.InnerException, ex.StackTrace));
             }
         }
@@ -406,6 +436,8 @@ namespace EQD2Converter
         private async void ConvertDose(object param = null)
         {
             Working = true;
+            SuccessVisibility = Visibility.Collapsed;
+            ErrorVisibility = Visibility.Collapsed;
             StatusColor = new SolidColorBrush(Colors.Transparent);
             StatusMessage = "Converting...";
             int[,,] convdose = new int[0, 0, 0];
@@ -423,9 +455,15 @@ namespace EQD2Converter
             if (!success)
             {
                 StatusColor = new SolidColorBrush(Colors.Tomato);
+                SuccessVisibility = Visibility.Collapsed;
+                ErrorVisibility = Visibility.Visible;
             }
             else
-                StatusColor = new SolidColorBrush(Colors.PaleGreen);
+            {
+                StatusColor = new SolidColorBrush(Colors.Transparent);
+                SuccessVisibility = Visibility.Visible;
+                ErrorVisibility = Visibility.Collapsed;
+            }
 
             //Tuple<int, int> minMaxConverted = Helpers.GetMinMaxValues(convdose, convdose.GetLength(1), convdose.GetLength(2), convdose.GetLength(0));
 

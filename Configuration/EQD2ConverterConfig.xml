@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<EQD2ConverterConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  xsi:noNamespaceSchemaLocation="\\spvaimapcn\data$\Apps\EQD2Converter\Schemas\EQD2ConverterConfig.xsd">
+  <version number="0.1"/>
+  <Defaults AlphaBetaRatio="3"/>
+  <Structures>
+    <Structure AlphaBetaRatio="3" StructureLabel="External">
+      <Aliases>
+        <Alias StructureId="BODY"/>
+      </Aliases>
+    </Structure>
+    <Structure AlphaBetaRatio="2" StructureLabel="Brainstem" MaxEQD2="50">
+      <Aliases>
+        <Alias StructureId="Brainstem"/>
+        <!--Not case sensitive and underscores are ignored when matching-->
+      </Aliases>
+    </Structure>
+    <Structure AlphaBetaRatio="2" StructureLabel="Segment of spinal cord" MaxEQD2="50">
+      <Aliases>
+        <Alias StructureId="SpinalCord"/>
+        <Alias StructureId="SpinalCord_PRV"/>
+        <!--Not case sensitive and underscores are ignored when matching-->
+      </Aliases>
+    </Structure>
+    <Structure AlphaBetaRatio="2" StructureLabel="Spinal Canal">
+      <Aliases>
+        <Alias StructureId="SpinalCanal"/>
+        <Alias StructureId="SpinalCanalPRV"/>
+        <!--Not case sensitive and underscores are ignored when matching-->
+      </Aliases>
+    </Structure>
+    <Structure AlphaBetaRatio="2" StructureLabel="Segment of spinal cord">
+      <Aliases>
+        <Alias StructureId="SpinalCord_PRV"/>
+        <!--Not case sensitive and underscores are ignored when matching-->
+      </Aliases>
+    </Structure>
+    <Structure AlphaBetaRatio="2" StructureLabel="Bronchial Tree">
+      <Aliases>
+        <Alias StructureId="ProxBronchTree"/>
+        <!--Not case sensitive and underscores are ignored when matching-->
+      </Aliases>
+    </Structure>
+    <Structure AlphaBetaRatio="2" StructureLabel="">
+      <Aliases>
+        <Alias StructureId="ProxTrachea"/>
+        <!--Not case sensitive and underscores are ignored when matching-->
+      </Aliases>
+    </Structure>
+  </Structures>
+</EQD2ConverterConfig>

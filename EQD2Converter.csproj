@@ -127,11 +127,13 @@
     <Compile Include="HelpWindow.xaml.cs">
       <DependentUpon>HelpWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Behaviours.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Model.cs" />
     <Compile Include="ObservableObject.cs" />
+    <Compile Include="OnlineHelpDefinitions.cs" />
     <Compile Include="PlanNameWindow.xaml.cs">
       <DependentUpon>PlanNameWindow.xaml</DependentUpon>
     </Compile>
@@ -224,7 +226,7 @@
     <Resource Include="Resources\align.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="EQD2ConverterConfig.xml" />
+    <Resource Include="Configuration\EQD2ConverterConfig.xml" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\align_grey.png" />
@@ -237,6 +239,17 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\circle-info-solid.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="OnlineHelp\OnlineHelp.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\check_trans_light.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\exclamation_light.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="packages\Fody.6.6.4\build\Fody.targets" Condition="Exists('packages\Fody.6.6.4\build\Fody.targets')" />

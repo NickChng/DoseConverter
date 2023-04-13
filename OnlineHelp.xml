@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<OnlineHelpDefinitions xsi:noNamespaceSchemaLocation="\\spvaimapcn\data$\Apps\NoPAUSE\TPAS_XML_Library\XML Schemas\OnlineHelpDefinitions.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Definitions>
+    <Definition DefinitionId="RAPVMAT_8in1" Text="The RAP-VMAT 8 Gy in 1# protocol. Note that there is a distinct cranial-specific option per the RAP-VMAT"/>
+    <Definition DefinitionId="RAPVMAT_ptv" Text="The PTV is the GTV with a 1 cm isotropic margin. Differences, e.g. due to use of a CTV, should be documented in the PAN."/>
+    <Definition DefinitionId="RAPVMAT_gtv" Text="The gross tumour volume. If a CTV has been created instead, DO NOT map the CTV to this structure as it is used to create the Lungs_sub_GTV volume."/>
+    <Definition DefinitionId="RAPVMAT_spinalCanal" Text="The entire spinal canal volume. Do not map a PRV structure to this as a 5 mm PRV will be added automatically for optimization"/>
+  </Definitions>
+</OnlineHelpDefinitions>

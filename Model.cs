@@ -145,9 +145,9 @@ namespace EQD2Converter
                 {
                     // Can't map between structure sets without registration info so no point allowing other plans, might as well launch from them
 
-                    
+
                     AllPlans.Add(new Tuple<string, string, string, bool>(pl.Course.Id, pl.Id, pl.StructureSet.Id, false));
-                    
+
                     foreach (var ps in c.PlanSums)
                     {
                         if (ps.StructureSet == pl.StructureSet)
@@ -345,53 +345,18 @@ namespace EQD2Converter
 
             VVector doseOrigin = dose.Origin;
 
-            int[,,] doseMatrix = GetDoseVoxelsFromDose(dose);
+            //int[,,] doseMatrix = GetDoseVoxelsFromDose(dose);
             originalArray = GetDoseVoxelsFromDose(dose); // a copy
+            int[,,] doseMatrix = new int[originalArray.GetLength(0), originalArray.GetLength(1), originalArray.GetLength(2)];
 
             double maxDoseVal = GetMaxDoseVal(dose, source);
 
-            Tuple<int, int> minMaxDose = Helpers.GetMinMaxValues(doseMatrix, Xsize, Ysize, Zsize);
+            Tuple<int, int> minMaxDose = Helpers.GetMinMaxValues(originalArray, Xsize, Ysize, Zsize);
 
             scaling = maxDoseVal / minMaxDose.Item2;
 
             doseMin = minMaxDose.Item1 * scaling;
             doseMax = minMaxDose.Item2 * scaling;
-
-            //Dictionary<Structure, double> structureDict = new Dictionary<Structure, double>() { };
-
-            //foreach (var row in this.DataGridStructuresList)
-            //{
-            //    if (row.AlphaBeta != null && row.AlphaBeta != "" && ConvertTextToDouble(row.AlphaBeta) != Double.NaN)
-            //    {
-            //        Structure structure = this.scriptcontext.StructureSet.Structures.First(id => id.Id == row.Structure);
-            //        double alphabeta = ConvertTextToDouble(row.AlphaBeta);
-
-            //        structureDict.Add(structure, alphabeta);
-            //    }
-            //}
-
-            //IOrderedEnumerable<KeyValuePair<Structure, double>> sortedDict;
-
-            //if (this.ComboBox.SelectedValue.ToString() == "Descending")
-            //{
-            //    sortedDict = from entry in structureDict orderby entry.Value descending select entry;
-            //}
-            //else
-            //{
-            //    sortedDict = from entry in structureDict orderby entry.Value ascending select entry;
-            //}
-
-            // If forced edge conversion is on, add margin to structure on a seperate structureset
-            //if ((bool)this.ForceConversionCheckBox.IsChecked)
-            //{
-            //    if (!this.WasStructureSetCreated)
-            //    {
-            //        this.AuxStructureSet = this.scriptcontext.Image.CreateNewStructureSet();
-            //        this.WasStructureSetCreated = true;
-            //    }
-            //}
-
-
 
             var plan = source as PlanSetup;
 
@@ -736,6 +701,7 @@ namespace EQD2Converter
                             // this.existingIndexes.Add(newIndices); // allow overwriting as I'm controlling the order from the list
                         }
                     }
+
                 }
             }
         }
@@ -758,7 +724,7 @@ namespace EQD2Converter
 
         public int CalculateBED(int dose, double alphabeta, double scaling, short numberOfFractions, double? convParam1 = null)
         {
-            return Convert.ToInt32(dose * (1 + dose * scaling / (numberOfFractions * alphabeta)));
+                return Convert.ToInt32(dose * (1 + dose * scaling / (numberOfFractions * alphabeta)));
         }
 
         public int CalculateEQDn(int dose, double alphabeta, double scaling, short numberOfFractions, double? n2 = null)

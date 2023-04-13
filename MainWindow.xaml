@@ -8,7 +8,7 @@
         xmlns:dd="urn:gong-wpf-dragdrop"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:ViewModel, IsDesignTimeCreatable=True}"
-        Title="EQD2Converter v1.0" Height="600" Width="800" Background="White" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize">
+        Title="Dose Converter v1.0" Height="600" Width="800" Background="White" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize">
     <Window.Resources>
         <local:EnumDescriptionConverter x:Key="EnumDescriptionConverter" />
         <local:VisibilityConverter x:Key="VisibilityConverter" />
@@ -370,7 +370,7 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0" Orientation="Horizontal">
-                <TextBlock Text="NoPAUSE - EQD2 Conversion Tool"></TextBlock>
+                <TextBlock Text="NoPAUSE - Dose Conversion Tool"></TextBlock>
             </StackPanel>
             <Border Grid.Row="1" HorizontalAlignment="Stretch" Height="1" CornerRadius="4,4,4,4" Background="Black" Margin="0,5,0,5"/>
         </Grid>
@@ -424,7 +424,7 @@
                         <local:DescriptionView HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" DataContext="{Binding ConvertToDescriptionViewModel}"/>
                     </Popup>
                 </StackPanel>
-                <ComboBox Grid.Row="1" Width="70" Height="30" VerticalAlignment="Center"  
+                <ComboBox Grid.Row="1" Height="30" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
                       Style="{StaticResource ComboBoxStyle}"
                       Template="{StaticResource ComboBoxControlTemplate}"
                       VerticalContentAlignment="Center" ItemsSource="{Binding DoseOutputFormatOptions}" SelectedItem="{Binding SelectedOutputFormat, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
@@ -448,11 +448,15 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <Label Grid.Row="0" Content="Output Plan Name:" VerticalAlignment="Center"/>
-                <TextBox Grid.Row="1" Text="{Binding ConvertedPlanName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="110" Height="30" HorizontalAlignment="Center" HorizontalContentAlignment="Left" VerticalContentAlignment="Center"/>
+                <Label Grid.Row="0" Content="Output Plan Name:" VerticalAlignment="Center" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+                <TextBox Grid.Row="1" Text="{Binding ConvertedPlanName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="110" Height="30" HorizontalAlignment="Left" HorizontalContentAlignment="Left" VerticalContentAlignment="Center"/>
+            </Grid>
+            <Grid Grid.Column="4" Margin="5,0,5,0">
+                <TextBlock Text="{Binding ConversionInputWarning, UpdateSourceTrigger=PropertyChanged}" Foreground="DarkSalmon" HorizontalAlignment="Center"
+                           VerticalAlignment="Center" FontSize="11" TextWrapping="Wrap"/>
             </Grid>
 
-          
+
             <!--<Button Margin="10,0,0,0"  Height="30" Width="60" Content="Help" HorizontalAlignment="Right" Command="{Binding buttonHelpCommand}"></Button>-->
         </Grid>
         <Grid Grid.Row="2" HorizontalAlignment="Stretch" Margin="0,10,0,0">
@@ -461,7 +465,7 @@
                 <RowDefinition Height="25"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Label Grid.Row="0" Content="Conversion is only performed on included structures, prioritizing those on top in the case of overlap." FontStyle="Italic" VerticalAlignment="Center" FontSize="10"/>
+            <Label Grid.Row="0" Content="Conversion is only performed on included structures, prioritizing those on top in the case of overlap. Converted dose elsewhere is zero." FontStyle="Italic" VerticalAlignment="Center" FontSize="10"/>
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="80"/>
@@ -641,13 +645,23 @@
                 <Grid VerticalAlignment="Center" Margin="0,0,0,0">
                     <ProgressBar  Name="ProgressBar" Height="25" Margin="0,0,0,0" VerticalAlignment="Center"  HorizontalAlignment="Stretch" Template="{StaticResource ProgressBarNC}" IsIndeterminate="True" 
                         Visibility="{Binding Working,UpdateSourceTrigger=PropertyChanged, FallbackValue=true, Converter={StaticResource VisibilityConverter}}" />
-                    <Border VerticalAlignment="Stretch" CornerRadius="4,4,4,4" BorderBrush="{Binding StatusColor, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" BorderThickness="2" Width="500">
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Text="{Binding StatusMessage, FallbackValue=StatusMessage, UpdateSourceTrigger=PropertyChanged}" Margin="10,3,10,3"/>
-                    </Border>
+                        <Grid Visibility="{Binding SuccessVisibility, UpdateSourceTrigger=PropertyChanged}">
+                            <Ellipse Height="20" Width="20" Fill="PaleGreen"/>
+                            <Image Source="Resources/check_trans_light.png" Height="15" Width="15"/>
+                        </Grid>
+                        <Grid Visibility="{Binding ErrorVisibility, UpdateSourceTrigger=PropertyChanged}">
+                            <Ellipse Height="20" Width="20" Fill="Tomato"/>
+                            <Image Source="Resources/exclamation_light.png" Height="15" Width="15" RenderOptions.BitmapScalingMode="Fant"/>
+                        </Grid>
+                    </StackPanel>
+
                 </Grid>
             </GroupBox>
             <Button Grid.Column="1" Margin="10,7,0,0"  Height="30" Width="100" Command="{Binding button1Command}" Background="Transparent" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalAlignment="Center"
-                    BorderThickness="0">
+                    BorderThickness="0" Visibility="{Binding StartButtonVisibility, UpdateSourceTrigger=PropertyChanged}">
                 <Border Background="PaleGreen" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" CornerRadius="4,4,4,4" Padding="2,2,2,2">
                     <Border.Effect>
                         <DropShadowEffect BlurRadius="2"
