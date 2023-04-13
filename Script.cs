@@ -47,6 +47,10 @@ namespace VMS.TPS
 
             Helpers.SeriLog.Initialize(scriptcontext.CurrentUser.Id);
             // The ESAPI worker needs to be created in the main thread
+            //EsapiWorker esapiWorker = null;
+            //if (scriptcontext.PlanSumsInScope.Count()>0)
+            //    esapiWorker = new EsapiWorker(scriptcontext.Patient, scriptcontext.PlanSum);
+            //else
             var esapiWorker = new EsapiWorker(scriptcontext.Patient, scriptcontext.PlanSetup);
 
             // This new queue of tasks will prevent the script

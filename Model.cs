@@ -15,6 +15,7 @@ using ESAPIScript;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace EQD2Converter
 {
@@ -49,33 +50,68 @@ namespace EQD2Converter
         public double doseMax;
         public double doseMin;
 
-        public async Task<(int[,,], bool, string)> GetConvertedDose(string newPlanName, List<AlphaBetaMapping> mappings, DoseOutputFormat format, double? DosePerFraction = null)
+        public async Task<(int[,,], bool, string)> GetConvertedDose(string courseId, string planId, bool isSum, string newPlanName, List<AlphaBetaMapping> mappings, DoseFormat format, double? convParameter = null)
         {
             ExternalPlanSetup newPlan = (ExternalPlanSetup)null;
             int[,,] outputDose = null;
             string errorMessage = "";
             bool success = true;
-            await _ew.AsyncRunPlanContext((p, pl) =>
-            {
-                try
-                {
-                    newPlan = pl.Course.AddExternalPlanSetupAsVerificationPlan(pl.StructureSet, (ExternalPlanSetup)pl);
-                    newPlan.Id = newPlanName;
-                }
-                catch
-                {
-                    errorMessage = "Error creating plan";
-                    success = false;
-                }
-            });
-            if (!success)
-                return (null, success, errorMessage);
 
             await _ew.AsyncRunPlanContext((p, pl) =>
             {
                 try
                 {
-                    outputDose = ConvertDose(newPlan, pl, mappings, format, DosePerFraction, false);
+                    if (isSum)
+                    {
+                        var c = p.Courses.FirstOrDefault(x => string.Equals(courseId, x.Id, StringComparison.OrdinalIgnoreCase));
+                        var sum = c.PlanSums.FirstOrDefault(x => string.Equals(x.Id, planId, StringComparison.OrdinalIgnoreCase));
+
+                        // can't sum over plans because dose matrices have different sizes, and unknown whether interpolating will result in same result as internal Eclipse sum.
+                        if (sum.Dose != null)
+                        {
+                            try
+                            {
+                                newPlan = pl.Course.AddExternalPlanSetupAsVerificationPlan(pl.StructureSet, (ExternalPlanSetup)pl);
+                                newPlan.Id = newPlanName;
+                            }
+                            catch
+                            {
+                                errorMessage = "Error creating plan";
+                                success = false;
+                            }
+                            outputDose = ConvertDose(format, newPlan, (ExternalPlanSetup)pl, sum, mappings, convParameter, false);
+                        }
+                        else
+                        {
+                            errorMessage = "Selected plan sum has no dose.";
+                            success = false;
+                        }
+
+                    }
+                    else
+                    {
+                        var plan = p.Courses.FirstOrDefault(x => string.Equals(courseId, x.Id, StringComparison.OrdinalIgnoreCase)).PlanSetups.FirstOrDefault(x => string.Equals(x.Id, planId, StringComparison.OrdinalIgnoreCase));
+                        if (plan.Dose != null)
+                        {
+                            try
+                            {
+                                newPlan = pl.Course.AddExternalPlanSetupAsVerificationPlan(pl.StructureSet, (ExternalPlanSetup)plan);
+                                newPlan.Id = newPlanName;
+                            }
+                            catch (Exception ex)
+                            {
+                                errorMessage = "Error creating plan";
+                                success = false;
+                            }
+                            outputDose = ConvertDose(format, newPlan, (ExternalPlanSetup)pl, plan, mappings, convParameter, false);
+
+                        }
+                        else
+                        {
+                            errorMessage = "Selected plan sum has no dose.";
+                            success = false;
+                        }
+                    }
                 }
                 catch (Exception f)
                 {
@@ -100,6 +136,28 @@ namespace EQD2Converter
             DefaultAlphaBeta = _config.Defaults.AlphaBetaRatio;
         }
 
+        public async Task<List<Tuple<string, string, string, bool>>> GetPlans()
+        {
+            var AllPlans = new List<Tuple<string, string, string, bool>>();
+            await _ew.AsyncRunPlanContext((p, pl) =>
+            {
+                foreach (var c in p.Courses)
+                {
+                    // Can't map between structure sets without registration info so no point allowing other plans, might as well launch from them
+
+                    
+                    AllPlans.Add(new Tuple<string, string, string, bool>(pl.Course.Id, pl.Id, pl.StructureSet.Id, false));
+                    
+                    foreach (var ps in c.PlanSums)
+                    {
+                        if (ps.StructureSet == pl.StructureSet)
+                            AllPlans.Add(new Tuple<string, string, string, bool>(c.Id, ps.Id, ps.StructureSet.Id, true));
+                    }
+                }
+            });
+            return AllPlans;
+        }
+
         public async Task<bool> InitializeModel()
         {
             string resourceName = Assembly.GetExecutingAssembly().GetManifestResourceNames().Single(s => s.EndsWith("StructureCodes.csv"));
@@ -118,31 +176,62 @@ namespace EQD2Converter
                 foreach (var structure in ss.Structures.Where(x => !x.IsEmpty))
                 {
                     var Code = structure.StructureCodeInfos.FirstOrDefault();
+                    bool codeMatched = false;
                     if (Code != null)
-                        StructureList.Add(new Tuple<string, string>(structure.Id, StructureCodeLookup[Code.Code]));
-                    else
+                        if (!string.IsNullOrEmpty(Code.Code))
+                            if (StructureCodeLookup.ContainsKey(Code.Code))
+                            {
+                                StructureList.Add(new Tuple<string, string>(structure.Id, StructureCodeLookup[Code.Code]));
+                                codeMatched = true;
+                            }
+                    if (!codeMatched)
                         StructureList.Add(new Tuple<string, string>(structure.Id, ""));
                 }
             });
             foreach (var structureRef in StructureList)
             {
-                var matchingStructure = _config.Structures.FirstOrDefault(x => x.Aliases.Select(y => y.StructureId).Any(z => string.Equals(z.Replace("_", ""), structureRef.Item1, StringComparison.OrdinalIgnoreCase))
-                || string.Equals(x.StructureLabel, structureRef.Item2, StringComparison.InvariantCultureIgnoreCase));
+                var matchingStructure = _config.Structures.FirstOrDefault(x => x.Aliases.Select(y => y.StructureId).Any(z => string.Equals(z.Replace("_", ""), structureRef.Item1.Replace("_", ""), StringComparison.OrdinalIgnoreCase))
+                || string.Equals(x.StructureLabel, structureRef.Item2, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(structureRef.Item2));
                 if (matchingStructure != null)
                 {
-                    AlphaBetaMappings.Add(new AlphaBetaMapping(structureRef.Item1, matchingStructure.AlphaBetaRatio, structureRef.Item2, true));
+                    AlphaBetaMappings.Add(new AlphaBetaMapping(structureRef.Item1, matchingStructure.AlphaBetaRatio, structureRef.Item2, matchingStructure.MaxEQD2, true));
                 }
                 else
-                    AlphaBetaMappings.Add(new AlphaBetaMapping(structureRef.Item1, DefaultAlphaBeta, structureRef.Item2, false));
+                    AlphaBetaMappings.Add(new AlphaBetaMapping(structureRef.Item1, DefaultAlphaBeta, structureRef.Item2, null, false));
             }
 
 
             return true;
         }
 
-        public List<AlphaBetaMapping> GetAlphaBetaMappings()
+        public async Task<List<AlphaBetaMapping>> GetAlphaBetaMappings(string ssId = null)
         {
-            return AlphaBetaMappings.ToList();
+            if (ssId == null)
+                return AlphaBetaMappings.ToList();
+            else
+            {
+                AlphaBetaMappings.Clear();
+                await _ew.AsyncRunStructureContext((pat, ss) =>
+                {
+                    var ssOverride = pat.StructureSets.FirstOrDefault(s => s.Id == ssId);
+                    foreach (var structure in ssOverride.Structures.Where(x => !x.IsEmpty))
+                    {
+                        var Code = structure.StructureCodeInfos.FirstOrDefault();
+                        string structureLabel = string.Empty;
+                        if (Code != null)
+                            if (!string.IsNullOrEmpty(Code.Code))
+                                if (StructureCodeLookup.ContainsKey(Code.Code))
+                                    structureLabel = StructureCodeLookup[Code.Code];
+                        var matchingStructure = _config.Structures.FirstOrDefault(x => x.Aliases.Select(y => y.StructureId).Any(z => string.Equals(z.Replace("_", ""), structure.Id.Replace("_", ""), StringComparison.OrdinalIgnoreCase))
+                           || string.Equals(x.StructureLabel, structureLabel, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(structureLabel));
+                        if (matchingStructure != null)
+                            AlphaBetaMappings.Add(new AlphaBetaMapping(structure.Id, matchingStructure.AlphaBetaRatio, structureLabel, matchingStructure.MaxEQD2, true));
+                        else
+                            AlphaBetaMappings.Add(new AlphaBetaMapping(structure.Id, DefaultAlphaBeta, "", 0, false));
+                    }
+                });
+            }
+            return AlphaBetaMappings;
         }
 
         public async Task<string> GetStructureLabel(string StructureId)
@@ -211,23 +300,26 @@ namespace EQD2Converter
             return doseMatrix;
         }
 
-        public double GetMaxDoseVal(Dose dose, ExternalPlanSetup plan)
+        public double GetMaxDoseVal(Dose dose, PlanningItem source)
         {
             DoseValue maxDose = dose.DoseMax3D;
             double maxDoseVal = maxDose.Dose;
 
-            if (maxDose.IsRelativeDoseValue)
+            PlanSetup plan = source as PlanSetup;
+            if (plan != null)
             {
-                if (plan.TotalDose.Unit == DoseValue.DoseUnit.cGy)
+                if (maxDose.IsRelativeDoseValue)
                 {
-                    maxDoseVal = maxDoseVal * plan.TotalDose.Dose / 10000.0;
-                }
-                else
-                {
-                    maxDoseVal = maxDoseVal * plan.TotalDose.Dose / 100.0;
+                    if (plan.TotalDose.Unit == DoseValue.DoseUnit.cGy)
+                    {
+                        maxDoseVal = maxDoseVal * plan.TotalDose.Dose / 10000.0;
+                    }
+                    else
+                    {
+                        maxDoseVal = maxDoseVal * plan.TotalDose.Dose / 100.0;
+                    }
                 }
             }
-
             if (maxDose.Unit == DoseValue.DoseUnit.cGy)
             {
                 maxDoseVal = maxDoseVal / 100.0;
@@ -235,10 +327,9 @@ namespace EQD2Converter
             return maxDoseVal;
         }
 
-        private int[,,] ConvertDose(ExternalPlanSetup newPlan, PlanSetup thisPlan, List<AlphaBetaMapping> mappings, DoseOutputFormat format, double? dosePerFraction = null, bool preview = false)
+        private int[,,] ConvertDose(DoseFormat format, ExternalPlanSetup newPlan, ExternalPlanSetup targetPlan, PlanningItem source, List<AlphaBetaMapping> mappings, double? convParameter = null, bool preview = false)
         {
-            ExternalPlanSetup epl = (ExternalPlanSetup)thisPlan;
-            Dose dose = epl.Dose;
+            Dose dose = source.Dose;
 
             int Xsize = dose.XSize;
             int Ysize = dose.YSize;
@@ -257,7 +348,7 @@ namespace EQD2Converter
             int[,,] doseMatrix = GetDoseVoxelsFromDose(dose);
             originalArray = GetDoseVoxelsFromDose(dose); // a copy
 
-            double maxDoseVal = GetMaxDoseVal(dose, epl);
+            double maxDoseVal = GetMaxDoseVal(dose, source);
 
             Tuple<int, int> minMaxDose = Helpers.GetMinMaxValues(doseMatrix, Xsize, Ysize, Zsize);
 
@@ -300,9 +391,23 @@ namespace EQD2Converter
             //    }
             //}
 
+
+
+            var plan = source as PlanSetup;
+
+            StructureSet ss;
+            ExternalPlanSetup epl = null;
+            if (plan != null)
+            {
+                epl = (ExternalPlanSetup)plan;
+                ss = epl.StructureSet;
+            }
+            else
+                ss = source.StructureSet;
+
             foreach (var str in mappings.Where(x => x.Include).Reverse())
             {
-                Structure structure = epl.StructureSet.Structures.FirstOrDefault(x => string.Equals(x.Id, str.StructureId, StringComparison.InvariantCultureIgnoreCase));
+                Structure structure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, str.StructureId, StringComparison.InvariantCultureIgnoreCase));
                 double alphabeta = str.AlphaBetaRatio;
 
                 // transfer structure to auxiliary structure set and add margin:
@@ -324,21 +429,45 @@ namespace EQD2Converter
 
                 //if (this.ComboBox2.SelectedValue.ToString() == "EQD2")
                 //{
-
-                switch (format)
+                if (epl != null)
                 {
-                    case DoseOutputFormat.EQD2:
-                        OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                     Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQD2);
-                        break;
-                    case DoseOutputFormat.BED:
-                        OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                     Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateBED);
-                        break;
-                    case DoseOutputFormat.EQDn:
-                        OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                     Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDn, dosePerFraction);
-                        break;
+                    switch (format)
+                    {
+                        case DoseFormat.EQD2:
+                            OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQD2);
+                            break;
+                        case DoseFormat.BED:
+                            OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateBED);
+                            break;
+                        case DoseFormat.EQDd:
+                            OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDd, convParameter);
+                            break;
+                        case DoseFormat.BEDn2:
+                            OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDn, convParameter);
+                            break;
+                        case DoseFormat.Base:
+                            OverridePixels(structure, alphabeta, 0, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                        Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDose, convParameter, str.MaxEQD2);
+                            break;
+                    }
+                    CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, epl);
+                }
+                else
+                {
+                    // plansum, assume dose is in EQD2 already
+                    switch (format)
+                    {
+                        case DoseFormat.Base:
+                            OverridePixels(structure, alphabeta, 0, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                       Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDose, convParameter, str.MaxEQD2);
+                            break;
+
+                    }
+                    CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, targetPlan, (PlanSum)source);
                 }
 
                 //}
@@ -364,18 +493,23 @@ namespace EQD2Converter
 
             existingIndexes = new HashSet<Tuple<int, int, int>>() { }; // reset!
 
-            if (!preview)
-            {
-                CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, epl);
-                return new int[0, 0, 0];
-            }
-            else
-            {
-                return doseMatrix;
-            }
+
+
+
+            return doseMatrix;
+
+            //if (!preview)
+            //{
+            //    CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, epl);
+            //    return new int[0, 0, 0];
+            //}
+            //else
+            //{
+            //    return doseMatrix;
+            //}
         }
 
-        public void CreatePlanAndAddDose(int Xsize, int Ysize, int Zsize, int[,,] doseMatrix, double doseMaxOriginal, ExternalPlanSetup newPlan, ExternalPlanSetup thisPlan)
+        public void CreatePlanAndAddDose(int Xsize, int Ysize, int Zsize, int[,,] doseMatrix, double doseMaxOriginal, ExternalPlanSetup newPlan, ExternalPlanSetup thisPlan, PlanSum sum = null)
         {
 
             int fractions = (int)thisPlan.NumberOfFractions;
@@ -394,7 +528,11 @@ namespace EQD2Converter
                 newPlan.PlanNormalizationValue = 100;
             }
 
-            EvaluationDose evalDose = newPlan.CopyEvaluationDose(thisPlan.Dose);
+            EvaluationDose evalDose;
+            if (sum != null)
+                evalDose = newPlan.CopyEvaluationDose(sum.Dose);
+            else
+                evalDose = newPlan.CopyEvaluationDose(thisPlan.Dose);
 
             double maxDoseVal = GetMaxDoseVal(evalDose, newPlan);
 
@@ -476,7 +614,7 @@ namespace EQD2Converter
         public delegate int calculateFunction(int dose, double alphabeta, double scaling, short numberOfFractions, double? nOut = null);
 
         public void OverridePixels(Structure structure, double alphabeta, short numFractions, int[,,] doseMatrixOrig, int[,,] doseMatrixOut, double scaling, int Xsize, int Ysize, int Zsize,
-            double Xres, double Yres, double Zres, VVector Xdir, VVector Ydir, VVector Zdir, VVector doseOrigin, calculateFunction functionCalculate, double? nOut = null)
+            double Xres, double Yres, double Zres, VVector Xdir, VVector Ydir, VVector Zdir, VVector doseOrigin, calculateFunction functionCalculate, double? nOut = null, double? maxEQD2 = null)
         {
             // The following is valid only for HFS, HFP, FFS, FFP orientations that do not mix x,y,z
             double sx = Xdir.x + Ydir.x + Zdir.x;
@@ -577,8 +715,22 @@ namespace EQD2Converter
                         if (profilePoints[p] && this.existingIndexes.Contains(newIndices) == false)
                         {
                             int dose = doseMatrixOrig[k, imin + p, j];
-                            if (nOut != null)
-                                doseMatrixOut[k, imin + p, j] = functionCalculate(dose, alphabeta, scaling, numFractions, nOut);
+                            if (nOut != null)  // either converting to a new fractionation or creating a base plan
+                            {
+                                if (maxEQD2 != null) // creating a base plan
+                                {
+                                    int maxEQD2_scaled = Convert.ToInt32(Math.Abs((double)maxEQD2 / scaling));
+                                    if (maxEQD2_scaled > dose)
+                                        doseMatrixOut[k, imin + p, j] = Math.Max(functionCalculate(maxEQD2_scaled, alphabeta, scaling, numFractions, nOut)
+                                         - functionCalculate(maxEQD2_scaled - dose, alphabeta, scaling, numFractions, nOut), 0);
+                                    else
+                                        doseMatrixOut[k, imin + p, j] = functionCalculate(maxEQD2_scaled, alphabeta, scaling, numFractions, nOut);
+
+                                }
+                                else
+                                    doseMatrixOut[k, imin + p, j] = functionCalculate(dose, alphabeta, scaling, numFractions, nOut);
+
+                            }
                             else
                                 doseMatrixOut[k, imin + p, j] = functionCalculate(dose, alphabeta, scaling, numFractions);
                             // this.existingIndexes.Add(newIndices); // allow overwriting as I'm controlling the order from the list
@@ -589,19 +741,31 @@ namespace EQD2Converter
         }
 
 
-        public int CalculateEQD2(int dose, double alphabeta, double scaling, short numberOfFractions, double? dFraction = null)
+        public int CalculateEQD2(int dose, double alphabeta, double scaling, short numberOfFractions, double? convParam1 = null)
         {
-            return Convert.ToInt32((dose * (alphabeta + dose * scaling / numberOfFractions) / (alphabeta + 2.0)));
+            return Convert.ToInt32(dose * (alphabeta + dose * scaling / numberOfFractions) / (alphabeta + 2.0));
         }
-        public int CalculateEQDn(int dose, double alphabeta, double scaling, short numberOfFractions, double? dFraction = null)
+
+        public int CalculatePhysicalDose(int EQD2, double alphabeta, double scaling, short numberOfFractions, double? n2 = null)
+        {
+            return Convert.ToInt32((double)n2 * alphabeta / 2 / scaling * (Math.Sqrt(1 + 4 * scaling / (double)n2 / alphabeta * EQD2 * (1 + 2 / alphabeta)) - 1));
+        }
+
+        public int CalculateEQDd(int dose, double alphabeta, double scaling, short numberOfFractions, double? dFraction = null)
         {
             return Convert.ToInt32((dose * (alphabeta + dose * scaling / numberOfFractions) / (alphabeta + dFraction)));
         }
 
-        public int CalculateBED(int dose, double alphabeta, double scaling, short numberOfFractions, double? dFraction = null)
+        public int CalculateBED(int dose, double alphabeta, double scaling, short numberOfFractions, double? convParam1 = null)
         {
             return Convert.ToInt32(dose * (1 + dose * scaling / (numberOfFractions * alphabeta)));
         }
+
+        public int CalculateEQDn(int dose, double alphabeta, double scaling, short numberOfFractions, double? n2 = null)
+        {
+            return Convert.ToInt32((double)n2 * alphabeta / 2 / scaling * (Math.Sqrt(1 + 4 * scaling / (double)n2 / alphabeta * (dose * (1 + dose * scaling / (numberOfFractions * alphabeta)))) - 1));
+        }
+
 
         public int MultiplyByAlphaBeta(int dose, double alphabeta, double scaling)
         {

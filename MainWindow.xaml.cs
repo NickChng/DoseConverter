@@ -33,6 +33,7 @@ namespace EQD2Converter
         {
         
             InitializeComponent();
+            
             DataContext = vm;
 
             //this.ComboBox.ItemsSource = new List<string> { "Ascending", "Descending" };

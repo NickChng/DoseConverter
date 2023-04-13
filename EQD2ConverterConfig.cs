@@ -118,6 +118,10 @@ namespace EQD2Converter {
         
         private string structureLabelField;
         
+        private double maxEQD2Field;
+        
+        private bool maxEQD2FieldSpecified;
+        
         private double alphaBetaRatioField;
         
         /// <remarks/>
@@ -139,6 +143,28 @@ namespace EQD2Converter {
             }
             set {
                 this.structureLabelField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public double MaxEQD2 {
+            get {
+                return this.maxEQD2Field;
+            }
+            set {
+                this.maxEQD2Field = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public bool MaxEQD2Specified {
+            get {
+                return this.maxEQD2FieldSpecified;
+            }
+            set {
+                this.maxEQD2FieldSpecified = value;
             }
         }
         

@@ -13,10 +13,15 @@
       <xs:enumeration value="Absolute" />
     </xs:restriction>
   </xs:simpleType>
-  <xs:simpleType name="PositiveDouble">
+  <xs:simpleType name="AlphaBetaValues">
     <xs:restriction base="xs:double">
       <xs:minInclusive value="0"/>
       <xs:maxInclusive value="20"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="PositiveDouble">
+    <xs:restriction base="xs:double">
+      <xs:minInclusive value="0"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:element name="EQD2ConverterConfig">
@@ -51,7 +56,8 @@
                     </xs:element>
                   </xs:sequence>
                   <xs:attribute name="StructureLabel" type="xs:string" use="required" />
-                  <xs:attribute name="AlphaBetaRatio" type="PositiveDouble" use="required" />
+                  <xs:attribute name="MaxEQD2" type="PositiveDouble" use="optional" />
+                  <xs:attribute name="AlphaBetaRatio" type="AlphaBetaValues" use="required" />
                 </xs:complexType>
               </xs:element>
             </xs:sequence>

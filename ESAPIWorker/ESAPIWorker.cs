@@ -18,12 +18,13 @@ namespace ESAPIScript
         private readonly Patient _p = null;
         private readonly Dispatcher Dispatcher = null;
         
-        public EsapiWorker(Patient p, StructureSet ss)
+       public EsapiWorker(Patient p, StructureSet ss)
         {
             _p = p;
             _ss = ss;
             Dispatcher = Dispatcher.CurrentDispatcher;
         }
+
         public EsapiWorker(Patient p, PlanSetup pl)
         {
             _p = p;
@@ -35,6 +36,7 @@ namespace ESAPIScript
         public delegate void D(Patient p, StructureSet s);
         public async Task<bool> AsyncRunStructureContext(Action<Patient, StructureSet> a)
         {
+           
             await Dispatcher.BeginInvoke(a, _p, _ss);
             return true;
         }
@@ -43,5 +45,6 @@ namespace ESAPIScript
             await Dispatcher.BeginInvoke(a, _p, _pl);
             return true;
         }
+     
     }
 }
