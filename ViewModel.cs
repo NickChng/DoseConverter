@@ -16,6 +16,7 @@ using System.Windows.Threading;
 using System.Xml.Serialization;
 using VMS.TPS.Common.Model.API;
 using GongSolutions;
+using System.Net.Http.Headers;
 
 namespace EQD2Converter
 {
@@ -170,9 +171,11 @@ namespace EQD2Converter
 
         public bool isConvertToInfoOpen { get; set; } = false;
 
+
         public DescriptionViewModel DoseDescriptionViewModel { get; private set; } = new DescriptionViewModel("Default", "Design");
         public DescriptionViewModel ConvertToDescriptionViewModel { get; private set; } = new DescriptionViewModel("Default", "Design");
 
+        public DescriptionViewModel MaxDoseInfoDescriptionViewModel { get; private set; } = new DescriptionViewModel("Default", "Design");
         public Visibility ShowN2Fractions
         {
             get
@@ -192,13 +195,14 @@ namespace EQD2Converter
             }
         }
 
+        private bool _conversionComplete = false;
         public Visibility StartButtonVisibility
         {
             get
             {
-                if (_selectedInputOption != null && _selectedOutputFormat != DoseFormat.None && !string.IsNullOrEmpty(ConvertedPlanName))
+                if (_selectedInputOption != null && _selectedOutputFormat != DoseFormat.None && !string.IsNullOrEmpty(ConvertedPlanName) && !_conversionComplete && isConvParameterValid())
                     return Visibility.Visible;
-                else 
+                else
                     return Visibility.Collapsed;
             }
         }
@@ -215,29 +219,134 @@ namespace EQD2Converter
         }
         public int SelectedIndex { get; set; }
 
-        private double _convParameter = 20;
-        public double convParameter
+        private double? _convParameter = null;
+        private string _convParameterString;
+        public string convParameterString
         {
-            get { return _convParameter; }
+            get
+            {
+                return _convParameterString;
+            }
             set
             {
-                switch (_selectedOutputFormat)
+                _conversionComplete = false;
+                if (value == null || value == string.Empty)
                 {
-                    case DoseFormat.BEDn2:
-                        _convParameter = Convert.ToUInt32(value);
-                        SetDefaultPlanName();
-                        break;
-                    case DoseFormat.EQDd:
-                        _convParameter = value;
-                        break;
-                    case DoseFormat.Base:
-                        _convParameter = Convert.ToUInt32(value);
-                        break;
+                    _convParameter = null;
+                    _convParameterString = string.Empty;
+                    RaisePropertyChangedEvent(nameof(convParameterString));
+                }
+                else
+                {
+                    switch (_selectedOutputFormat)
+                    {
+                        case DoseFormat.BEDn2:
+                            if (int.TryParse(value, out int intVal))
+                            {
+                                _convParameter = intVal;
+                                _convParameterString = intVal.ToString();
+                                SetDefaultPlanName();
+                            }
+                            else
+                            {
+                                _convParameter = null;
+                                _convParameterString = string.Empty;
+                            }
+                            break;
+                        case DoseFormat.EQDd:
+                            if (double.TryParse(value, out double doubleVal))
+                            {
+                                _convParameter = doubleVal;
+                                _convParameterString = doubleVal.ToString();
+                                SetDefaultPlanName();
+                            }
+                            else
+                            {
+                                _convParameter = null;
+                                _convParameterString = string.Empty;
+                            }
+                                break;
+                        case DoseFormat.Base:
+                            if (int.TryParse(value, out intVal))
+                            {
+                                _convParameter = intVal;
+                                _convParameterString = intVal.ToString();
+                                SetDefaultPlanName();
+                                foreach (var abm in AlphaBetaMappings)
+                                {
+                                    abm.n2 = ushort.Parse(value);
+                                }
+                                RaisePropertyChangedEvent(nameof(DisplayMaxGy));
+                            }
+                            else
+                            {
+                                _convParameter = null;
+                                _convParameterString = string.Empty;
+                                foreach (var abm in AlphaBetaMappings)
+                                {
+                                    abm.n2 = 0;
+                                }
+                                RaisePropertyChangedEvent(nameof(DisplayMaxGy));
+                            }
+                            break;
+                    }
                 }
                 RaisePropertyChangedEvent(nameof(StartButtonVisibility));
+                RaisePropertyChangedEvent(nameof(convParameterTextBoxStatusColor));
             }
         }
 
+        public SolidColorBrush convParameterTextBoxStatusColor
+        {
+            get
+            {
+                if (isConvParameterValid())
+                    return new SolidColorBrush(Colors.White);
+                else
+                    return new SolidColorBrush(Colors.DarkOrange);
+            }
+        }
+        private bool isConvParameterValid()
+        {
+            switch (_selectedOutputFormat)
+            {
+                case DoseFormat.BEDn2:
+                    {
+                        if (_convParameter == null)
+                            return false;
+                        else
+                        {
+                            if (_convParameter % 1 == 0) // int check
+                                return true;
+                            else return false;
+                        }
+                    }
+                case DoseFormat.Base:
+                    if (_convParameter == null)
+                        return false;
+                    else
+                    {
+                        if (_convParameter % 1 == 0) // int check
+                            return true;
+                        else return false;
+                    }
+                default:
+                    {
+                        return true;
+                    }
+            }
+
+        }
+        public string DisplayMaxGy
+        {
+            get
+            {
+                if (_convParameter != null)
+                    return string.Format("Eqv. in {0}#", _convParameter);
+                else
+                    return string.Empty;
+            }
+        }
         private DoseFormat _selectedOutputFormat = DoseFormat.None;
         public DoseFormat SelectedOutputFormat
         {
@@ -245,6 +354,8 @@ namespace EQD2Converter
             set
             {
                 _selectedOutputFormat = value;
+                _conversionComplete = false;
+                convParameterString = string.Empty;
                 if (_model != null)
                 {
                     SetDefaultPlanName();
@@ -259,10 +370,11 @@ namespace EQD2Converter
                         break;
                     case DoseFormat.Base:
                         ConversionInputWarning = "Ensure source distribution has units of EQD2. Input plan fractionation and total dose is ignored.";
-                        _convParameter = Convert.ToUInt32(value);
                         break;
                 }
+                RaisePropertyChangedEvent(nameof(convParameterTextBoxStatusColor));
                 RaisePropertyChangedEvent(nameof(ShowN2Fractions));
+                RaisePropertyChangedEvent(nameof(ShowMaxEQD2));
                 RaisePropertyChangedEvent(nameof(StartButtonVisibility));
             }
         }
@@ -296,10 +408,10 @@ namespace EQD2Converter
                     ConvertedPlanName = fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)) + "_" + SelectedOutputFormat.Display();
                     break;
                 case DoseFormat.BEDn2:
-                    ConvertedPlanName = string.Format("{0}_{1}fx", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)), convParameter);
+                    ConvertedPlanName = string.Format("{0}_{1}fx", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)), _convParameter);
                     break;
                 case DoseFormat.Base:
-                    ConvertedPlanName = string.Format("{0}_{1}fxB", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)), convParameter);
+                    ConvertedPlanName = string.Format("{0}_{1}fxB", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)), _convParameter);
                     break;
                 case DoseFormat.BED:
                     ConvertedPlanName = fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)) + "_" + SelectedOutputFormat.Display();
@@ -314,6 +426,7 @@ namespace EQD2Converter
         private void ClearDesignParameters()
         {
             DesignTime = false;
+            ConversionInputWarning = "";
             AlphaBetaMappings.Clear();
             ConvertedPlanName = "";
             PlanInputOptions.Clear();
@@ -386,6 +499,7 @@ namespace EQD2Converter
 
                 DoseDescriptionViewModel = new DescriptionViewModel(_onlineHelpDefinitions.Definitions.FirstOrDefault(x => string.Equals(x.DefinitionId, "Source dose", StringComparison.OrdinalIgnoreCase)));
                 ConvertToDescriptionViewModel = new DescriptionViewModel(_onlineHelpDefinitions.Definitions.FirstOrDefault(x => string.Equals(x.DefinitionId, "Convert to", StringComparison.OrdinalIgnoreCase)));
+                MaxDoseInfoDescriptionViewModel = new DescriptionViewModel(_onlineHelpDefinitions.Definitions.FirstOrDefault(x=> string.Equals(x.DefinitionId, "Max Equivalent Dose", StringComparison.OrdinalIgnoreCase)));
             }
             catch (Exception ex)
             {
@@ -444,7 +558,7 @@ namespace EQD2Converter
             bool success = true;
             try
             {
-                (convdose, success, StatusMessage) = await _model.GetConvertedDose(SelectedInputOption.CourseId, SelectedInputOption.Id, SelectedInputOption.IsSum, ConvertedPlanName, AlphaBetaMappings.ToList(), SelectedOutputFormat, convParameter);
+                (convdose, success, StatusMessage) = await _model.GetConvertedDose(SelectedInputOption.CourseId, SelectedInputOption.Id, SelectedInputOption.IsSum, ConvertedPlanName, AlphaBetaMappings.ToList(), SelectedOutputFormat, _convParameter);
 
             }
             catch (Exception f)
@@ -461,16 +575,12 @@ namespace EQD2Converter
             else
             {
                 StatusColor = new SolidColorBrush(Colors.Transparent);
+                _conversionComplete = true;
                 SuccessVisibility = Visibility.Visible;
                 ErrorVisibility = Visibility.Collapsed;
             }
-
-            //Tuple<int, int> minMaxConverted = Helpers.GetMinMaxValues(convdose, convdose.GetLength(1), convdose.GetLength(2), convdose.GetLength(0));
-
-            //PreviewWindow previewWindow = new PreviewWindow(this.scriptcontext, convdose, this.originalArray,
-            //    this.scaling, this.doseMin, this.doseMax, minMaxConverted.Item1, minMaxConverted.Item2);
-            //previewWindow.ShowDialog();
             Working = false;
+            RaisePropertyChangedEvent(nameof(StartButtonVisibility));
         }
 
         public ICommand ConvertToInfoButtonCommand
@@ -485,6 +595,21 @@ namespace EQD2Converter
         {
             isConvertToInfoOpen ^= true;
         }
+
+        public ICommand MaxDoseInfoButtonCommand
+        {
+            get
+            {
+                return new DelegateCommand(ToggleMaxDoseInfo);
+            }
+        }
+
+        private void ToggleMaxDoseInfo(object param = null)
+        {
+            isMaxDoseInfoOpen ^= true;
+        }
+        
+        public bool isMaxDoseInfoOpen { get; set; }
 
         public ICommand DoseSelectionInfoButtonCommand
         {
