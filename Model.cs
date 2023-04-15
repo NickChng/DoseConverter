@@ -194,10 +194,10 @@ namespace EQD2Converter
                 || string.Equals(x.StructureLabel, structureRef.Item2, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(structureRef.Item2));
                 if (matchingStructure != null)
                 {
-                    AlphaBetaMappings.Add(new AlphaBetaMapping(structureRef.Item1, matchingStructure.AlphaBetaRatio, structureRef.Item2, matchingStructure.MaxEQD2, true));
+                    AlphaBetaMappings.Add(new AlphaBetaMapping(this, structureRef.Item1, matchingStructure.AlphaBetaRatio, structureRef.Item2, matchingStructure.MaxEQD2, true));
                 }
                 else
-                    AlphaBetaMappings.Add(new AlphaBetaMapping(structureRef.Item1, DefaultAlphaBeta, structureRef.Item2, null, false));
+                    AlphaBetaMappings.Add(new AlphaBetaMapping(this, structureRef.Item1, DefaultAlphaBeta, structureRef.Item2, null, false));
             }
 
 
@@ -225,9 +225,9 @@ namespace EQD2Converter
                         var matchingStructure = _config.Structures.FirstOrDefault(x => x.Aliases.Select(y => y.StructureId).Any(z => string.Equals(z.Replace("_", ""), structure.Id.Replace("_", ""), StringComparison.OrdinalIgnoreCase))
                            || string.Equals(x.StructureLabel, structureLabel, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(structureLabel));
                         if (matchingStructure != null)
-                            AlphaBetaMappings.Add(new AlphaBetaMapping(structure.Id, matchingStructure.AlphaBetaRatio, structureLabel, matchingStructure.MaxEQD2, true));
+                            AlphaBetaMappings.Add(new AlphaBetaMapping(this, structure.Id, matchingStructure.AlphaBetaRatio, structureLabel, matchingStructure.MaxEQD2, true));
                         else
-                            AlphaBetaMappings.Add(new AlphaBetaMapping(structure.Id, DefaultAlphaBeta, "", 0, false));
+                            AlphaBetaMappings.Add(new AlphaBetaMapping(this, structure.Id, DefaultAlphaBeta, "", 0, false));
                     }
                 });
             }
@@ -732,6 +732,10 @@ namespace EQD2Converter
             return Convert.ToInt32((double)n2 * alphabeta / 2 / scaling * (Math.Sqrt(1 + 4 * scaling / (double)n2 / alphabeta * (dose * (1 + dose * scaling / (numberOfFractions * alphabeta)))) - 1));
         }
 
+        public double ConvertEQD2toPhysical(double EQD2, double alphabeta, ushort n2)
+        {
+            return (double)n2 * alphabeta / 2 * (Math.Sqrt(1 + 4 / (double)n2 / alphabeta * EQD2 * (1 + 2 / alphabeta)) - 1);
+        }
 
         public int MultiplyByAlphaBeta(int dose, double alphabeta, double scaling)
         {

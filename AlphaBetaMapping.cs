@@ -2,10 +2,53 @@
 
 namespace EQD2Converter
 {
-    public class AlphaBetaMapping :ObservableObject
+    public class AlphaBetaMapping : ObservableObject
     {
+        private Model _model;
         public double AlphaBetaRatio { get; set; }
-        public double? MaxEQD2 { get; set; } = null;
+
+        private double? _maxEQD2 = null;
+        public double? MaxEQD2
+        {
+            get { return _maxEQD2; }
+            set
+            {
+                _maxEQD2 = value;
+                RaisePropertyChangedEvent(nameof(DisplayMaxEQD2inBEDn2));
+            }
+        }
+                
+
+        private ushort _n2 = 0;
+        public ushort n2
+        {
+            get { return _n2; }
+            set
+            {
+                _n2 = value;
+                RaisePropertyChangedEvent(nameof(DisplayMaxEQD2inBEDn2));
+            }
+        }
+
+        private string _displayMaxEQD2inBEDn2 = "Design";
+        public string DisplayMaxEQD2inBEDn2
+        {
+            get
+            {
+                if (MaxEQD2 != null && _n2 != 0)
+                {
+                    double MaxEQD2inBEDn2 = _model.ConvertEQD2toPhysical((double)MaxEQD2, AlphaBetaRatio, _n2);
+                    _displayMaxEQD2inBEDn2 = string.Format("{0:0.00} Gy", MaxEQD2inBEDn2, _n2);
+                    return _displayMaxEQD2inBEDn2;
+                }
+                else
+                {
+                    return string.Empty;
+                }
+                
+            }
+        }
+
         public string StructureId { get; set; }
 
         public string StructureLabel { get; set; }
@@ -13,9 +56,11 @@ namespace EQD2Converter
         public bool Include { get; set; } = false;
 
         public AlphaBetaMapping() { }
-        
-        public AlphaBetaMapping(string structureId, double alphaBetaRatio, string structureLabel, double? maxEQD2 = null, bool include=false)
+
+        public AlphaBetaMapping(Model model, string structureId, double alphaBetaRatio, string structureLabel, double? maxEQD2 = null, bool include = false)
         {
+            _model = model;
+            _displayMaxEQD2inBEDn2 = string.Empty;
             StructureId = structureId;
             AlphaBetaRatio = alphaBetaRatio;
             StructureLabel = structureLabel;

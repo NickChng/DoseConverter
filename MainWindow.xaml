@@ -6,9 +6,10 @@
         xmlns:local="clr-namespace:EQD2Converter"
         xmlns:Microsoft_Windows_Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero"
         xmlns:dd="urn:gong-wpf-dragdrop"
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:ViewModel, IsDesignTimeCreatable=True}"
-        Title="Dose Converter v1.0" Height="600" Width="800" Background="White" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize">
+        Title="Dose Converter v1.0" Height="600" Width="950" Background="White" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize">
     <Window.Resources>
         <local:EnumDescriptionConverter x:Key="EnumDescriptionConverter" />
         <local:VisibilityConverter x:Key="VisibilityConverter" />
@@ -213,7 +214,7 @@
                                 <ThicknessAnimationUsingKeyFrames BeginTime="0:0:0" Duration="0:0:4" Storyboard.TargetName="GR" Storyboard.TargetProperty="Margin">
                                     <ThicknessAnimationUsingKeyFrames.KeyFrames>
                                         <LinearThicknessKeyFrame KeyTime="0:0:0" Value="-10,0,0,0"/>
-                                        <LinearThicknessKeyFrame KeyTime="0:0:2" Value="600,0,0,0"/>
+                                        <LinearThicknessKeyFrame KeyTime="0:0:2" Value="850,0,0,0"/>
                                         <LinearThicknessKeyFrame KeyTime="0:0:4" Value="-10,0,0,0"/>
                                     </ThicknessAnimationUsingKeyFrames.KeyFrames>
                                 </ThicknessAnimationUsingKeyFrames>
@@ -371,6 +372,7 @@
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0" Orientation="Horizontal">
                 <TextBlock Text="NoPAUSE - Dose Conversion Tool"></TextBlock>
+                <TextBlock Text="EVALUATION ONLY" Margin="10,0,0,0" Foreground="Tomato" FontWeight="Bold"></TextBlock>
             </StackPanel>
             <Border Grid.Row="1" HorizontalAlignment="Stretch" Height="1" CornerRadius="4,4,4,4" Background="Black" Margin="0,5,0,5"/>
         </Grid>
@@ -441,7 +443,18 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Label Grid.Row="0" Content="in # fx" VerticalAlignment="Bottom"/>
-                <TextBox Grid.Row="1" Text="{Binding convParameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, FallbackValue=2}" Height="30"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" VerticalContentAlignment="Center" />
+                <TextBox Grid.Row="1" Text="{Binding convParameterString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}"
+                         Height="30" VerticalContentAlignment="Center" Margin="0,1,0,-1" Background="{Binding convParameterTextBoxStatusColor, UpdateSourceTrigger=PropertyChanged}">
+                    <TextBox.Style>
+                        <Style TargetType="TextBox">
+                            <Style.Triggers>
+                                <Trigger Property="Validation.HasError" Value="True">
+                                    <Setter Property="Background" Value="DarkOrange" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
             </Grid>
             <Grid Grid.Column="3" Margin="5,0,5,0">
                 <Grid.RowDefinitions>
@@ -460,19 +473,24 @@
             <!--<Button Margin="10,0,0,0"  Height="30" Width="60" Content="Help" HorizontalAlignment="Right" Command="{Binding buttonHelpCommand}"></Button>-->
         </Grid>
         <Grid Grid.Row="2" HorizontalAlignment="Stretch" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="41*"/>
+                <ColumnDefinition Width="24*"/>
+            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="25"/>
                 <RowDefinition Height="25"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Label Grid.Row="0" Content="Conversion is only performed on included structures, prioritizing those on top in the case of overlap. Converted dose elsewhere is zero." FontStyle="Italic" VerticalAlignment="Center" FontSize="10"/>
-            <Grid Grid.Row="1">
+            <Label Content="Conversion is only performed on included structures, prioritizing those on top in the case of overlap. Converted dose elsewhere is zero." FontStyle="Italic" VerticalAlignment="Center" FontSize="10" Grid.ColumnSpan="2"/>
+            <Grid Grid.Row="1" Grid.ColumnSpan="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="80"/>
                     <ColumnDefinition Width="80"/>
                     <ColumnDefinition Width="100"/>
                     <ColumnDefinition Width="90"/>
                     <ColumnDefinition Width="Auto" MaxWidth="90"/>
+                    <ColumnDefinition Width="Auto" MaxWidth="110"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Border Grid.Column="0" Background="CornflowerBlue" CornerRadius="4" Margin="5,0,5,0">
@@ -489,18 +507,29 @@
                         <TextBlock Text="Alpha/Beta" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold" Margin="5,0,5,0"/>
                     </Button>
                 </Border>
-
                 <Border Grid.Column="4" Background="CornflowerBlue" CornerRadius="4" Margin="5,0,5,0" Visibility="{Binding ShowMaxEQD2, UpdateSourceTrigger=PropertyChanged}" Width="80">
                     <TextBlock Text="Max EQD2" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold" Margin="5,0,5,0" />
                 </Border>
-                <Border Grid.Column="5" Background="CornflowerBlue" CornerRadius="4" Margin="5,0,5,0">
+                <StackPanel Grid.Column="5" Orientation="Horizontal" Margin="5,0,0,0" Visibility="{Binding ShowMaxEQD2, UpdateSourceTrigger=PropertyChanged}" Width="110">
+                    <Border Background="CornflowerBlue" CornerRadius="4"  Width="80">
+                        <TextBlock Text="{Binding DisplayMaxGy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold" Margin="5,0,5,0" />
+                    </Border>
+                     <Button Name="MaxDoseInfoButton" Command="{Binding MaxDoseInfoButtonCommand}" Style="{StaticResource ButtonStyle_Small}">
+                        <Image Source="Resources/circle-info-solid.png"/>
+                    </Button>
+                    <Popup PlacementTarget="{Binding ElementName=MaxDoseInfoButton}" Placement="Right" StaysOpen="False"
+                           AllowsTransparency="True" PopupAnimation="Fade" IsOpen="{Binding isMaxDoseInfoOpen, UpdateSourceTrigger=PropertyChanged}">
+                        <local:DescriptionView HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" DataContext="{Binding MaxDoseInfoDescriptionViewModel}"/>
+                    </Popup>
+                </StackPanel>
+              
+                <Border Grid.Column="6" Background="CornflowerBlue" CornerRadius="4" Margin="5,0,5,0">
                     <TextBlock Text="Structure Label" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
                 </Border>
             </Grid>
-            <ListView Name="StructureListView" Grid.Row="2" ItemsSource="{Binding AlphaBetaMappings, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0"
-                      SelectedItem="{Binding SelectedMapping, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding SelectedIndex}"
-                      HorizontalAlignment="Stretch" dd:DragDrop.IsDragSource="True" HorizontalContentAlignment="Stretch" AlternationCount="2" ItemContainerStyle="{StaticResource DraggableListViewItemStyle}" 
-                      DragDrop.DragOver="DragConstraint_ListView_DragOver" DragDrop.Drop="DragConstraint_Drop" MouseLeave="Constraint_ListView_MouseLeave">
+            <ListView Name="StructureListView" Grid.Row="2" ItemsSource="{Binding AlphaBetaMappings, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Style="{x:Null}"
+                      SelectedItem="{Binding SelectedMapping, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding SelectedIndex}" dd:DragDrop.IsDragSource="True" HorizontalContentAlignment="Stretch" AlternationCount="2" ItemContainerStyle="{StaticResource DraggableListViewItemStyle}" 
+                      DragDrop.DragOver="DragConstraint_ListView_DragOver" DragDrop.Drop="DragConstraint_Drop" MouseLeave="Constraint_ListView_MouseLeave" Grid.ColumnSpan="2">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Grid HorizontalAlignment="Stretch">
@@ -510,6 +539,7 @@
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="90"/>
                                 <ColumnDefinition Width="Auto" MaxWidth="90"/>
+                                <ColumnDefinition Width="Auto" MaxWidth="110"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Button Grid.Column="0" Command="{Binding ToggleIncludeCommand}" Style="{StaticResource ButtonStyle_Small}" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -600,7 +630,7 @@
                                         </Style>
                                     </TextBox.Style>
                                 </TextBox>
-                                <Label Grid.Column="1" Content="Gy2">
+                                <Label Grid.Column="1" Content="Gy2" HorizontalAlignment="Center">
                                     <Label.Style>
                                         <Style>
                                             <Style.Triggers>
@@ -616,7 +646,26 @@
                                     </Label.Style>
                                 </Label>
                             </Grid>
-                            <TextBlock Grid.Column="5" Text="{Binding StructureLabel}"  VerticalAlignment="Center" Margin="5,0,0,0">
+                            <Grid Grid.Column="5" Margin="5,0,0,0" Width="110" HorizontalAlignment="Center" 
+                                  Visibility="{Binding DataContext.ShowMaxEQD2, RelativeSource={RelativeSource AncestorLevel=1, AncestorType={x:Type ListView}}, UpdateSourceTrigger=PropertyChanged}">
+                                <TextBlock Text="{Binding DisplayMaxEQD2inBEDn2, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Include, UpdateSourceTrigger=PropertyChanged}"
+                                       HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0">
+                                    <TextBlock.Style>
+                                        <Style>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
+                                                    <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
+                                                    <Setter Property="TextBlock.FontWeight" Value="Normal"></Setter>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
+                                                    <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                            <TextBlock Grid.Column="6" Text="{Binding StructureLabel}"  VerticalAlignment="Center" Margin="5,0,0,0">
                                 <TextBlock.Style>
                                     <Style>
                                         <Style.Triggers>
@@ -670,7 +719,7 @@
                                               Color="Black"
                                               Opacity="0.4" />
                     </Border.Effect>
-                    <TextBlock Text = "Create Plan" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="5,0,5,0">
+                    <TextBlock Text = "Convert dose" IsEnabled="{Binding isButtonEnabled, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="5,0,5,0">
                         <TextBlock.Style>
                             <Style>
                                 <Style.Triggers>

@@ -45,8 +45,6 @@ namespace EQD2Converter
           
         }
 
-
-
         private double ConvertTextToDouble(string text)
         {
             if (Double.TryParse(text, out double result))
