@@ -569,6 +569,7 @@ namespace EQD2Converter
             if (!success)
             {
                 StatusColor = new SolidColorBrush(Colors.Tomato);
+                _conversionComplete = true;
                 SuccessVisibility = Visibility.Collapsed;
                 ErrorVisibility = Visibility.Visible;
             }
