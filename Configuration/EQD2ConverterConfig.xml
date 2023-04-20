@@ -3,7 +3,7 @@
   <version number="0.1"/>
   <Defaults AlphaBetaRatio="3" TempEdgeStructureName ="Temp_AutoEdge"/>
   <Structures>
-    <Structure AlphaBetaRatio="3" StructureLabel="External">
+    <Structure AlphaBetaRatio="3" StructureLabel="External" ForceEdgeConversion="false">
       <Aliases>
         <Alias StructureId="BODY"/>
       </Aliases>

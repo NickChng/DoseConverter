@@ -59,6 +59,7 @@
                   <xs:attribute name="StructureLabel" type="xs:string" use="required" />
                   <xs:attribute name="MaxEQD2" type="PositiveDouble" use="optional" />
                   <xs:attribute name="AlphaBetaRatio" type="AlphaBetaValues" use="required" />
+                  <xs:attribute name="ForceEdgeConversion" type="xs:boolean" use="optional" default="true" />
                 </xs:complexType>
               </xs:element>
             </xs:sequence>

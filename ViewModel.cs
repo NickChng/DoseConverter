@@ -635,9 +635,9 @@ namespace EQD2Converter
         {
             List<StructureViewModel> unsortedMappings = new List<StructureViewModel>();
             if (ssId != null)
-                unsortedMappings = await _model.GetAlphaBetaMappings(ssId);
+                unsortedMappings = await _model.GetStructureDefinitions(ssId);
             else
-                unsortedMappings = await _model.GetAlphaBetaMappings();
+                unsortedMappings = await _model.GetStructureDefinitions();
             _ui.Invoke(() =>
             {
                 AlphaBetaMappings.Clear();

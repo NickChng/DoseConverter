@@ -137,6 +137,12 @@ namespace EQD2Converter {
         
         private double alphaBetaRatioField;
         
+        private bool forceEdgeConversionField;
+        
+        public EQD2ConverterConfigStructure() {
+            this.forceEdgeConversionField = true;
+        }
+        
         /// <remarks/>
         [System.Xml.Serialization.XmlArrayItemAttribute("Alias", IsNullable=false)]
         public EQD2ConverterConfigStructureAlias[] Aliases {
@@ -189,6 +195,18 @@ namespace EQD2Converter {
             }
             set {
                 this.alphaBetaRatioField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [System.ComponentModel.DefaultValueAttribute(true)]
+        public bool ForceEdgeConversion {
+            get {
+                return this.forceEdgeConversionField;
+            }
+            set {
+                this.forceEdgeConversionField = value;
             }
         }
     }

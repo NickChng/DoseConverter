@@ -24,7 +24,7 @@ namespace EQD2Converter
     public class Model
     {
         private EQD2ConverterConfig _config;
-        private List<StructureViewModel> AlphaBetaMappings { get; set; } = new List<StructureViewModel>();
+        private List<StructureViewModel> StructureDefinitions { get; set; } = new List<StructureViewModel>();
         public double DefaultAlphaBeta { get; private set; }
 
         public int[,,] originalArray { get; private set; }
@@ -142,17 +142,16 @@ namespace EQD2Converter
             await _ew.AsyncRunPlanContext((p, pl) =>
             {
                 AllPlans.Add(new Tuple<string, string, string, bool>(pl.Course.Id, pl.Id, pl.StructureSet.Id, false));
-                foreach (var c in p.Courses)
+                foreach (var otherPlan in pl.Course.PlanSetups)
                 {
                     // Can't map between structure sets without registration info so no point allowing other plans, might as well launch from them
-                    foreach (var otherPlan in c.PlanSetups.Where(x => x.StructureSet.Id == pl.StructureSet.Id && x != pl))
-                    {
+                    if (otherPlan.StructureSet.Id == pl.StructureSet.Id && otherPlan != pl)
                         AllPlans.Add(new Tuple<string, string, string, bool>(otherPlan.Course.Id, otherPlan.Id, otherPlan.StructureSet.Id, false));
-                    }
-                    foreach (var ps in c.PlanSums.Where(x => x.StructureSet.Id == pl.StructureSet.Id))
-                    {
-                        AllPlans.Add(new Tuple<string, string, string, bool>(c.Id, ps.Id, ps.StructureSet.Id, true));
-                    }
+                }
+                foreach (var sum in pl.Course.PlanSums)
+                {
+                    if (sum.StructureSet.Id == pl.StructureSet.Id)
+                        AllPlans.Add(new Tuple<string, string, string, bool>(pl.Course.Id, sum.Id, sum.StructureSet.Id, true));
                 }
             });
             return AllPlans;
@@ -236,23 +235,23 @@ namespace EQD2Converter
                 || string.Equals(x.StructureLabel, structureRef.Item2, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(structureRef.Item2));
                 if (matchingStructure != null)
                 {
-                    AlphaBetaMappings.Add(new StructureViewModel(this, structureRef.Item1, matchingStructure.AlphaBetaRatio, structureRef.Item2, matchingStructure.MaxEQD2, true));
+                    StructureDefinitions.Add(new StructureViewModel(this, structureRef.Item1, matchingStructure.AlphaBetaRatio, structureRef.Item2, matchingStructure.ForceEdgeConversion, matchingStructure.MaxEQD2, true));
                 }
                 else
-                    AlphaBetaMappings.Add(new StructureViewModel(this, structureRef.Item1, DefaultAlphaBeta, structureRef.Item2, null, false));
+                    StructureDefinitions.Add(new StructureViewModel(this, structureRef.Item1, DefaultAlphaBeta, structureRef.Item2, false, null, false));
             }
 
 
             return true;
         }
 
-        public async Task<List<StructureViewModel>> GetAlphaBetaMappings(string ssId = null)
+        public async Task<List<StructureViewModel>> GetStructureDefinitions(string ssId = null)
         {
             if (ssId == null)
-                return AlphaBetaMappings.ToList();
+                return StructureDefinitions.ToList();
             else
             {
-                AlphaBetaMappings.Clear();
+                StructureDefinitions.Clear();
                 await _ew.AsyncRunStructureContext((pat, ss) =>
                 {
                     var ssOverride = pat.StructureSets.FirstOrDefault(s => s.Id == ssId);
@@ -267,13 +266,13 @@ namespace EQD2Converter
                         var matchingStructure = _config.Structures.FirstOrDefault(x => x.Aliases.Select(y => y.StructureId).Any(z => string.Equals(z.Replace("_", ""), structure.Id.Replace("_", ""), StringComparison.OrdinalIgnoreCase))
                            || string.Equals(x.StructureLabel, structureLabel, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(structureLabel));
                         if (matchingStructure != null)
-                            AlphaBetaMappings.Add(new StructureViewModel(this, structure.Id, matchingStructure.AlphaBetaRatio, structureLabel, matchingStructure.MaxEQD2, true));
+                            StructureDefinitions.Add(new StructureViewModel(this, structure.Id, matchingStructure.AlphaBetaRatio, structureLabel, matchingStructure.ForceEdgeConversion, matchingStructure.MaxEQD2, true));
                         else
-                            AlphaBetaMappings.Add(new StructureViewModel(this, structure.Id, DefaultAlphaBeta, "", 0, false));
+                            StructureDefinitions.Add(new StructureViewModel(this, structure.Id, DefaultAlphaBeta, "", false, null, false));
                     }
                 });
             }
-            return AlphaBetaMappings;
+            return StructureDefinitions;
         }
 
         public async Task<string> GetStructureLabel(string StructureId)

@@ -58,13 +58,14 @@ namespace EQD2Converter
 
         public StructureViewModel() { }
 
-        public StructureViewModel(Model model, string structureId, double alphaBetaRatio, string structureLabel, double? maxEQD2 = null, bool include = false)
+        public StructureViewModel(Model model, string structureId, double alphaBetaRatio, string structureLabel, bool includeEdges=true, double? maxEQD2 = null, bool include = false)
         {
             _model = model;
             _displayMaxEQD2inBEDn2 = string.Empty;
             StructureId = structureId;
             AlphaBetaRatio = alphaBetaRatio;
             StructureLabel = structureLabel;
+            IncludeEdges = includeEdges;
             Include = include;
             MaxEQD2 = maxEQD2;
         }
