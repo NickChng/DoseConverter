@@ -16,13 +16,15 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Serilog.Core;
+using System.Diagnostics;
 
 namespace EQD2Converter
 {
     public class Model
     {
         private EQD2ConverterConfig _config;
-        private List<AlphaBetaMapping> AlphaBetaMappings { get; set; } = new List<AlphaBetaMapping>();
+        private List<StructureViewModel> AlphaBetaMappings { get; set; } = new List<StructureViewModel>();
         public double DefaultAlphaBeta { get; private set; }
 
         public int[,,] originalArray { get; private set; }
@@ -50,7 +52,7 @@ namespace EQD2Converter
         public double doseMax;
         public double doseMin;
 
-        public async Task<(int[,,], bool, string)> GetConvertedDose(string courseId, string planId, bool isSum, string newPlanName, List<AlphaBetaMapping> mappings, DoseFormat format, double? convParameter = null)
+        public async Task<(int[,,], bool, string)> GetConvertedDose(string courseId, string planId, bool isSum, string newPlanName, List<StructureViewModel> mappings, DoseFormat format, double? convParameter = null)
         {
             ExternalPlanSetup newPlan = (ExternalPlanSetup)null;
             int[,,] outputDose = null;
@@ -113,12 +115,10 @@ namespace EQD2Converter
                         }
                     }
                 }
-                catch (Exception f)
+                catch (Exception ex)
                 {
-                    //waitWindow.Close();
-                    //this.Cursor = null;
                     success = false;
-                    MessageBox.Show(f.Message + "\n" + f.StackTrace, "Error");
+                    errorMessage = ex.Message;
                 }
             });
             if (!success)
@@ -141,21 +141,56 @@ namespace EQD2Converter
             var AllPlans = new List<Tuple<string, string, string, bool>>();
             await _ew.AsyncRunPlanContext((p, pl) =>
             {
+                AllPlans.Add(new Tuple<string, string, string, bool>(pl.Course.Id, pl.Id, pl.StructureSet.Id, false));
                 foreach (var c in p.Courses)
                 {
                     // Can't map between structure sets without registration info so no point allowing other plans, might as well launch from them
-
-
-                    AllPlans.Add(new Tuple<string, string, string, bool>(pl.Course.Id, pl.Id, pl.StructureSet.Id, false));
-
-                    foreach (var ps in c.PlanSums)
+                    foreach (var otherPlan in c.PlanSetups.Where(x => x.StructureSet.Id == pl.StructureSet.Id && x != pl))
                     {
-                        if (ps.StructureSet == pl.StructureSet)
-                            AllPlans.Add(new Tuple<string, string, string, bool>(c.Id, ps.Id, ps.StructureSet.Id, true));
+                        AllPlans.Add(new Tuple<string, string, string, bool>(otherPlan.Course.Id, otherPlan.Id, otherPlan.StructureSet.Id, false));
+                    }
+                    foreach (var ps in c.PlanSums.Where(x => x.StructureSet.Id == pl.StructureSet.Id))
+                    {
+                        AllPlans.Add(new Tuple<string, string, string, bool>(c.Id, ps.Id, ps.StructureSet.Id, true));
                     }
                 }
             });
             return AllPlans;
+        }
+
+        public async Task<bool> ValidatePlanName(string proposedName)
+        {
+            bool planWithNameExists = false;
+            await _ew.AsyncRunPlanContext((p, pl) =>
+            {
+                planWithNameExists = !pl.Course.PlanSetups.Any(x => string.Equals(x.Id, proposedName, StringComparison.OrdinalIgnoreCase));
+            });
+            return planWithNameExists;
+        }
+
+        private async Task<Tuple<bool, string>> ValidatePlan()
+        {
+            bool success = true;
+            string errorMessage = string.Empty;
+            await _ew.AsyncRunPlanContext((p, pl) =>
+            {
+                if (pl.TreatmentPercentage != 1)
+                {
+                    success = false;
+                    errorMessage = "Treatment percentage must be 100%.";
+                }
+                if (double.IsNaN(pl.DosePerFraction.Dose))
+                {
+                    success = false;
+                    errorMessage = "Dose per fraction must be defined.";
+                }
+                if (double.IsNaN(pl.TotalDose.Dose))
+                {
+                    success = false;
+                    errorMessage = "Plan's total dose must be defined.";
+                }
+            });
+            return new Tuple<bool, string>(success, errorMessage);
         }
 
         public async Task<bool> InitializeModel()
@@ -168,6 +203,13 @@ namespace EQD2Converter
                     string[] line = labelData.ReadLine().Split(',');
                     StructureCodeLookup.Add(line[1].Trim(), line[2].Trim());
                 }
+            }
+            // Validate selected plan:
+            (bool success, string errorMessage) = await ValidatePlan();
+            if (!success)
+            {
+                string exceptionMessage = string.Format("Error with selected plan: {0}.\r\nPlease correct the error and relaunch the script.", errorMessage);
+                throw new Exception(exceptionMessage);
             }
             var StructureList = new List<Tuple<string, string>>();
             await _ew.AsyncRunStructureContext((pat, ss) =>
@@ -194,17 +236,17 @@ namespace EQD2Converter
                 || string.Equals(x.StructureLabel, structureRef.Item2, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(structureRef.Item2));
                 if (matchingStructure != null)
                 {
-                    AlphaBetaMappings.Add(new AlphaBetaMapping(this, structureRef.Item1, matchingStructure.AlphaBetaRatio, structureRef.Item2, matchingStructure.MaxEQD2, true));
+                    AlphaBetaMappings.Add(new StructureViewModel(this, structureRef.Item1, matchingStructure.AlphaBetaRatio, structureRef.Item2, matchingStructure.MaxEQD2, true));
                 }
                 else
-                    AlphaBetaMappings.Add(new AlphaBetaMapping(this, structureRef.Item1, DefaultAlphaBeta, structureRef.Item2, null, false));
+                    AlphaBetaMappings.Add(new StructureViewModel(this, structureRef.Item1, DefaultAlphaBeta, structureRef.Item2, null, false));
             }
 
 
             return true;
         }
 
-        public async Task<List<AlphaBetaMapping>> GetAlphaBetaMappings(string ssId = null)
+        public async Task<List<StructureViewModel>> GetAlphaBetaMappings(string ssId = null)
         {
             if (ssId == null)
                 return AlphaBetaMappings.ToList();
@@ -225,9 +267,9 @@ namespace EQD2Converter
                         var matchingStructure = _config.Structures.FirstOrDefault(x => x.Aliases.Select(y => y.StructureId).Any(z => string.Equals(z.Replace("_", ""), structure.Id.Replace("_", ""), StringComparison.OrdinalIgnoreCase))
                            || string.Equals(x.StructureLabel, structureLabel, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(structureLabel));
                         if (matchingStructure != null)
-                            AlphaBetaMappings.Add(new AlphaBetaMapping(this, structure.Id, matchingStructure.AlphaBetaRatio, structureLabel, matchingStructure.MaxEQD2, true));
+                            AlphaBetaMappings.Add(new StructureViewModel(this, structure.Id, matchingStructure.AlphaBetaRatio, structureLabel, matchingStructure.MaxEQD2, true));
                         else
-                            AlphaBetaMappings.Add(new AlphaBetaMapping(this, structure.Id, DefaultAlphaBeta, "", 0, false));
+                            AlphaBetaMappings.Add(new StructureViewModel(this, structure.Id, DefaultAlphaBeta, "", 0, false));
                     }
                 });
             }
@@ -327,7 +369,7 @@ namespace EQD2Converter
             return maxDoseVal;
         }
 
-        private int[,,] ConvertDose(DoseFormat format, ExternalPlanSetup newPlan, ExternalPlanSetup targetPlan, PlanningItem source, List<AlphaBetaMapping> mappings, double? convParameter = null, bool preview = false)
+        private int[,,] ConvertDose(DoseFormat format, ExternalPlanSetup newPlan, ExternalPlanSetup targetPlan, PlanningItem source, List<StructureViewModel> mappings, double? convParameter = null, bool preview = false)
         {
             Dose dose = source.Dose;
 
@@ -370,10 +412,11 @@ namespace EQD2Converter
             else
                 ss = source.StructureSet;
 
-            foreach (var str in mappings.Where(x => x.Include).Reverse())
+            foreach (var strVM in mappings.Where(x => x.Include).Reverse())
             {
-                Structure structure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, str.StructureId, StringComparison.InvariantCultureIgnoreCase));
-                double alphabeta = str.AlphaBetaRatio;
+                Structure structure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, strVM.StructureId, StringComparison.InvariantCultureIgnoreCase));
+                double alphabeta = strVM.AlphaBetaRatio;
+
 
                 // transfer structure to auxiliary structure set and add margin:
                 //if ((bool)this.ForceConversionCheckBox.IsChecked)
@@ -388,12 +431,34 @@ namespace EQD2Converter
 
                 if (structure.IsEmpty)
                 {
-                    // MessageBox.Show("Cannot apply margin to " + structure.Id + ". Structure will be skipped.", "Error");
+                    Helpers.SeriLog.LogWarning(string.Format("Structure {0} is empty, skipping conversion", structure.Id));
                     continue;
                 }
 
-                //if (this.ComboBox2.SelectedValue.ToString() == "EQD2")
-                //{
+                if (strVM.IncludeEdges)
+                {
+                    try
+                    {
+                        var edgeStructure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, _config.Defaults.TempEdgeStructureName, StringComparison.InvariantCultureIgnoreCase));
+                        if (edgeStructure == null)
+                            edgeStructure = ss.AddStructure("CONTROL", _config.Defaults.TempEdgeStructureName);
+                        var margin = DetermineMargin(source);
+                        edgeStructure.SegmentVolume = structure.AsymmetricMargin(new AxisAlignedMargins(StructureMarginGeometry.Outer, margin.Item1, margin.Item2, margin.Item3, margin.Item1, margin.Item2, margin.Item3));
+                        Helpers.SeriLog.LogInfo(string.Format("Added inclusion margins to structure {0} of X={1}, Y={2}, Z={3}.", structure.Id, margin.Item1, margin.Item2, margin.Item3));
+                        structure = edgeStructure;
+                    }
+                    catch (Exception ex)
+                    {
+                        string errorMessage = "Error creating edge volume. Check that configuration file defines TempEdgeStructureName and that structure set isn't locked";
+                        Helpers.SeriLog.LogError(errorMessage, ex);
+                        throw new Exception(errorMessage);
+                    }
+                }
+                else
+                {
+                    structure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, strVM.StructureId, StringComparison.InvariantCultureIgnoreCase));
+                }
+
                 if (epl != null)
                 {
                     switch (format)
@@ -416,7 +481,7 @@ namespace EQD2Converter
                             break;
                         case DoseFormat.Base:
                             OverridePixels(structure, alphabeta, 0, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                        Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDose, convParameter, str.MaxEQD2);
+                        Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDose, convParameter, strVM.MaxEQD2);
                             break;
                     }
                     CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, epl);
@@ -428,55 +493,34 @@ namespace EQD2Converter
                     {
                         case DoseFormat.Base:
                             OverridePixels(structure, alphabeta, 0, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                       Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDose, convParameter, str.MaxEQD2);
+                       Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDose, convParameter, strVM.MaxEQD2);
                             break;
 
                     }
                     CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, targetPlan, (PlanSum)source);
                 }
-
-                //}
-                //else if (this.ComboBox2.SelectedValue.ToString() == "BED")
-                //{
-                //    OverridePixels(structure, alphabeta, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                //         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateBED);
-                //}
-                //else
-                //{
-                //    OverridePixels(structure, alphabeta, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                //         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, MultiplyByAlphaBeta);
-                //}
-
-                //if ((bool)this.ForceConversionCheckBox.IsChecked)
-                //{
-                //    if (this.AuxStructureSet.CanRemoveStructure(structure))
-                //    {
-                //        this.AuxStructureSet.RemoveStructure(structure);
-                //    }
-                //}
             }
 
-            existingIndexes = new HashSet<Tuple<int, int, int>>() { }; // reset!
-
-
-
-
+            existingIndexes = new HashSet<Tuple<int, int, int>>() { }; // Legacy code. In original implementation was used to track which voxels had been converted, but present approach is to rely on user setting order. 
+            // clean up edge conversion
+            try
+            {
+                var edgeStructure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, _config.Defaults.TempEdgeStructureName, StringComparison.InvariantCultureIgnoreCase));
+                if (edgeStructure != null)
+                    ss.RemoveStructure(edgeStructure);
+            }
+            catch (Exception ex)
+            {
+                string errorMessage = "Error cleaning up temporary edge conversion structure. This may need to be done manually.";
+                Helpers.SeriLog.LogError(errorMessage, ex);
+                throw new Exception(errorMessage);
+            }
             return doseMatrix;
 
-            //if (!preview)
-            //{
-            //    CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, epl);
-            //    return new int[0, 0, 0];
-            //}
-            //else
-            //{
-            //    return doseMatrix;
-            //}
         }
 
         public void CreatePlanAndAddDose(int Xsize, int Ysize, int Zsize, int[,,] doseMatrix, double doseMaxOriginal, ExternalPlanSetup newPlan, ExternalPlanSetup thisPlan, PlanSum sum = null)
         {
-
             int fractions = (int)thisPlan.NumberOfFractions;
             DoseValue dosePerFraction = thisPlan.DosePerFraction;
             double treatPercentage = thisPlan.TreatmentPercentage;
@@ -542,23 +586,6 @@ namespace EQD2Converter
             return Convert.ToInt32((coord - origin) / (direction * res));
         }
 
-
-        private void ForceConversionCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            //if ((bool)this.ForceConversionCheckBox.IsChecked)
-            //{
-            //    this.ForcedConversionLabel.Text = "Warning. An auxiliary structure set will be created. The plan and the original structure set" +
-            //        " will be left untouched. After conversion you must manually delete the new structure set/image.";
-            //    this.ForcedConversionLabel.Foreground = Brushes.Red;
-            //    this.ForceConversionMarginStackPanel.Visibility = Visibility.Visible;
-            //}
-            //else
-            //{
-            //    this.ForcedConversionLabel.Text = "";
-            //    this.ForceConversionMarginStackPanel.Visibility = Visibility.Hidden;
-            //}
-        }
-
         private void ForceConversionMargin_TextChanged(object sender, TextChangedEventArgs e)
         {
             TextBox txt = sender as TextBox;
@@ -567,13 +594,13 @@ namespace EQD2Converter
             txt.CaretIndex = ind;
         }
 
-        public void DetermineMargin()
+        public Tuple<double, double, double> DetermineMargin(PlanningItem source)
         {
             ////determine margin for structures from dose voxel size
-            //double dx = this.scriptcontext.ExternalPlanSetup.Dose.XRes;
-            //double dy = this.scriptcontext.ExternalPlanSetup.Dose.YRes;
-            //double dz = this.scriptcontext.ExternalPlanSetup.Dose.ZRes;
-            //this.ForceConversionMargin.Text = new List<double>() { dx, dy, dz }.Max().ToString();
+            double dx = source.Dose.XRes;
+            double dy = source.Dose.YRes;
+            double dz = source.Dose.ZRes;
+            return new Tuple<double, double, double>(dx, dy, dz);
         }
 
         public delegate int calculateFunction(int dose, double alphabeta, double scaling, short numberOfFractions, double? nOut = null);
@@ -724,7 +751,7 @@ namespace EQD2Converter
 
         public int CalculateBED(int dose, double alphabeta, double scaling, short numberOfFractions, double? convParam1 = null)
         {
-                return Convert.ToInt32(dose * (1 + dose * scaling / (numberOfFractions * alphabeta)));
+            return Convert.ToInt32(dose * (1 + dose * scaling / (numberOfFractions * alphabeta)));
         }
 
         public int CalculateEQDn(int dose, double alphabeta, double scaling, short numberOfFractions, double? n2 = null)

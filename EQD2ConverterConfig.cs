@@ -94,6 +94,8 @@ namespace EQD2Converter {
         
         private double alphaBetaRatioField;
         
+        private string tempEdgeStructureNameField;
+        
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
         public double AlphaBetaRatio {
@@ -102,6 +104,17 @@ namespace EQD2Converter {
             }
             set {
                 this.alphaBetaRatioField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public string TempEdgeStructureName {
+            get {
+                return this.tempEdgeStructureNameField;
+            }
+            set {
+                this.tempEdgeStructureNameField = value;
             }
         }
     }

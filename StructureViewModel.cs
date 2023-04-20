@@ -2,7 +2,7 @@
 
 namespace EQD2Converter
 {
-    public class AlphaBetaMapping : ObservableObject
+    public class StructureViewModel : ObservableObject
     {
         private Model _model;
         public double AlphaBetaRatio { get; set; }
@@ -17,7 +17,8 @@ namespace EQD2Converter
                 RaisePropertyChangedEvent(nameof(DisplayMaxEQD2inBEDn2));
             }
         }
-                
+
+        public bool IncludeEdges { get; set; } = false;
 
         private ushort _n2 = 0;
         public ushort n2
@@ -55,9 +56,9 @@ namespace EQD2Converter
 
         public bool Include { get; set; } = false;
 
-        public AlphaBetaMapping() { }
+        public StructureViewModel() { }
 
-        public AlphaBetaMapping(Model model, string structureId, double alphaBetaRatio, string structureLabel, double? maxEQD2 = null, bool include = false)
+        public StructureViewModel(Model model, string structureId, double alphaBetaRatio, string structureLabel, double? maxEQD2 = null, bool include = false)
         {
             _model = model;
             _displayMaxEQD2inBEDn2 = string.Empty;

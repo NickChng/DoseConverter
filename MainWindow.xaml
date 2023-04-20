@@ -403,6 +403,7 @@
                     </Popup>
                 </StackPanel>
                 <ComboBox Grid.Row="1" Style="{StaticResource ComboBoxStyle}" Template="{StaticResource ComboBoxControlTemplate}" Height="30" ItemsSource="{Binding PlanInputOptions}" 
+                          IsEnabled="{Binding NoFatalErrorOccurred, UpdateSourceTrigger=PropertyChanged}"
                           SelectedItem="{Binding SelectedInputOption, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
@@ -429,6 +430,7 @@
                 <ComboBox Grid.Row="1" Height="30" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
                       Style="{StaticResource ComboBoxStyle}"
                       Template="{StaticResource ComboBoxControlTemplate}"
+                      IsEnabled="{Binding NoFatalErrorOccurred, UpdateSourceTrigger=PropertyChanged}"
                       VerticalContentAlignment="Center" ItemsSource="{Binding DoseOutputFormatOptions}" SelectedItem="{Binding SelectedOutputFormat, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
@@ -443,7 +445,7 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Label Grid.Row="0" Content="in # fx" VerticalAlignment="Bottom"/>
-                <TextBox Grid.Row="1" Text="{Binding convParameterString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}"
+                <TextBox Grid.Row="1" Text="{Binding convParameterString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}" IsEnabled="{Binding NoFatalErrorOccurred, UpdateSourceTrigger=PropertyChanged}"
                          Height="30" VerticalContentAlignment="Center" Margin="0,1,0,-1" Background="{Binding convParameterTextBoxStatusColor, UpdateSourceTrigger=PropertyChanged}">
                     <TextBox.Style>
                         <Style TargetType="TextBox">
@@ -462,7 +464,9 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Label Grid.Row="0" Content="Output Plan Name:" VerticalAlignment="Center" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
-                <TextBox Grid.Row="1" Text="{Binding ConvertedPlanName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="110" Height="30" HorizontalAlignment="Left" HorizontalContentAlignment="Left" VerticalContentAlignment="Center"/>
+                <TextBox Grid.Row="1" Text="{Binding ConvertedPlanName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Background="{Binding ConvertedPlanNameBackgroundColor, UpdateSourceTrigger=PropertyChanged}"
+                         IsEnabled="{Binding NoFatalErrorOccurred, UpdateSourceTrigger=PropertyChanged}" Width="110" Height="30" HorizontalAlignment="Left" HorizontalContentAlignment="Left" VerticalContentAlignment="Center"/>
             </Grid>
             <Grid Grid.Column="4" Margin="5,0,5,0">
                 <TextBlock Text="{Binding ConversionInputWarning, UpdateSourceTrigger=PropertyChanged}" Foreground="DarkSalmon" HorizontalAlignment="Center"
@@ -491,6 +495,7 @@
                     <ColumnDefinition Width="90"/>
                     <ColumnDefinition Width="Auto" MaxWidth="90"/>
                     <ColumnDefinition Width="Auto" MaxWidth="110"/>
+                    <ColumnDefinition Width="Auto" MaxWidth="80"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Border Grid.Column="0" Background="CornflowerBlue" CornerRadius="4" Margin="5,0,5,0">
@@ -514,7 +519,7 @@
                     <Border Background="CornflowerBlue" CornerRadius="4"  Width="80">
                         <TextBlock Text="{Binding DisplayMaxGy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold" Margin="5,0,5,0" />
                     </Border>
-                     <Button Name="MaxDoseInfoButton" Command="{Binding MaxDoseInfoButtonCommand}" Style="{StaticResource ButtonStyle_Small}">
+                    <Button Name="MaxDoseInfoButton" Command="{Binding MaxDoseInfoButtonCommand}" Style="{StaticResource ButtonStyle_Small}" HorizontalAlignment="Left">
                         <Image Source="Resources/circle-info-solid.png"/>
                     </Button>
                     <Popup PlacementTarget="{Binding ElementName=MaxDoseInfoButton}" Placement="Right" StaysOpen="False"
@@ -522,8 +527,19 @@
                         <local:DescriptionView HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" DataContext="{Binding MaxDoseInfoDescriptionViewModel}"/>
                     </Popup>
                 </StackPanel>
-              
-                <Border Grid.Column="6" Background="CornflowerBlue" CornerRadius="4" Margin="5,0,5,0">
+                <StackPanel Grid.Column="6" Orientation="Horizontal" Margin="5,0,0,0" Width="75">
+                    <Border Background="CornflowerBlue" CornerRadius="4"  Width="50">
+                        <TextBlock Text="+Edges" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold" Margin="5,0,5,0" />
+                    </Border>
+                    <Button Name="IncludeEdgesInfoButton" Command="{Binding IncludeEdgesInfoButtonCommand}" Style="{StaticResource ButtonStyle_Small}" HorizontalAlignment="Left">
+                        <Image Source="Resources/circle-info-solid.png"/>
+                    </Button>
+                    <Popup PlacementTarget="{Binding ElementName=MaxDoseInfoButton}" Placement="Right" StaysOpen="False"
+                           AllowsTransparency="True" PopupAnimation="Fade" IsOpen="{Binding isIncludeEdgesInfoOpen, UpdateSourceTrigger=PropertyChanged}">
+                        <local:DescriptionView HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" DataContext="{Binding IncludeEdgesInfoDescriptionViewModel}"/>
+                    </Popup>
+                </StackPanel>
+                <Border Grid.Column="7" Background="CornflowerBlue" CornerRadius="4" Margin="5,0,5,0">
                     <TextBlock Text="Structure Label" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
                 </Border>
             </Grid>
@@ -540,6 +556,7 @@
                                 <ColumnDefinition Width="90"/>
                                 <ColumnDefinition Width="Auto" MaxWidth="90"/>
                                 <ColumnDefinition Width="Auto" MaxWidth="110"/>
+                                <ColumnDefinition Width="Auto" MaxWidth="80"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Button Grid.Column="0" Command="{Binding ToggleIncludeCommand}" Style="{StaticResource ButtonStyle_Small}" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -665,7 +682,25 @@
                                     </TextBlock.Style>
                                 </TextBlock>
                             </Grid>
-                            <TextBlock Grid.Column="6" Text="{Binding StructureLabel}"  VerticalAlignment="Center" Margin="5,0,0,0">
+                            <Grid Grid.Column="6" Margin="5,0,0,0" Width="80" HorizontalAlignment="Center">
+                                <CheckBox IsChecked="{Binding IncludeEdges, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0">
+                                    <CheckBox.Style>
+                                        <Style>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
+                                                    <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
+                                                    <Setter Property="TextBlock.FontWeight" Value="Normal"></Setter>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
+                                                    <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </CheckBox.Style>
+                                </CheckBox>
+                            </Grid>
+                            <TextBlock Grid.Column="7" Text="{Binding StructureLabel}"  VerticalAlignment="Center" Margin="5,0,0,0">
                                 <TextBlock.Style>
                                     <Style>
                                         <Style.Triggers>
@@ -695,7 +730,7 @@
                     <ProgressBar  Name="ProgressBar" Height="25" Margin="0,0,0,0" VerticalAlignment="Center"  HorizontalAlignment="Stretch" Template="{StaticResource ProgressBarNC}" IsIndeterminate="True" 
                         Visibility="{Binding Working,UpdateSourceTrigger=PropertyChanged, FallbackValue=true, Converter={StaticResource VisibilityConverter}}" />
 
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" ToolTip="{Binding StatusDetails, UpdateSourceTrigger=PropertyChanged}">
                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Text="{Binding StatusMessage, FallbackValue=StatusMessage, UpdateSourceTrigger=PropertyChanged}" Margin="10,3,10,3"/>
                         <Grid Visibility="{Binding SuccessVisibility, UpdateSourceTrigger=PropertyChanged}">
                             <Ellipse Height="20" Width="20" Fill="PaleGreen"/>
