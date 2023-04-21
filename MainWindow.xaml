@@ -4,355 +4,34 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:EQD2Converter"
-        xmlns:Microsoft_Windows_Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero"
         xmlns:dd="urn:gong-wpf-dragdrop"
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:ViewModel, IsDesignTimeCreatable=True}"
         Title="Dose Converter v1.0" Height="600" Width="950" Background="White" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize">
     <Window.Resources>
-        <local:EnumDescriptionConverter x:Key="EnumDescriptionConverter" />
-        <local:VisibilityConverter x:Key="VisibilityConverter" />
-        <Style x:Key="ColumnElementStyle" TargetType="TextBlock">
-            <Setter Property="Margin" Value="10,0,10,0" />
-        </Style>
-        <Style x:Key="DataGridContentCellCentering" TargetType="DataGridCell">
-            <Style.Resources>
-                <Style TargetType="ContentPresenter">
-                    <Setter Property="HorizontalAlignment" Value="Center" />
-                </Style>
-            </Style.Resources>
-            <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="Foreground" Value="Black"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-        <Style TargetType="{x:Type Button}"/>
-        <Style TargetType="{x:Type Label}"/>
-        <Style TargetType="{x:Type Border}"/>
-        <Style TargetType="{x:Type CheckBox}"/>
-        <Style TargetType="{x:Type DataGrid}"/>
-        <Style TargetType="{x:Type ToolTip}"/>
-        <Style TargetType="{x:Type TextBlock}"/>
-        <Style TargetType="{x:Type StackPanel}"/>
-        <Style TargetType="{x:Type GroupBox}"/>
-        <Style TargetType="{x:Type ScrollBar}"/>
-        <Style TargetType="{x:Type TabControl}"/>
-        <Style TargetType="{x:Type TabItem}"/>
-        <Style TargetType="{x:Type TextBox}"/>
-        <Style x:Key="ButtonStyle_Small" TargetType="Button">
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Padding" Value="0,0,0,0"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Height" Value="25"/>
-            <Setter Property="Width" Value="25"/>
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-            <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Name="border" BorderThickness="1" Padding="3,2" BorderBrush="Transparent" CornerRadius="3" Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="BorderBrush" Value="CornFlowerBlue" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <ControlTemplate x:Key="ProgressBarNC" TargetType="{x:Type ProgressBar}">
-            <Grid x:Name="TemplateRoot" SnapsToDevicePixels="True">
-                <Rectangle Fill="AliceBlue" RadiusY="2" RadiusX="2"/>
-                <Border CornerRadius="2" Margin="1">
-                    <Border.Background>
-                        <LinearGradientBrush EndPoint="0,1" StartPoint="0,0">
-                            <GradientStop Color="#50FFFFFF" Offset="0.5385"/>
-                            <GradientStop Color="Transparent" Offset="0.5385"/>
-                        </LinearGradientBrush>
-                    </Border.Background>
-                </Border>
-                <Border BorderBrush="AliceBlue" BorderThickness="1,0,1,1" Margin="1">
-                    <Border.Background>
-                        <LinearGradientBrush EndPoint="0,1" StartPoint="0,0">
-                            <GradientStop Color="#80FFFFFF" Offset="0.05"/>
-                            <!--<GradientStop Color="SteelBlue" Offset="0.05"/>-->
-                            <GradientStop Color="Transparent" Offset="0.25"/>
-                        </LinearGradientBrush>
-                    </Border.Background>
-                </Border>
-                <Rectangle x:Name="PART_Track" Margin="1"/>
-                <Decorator x:Name="PART_Indicator" HorizontalAlignment="Left" Margin="1">
-                    <Grid x:Name="Foreground">
-                        <Rectangle x:Name="Indicator" Fill="{TemplateBinding Foreground}"/>
-                        <Grid x:Name="Animation" ClipToBounds="True">
-                            <Rectangle x:Name="GR" HorizontalAlignment="Left" Margin="0,0,0,0" Width="80">
-                                <Rectangle.Fill>
-                                    <LinearGradientBrush EndPoint="1,0" StartPoint="0,0">
-                                        <GradientStop Color="Transparent" Offset="0"/>
-                                        <GradientStop Color="LightSteelBlue" Offset="0.4"/>
-                                        <GradientStop Color="LightSteelBlue" Offset="0.6"/>
-                                        <GradientStop Color="Transparent" Offset="1"/>
-                                    </LinearGradientBrush>
-                                </Rectangle.Fill>
-                            </Rectangle>
-                        </Grid>
-                        <Grid x:Name="Overlay">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition MaxWidth="15"/>
-                                <ColumnDefinition Width="0.1*"/>
-                                <ColumnDefinition MaxWidth="15"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition/>
-                                <RowDefinition/>
-                            </Grid.RowDefinitions>
-                            <Rectangle x:Name="LeftDark" Margin="1,1,0,1" RadiusY="1" RadiusX="1" Grid.RowSpan="2">
-                                <Rectangle.Fill>
-                                    <LinearGradientBrush EndPoint="1,0" StartPoint="0,0">
-                                        <GradientStop Color="#0C000000" Offset="0"/>
-                                        <GradientStop Color="SteelBlue" Offset="1"/>
-                                    </LinearGradientBrush>
-                                </Rectangle.Fill>
-                            </Rectangle>
-                            <Rectangle x:Name="RightDark" Grid.Column="2" Margin="0,1,1,1" RadiusY="1" RadiusX="1" Grid.RowSpan="2">
-                                <Rectangle.Fill>
-                                    <LinearGradientBrush EndPoint="1,0" StartPoint="0,0">
-                                        <GradientStop Color="SteelBlue" Offset="0"/>
-                                        <GradientStop Color="SteelBlue" Offset="0.7"/>
-                                        <!--<GradientStop Color="#0C000000" Offset="1"/>-->
-                                        <GradientStop Color="SteelBlue" Offset="1"/>
-                                    </LinearGradientBrush>
-                                </Rectangle.Fill>
-                            </Rectangle>
-                            <Rectangle x:Name="LeftLight" Grid.Column="0" Grid.Row="2">
-                                <Rectangle.Fill>
-                                    <RadialGradientBrush RadiusY="1" RadiusX="1">
-                                        <RadialGradientBrush.RelativeTransform>
-                                            <MatrixTransform Matrix="1,0,0,1,0.5,0.5"/>
-                                        </RadialGradientBrush.RelativeTransform>
-                                        <!--<GradientStop Color="#60FFFFC4" Offset="0"/>
-                                        <GradientStop Color="#00FFFFC4" Offset="1"/>-->
-                                        <GradientStop Color="SteelBlue" Offset="0"/>
-                                        <GradientStop Color="SteelBlue" Offset="1"/>
-                                    </RadialGradientBrush>
-                                </Rectangle.Fill>
-                            </Rectangle>
-                            <Rectangle x:Name="CenterLight" Grid.Column="1" Grid.Row="2">
-                                <Rectangle.Fill>
-                                    <LinearGradientBrush EndPoint="0,0" StartPoint="0,1">
-                                        <GradientStop Color="#60FFFFC4" Offset="0"/>
-                                        <GradientStop Color="#00FFFFC4" Offset="1"/>
-                                        <!--<GradientStop Color="SteelBlue" Offset="0"/>
-                                        <GradientStop Color="SteelBlue" Offset="1"/>-->
-                                    </LinearGradientBrush>
-                                </Rectangle.Fill>
-                            </Rectangle>
-                            <Rectangle x:Name="RightLight" Grid.Column="2" Grid.Row="2">
-                                <Rectangle.Fill>
-                                    <RadialGradientBrush RadiusY="1" RadiusX="1">
-                                        <RadialGradientBrush.RelativeTransform>
-                                            <MatrixTransform Matrix="1,0,0,1,-0.5,0.5"/>
-                                        </RadialGradientBrush.RelativeTransform>
-                                        <GradientStop Color="#60FFFFC4" Offset="0"/>
-                                        <GradientStop Color="#00FFFFC4" Offset="1"/>
-                                        <!--<GradientStop Color="SteelBlue" Offset="0"/>
-                                        <GradientStop Color="SteelBlue" Offset="1"/>-->
-
-                                    </RadialGradientBrush>
-                                </Rectangle.Fill>
-                            </Rectangle>
-                            <Border x:Name="Highlight1" Grid.ColumnSpan="3" Grid.RowSpan="2">
-                                <Border.Background>
-                                    <LinearGradientBrush EndPoint="0,1" StartPoint="0,0">
-                                        <GradientStop Color="#90FFFFFF" Offset="0.5385"/>
-                                        <!--<GradientStop Color="SteelBlue" Offset="0.5385"/>-->
-                                        <GradientStop Color="Transparent" Offset="0.5385"/>
-                                    </LinearGradientBrush>
-                                </Border.Background>
-                            </Border>
-                            <Border x:Name="Highlight2" Grid.ColumnSpan="3" Grid.RowSpan="2">
-                                <Border.Background>
-                                    <LinearGradientBrush EndPoint="0,1" StartPoint="0,0">
-                                        <GradientStop Color="#80FFFFFF" Offset="0.05"/>
-                                        <!--<GradientStop Color="SteelBlue" Offset="0.05"/>-->
-                                        <GradientStop Color="Transparent" Offset="0.25"/>
-                                    </LinearGradientBrush>
-                                </Border.Background>
-                            </Border>
-                        </Grid>
-                    </Grid>
-                </Decorator>
-                <Border BorderBrush="AliceBlue" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2"/>
-            </Grid>
-            <ControlTemplate.Triggers>
-                <Trigger Property="Orientation" Value="Vertical">
-                    <Setter Property="LayoutTransform" TargetName="TemplateRoot">
-                        <Setter.Value>
-                            <RotateTransform Angle="-90"/>
-                        </Setter.Value>
-                    </Setter>
-                </Trigger>
-                <Trigger Property="IsIndeterminate" Value="True">
-                    <Setter Property="Visibility" TargetName="LeftDark" Value="Collapsed"/>
-                    <Setter Property="Visibility" TargetName="RightDark" Value="Collapsed"/>
-                    <Setter Property="Visibility" TargetName="LeftLight" Value="Collapsed"/>
-                    <Setter Property="Visibility" TargetName="CenterLight" Value="Collapsed"/>
-                    <Setter Property="Visibility" TargetName="RightLight" Value="Collapsed"/>
-                    <Setter Property="Visibility" TargetName="Indicator" Value="Collapsed"/>
-                </Trigger>
-                <Trigger Property="IsIndeterminate" Value="True">
-                    <Trigger.EnterActions>
-                        <BeginStoryboard>
-                            <Storyboard RepeatBehavior="Forever">
-                                <ThicknessAnimationUsingKeyFrames BeginTime="0:0:0" Duration="0:0:4" Storyboard.TargetName="GR" Storyboard.TargetProperty="Margin">
-                                    <ThicknessAnimationUsingKeyFrames.KeyFrames>
-                                        <LinearThicknessKeyFrame KeyTime="0:0:0" Value="-10,0,0,0"/>
-                                        <LinearThicknessKeyFrame KeyTime="0:0:2" Value="850,0,0,0"/>
-                                        <LinearThicknessKeyFrame KeyTime="0:0:4" Value="-10,0,0,0"/>
-                                    </ThicknessAnimationUsingKeyFrames.KeyFrames>
-                                </ThicknessAnimationUsingKeyFrames>
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </Trigger.EnterActions>
-                </Trigger>
-            </ControlTemplate.Triggers>
-        </ControlTemplate>
-        <Style x:Key="DraggableListViewItemStyle" TargetType="ListViewItem">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <!-- Trun off default selection-->
-                    <ControlTemplate TargetType="{x:Type ListViewItem}">
-                        <Grid Background="Transparent">
-                            <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" 
-                                Margin="0,2,2,2"
-                                CornerRadius="5,5,5,5"
-                            Background="{TemplateBinding Background}"
-                            Padding="{TemplateBinding Padding}" 
-                            SnapsToDevicePixels="true">
-                            </Border>
-                            <ContentPresenter Name="CP" 
-                                Margin="0,2,2,2"
-                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
-                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
-                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="ItemsControl.AlternationIndex" Value="1">
-                                <Setter Property="Background" Value="AliceBlue"></Setter>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <!--<MultiDataTrigger>
-                    <MultiDataTrigger.Conditions>
-                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorLevel=3, AncestorType=Grid}, Path=IsMouseOver}" Value="false"/>
-                        <Condition Binding="{Binding ElementName=AutoPlanner, Path=DataContext.DragSelected}" Value="false"/>
-                    </MultiDataTrigger.Conditions>
-                    <Setter Property="IsSelected" Value="false"></Setter>
-                </MultiDataTrigger>
-                <DataTrigger Binding="{Binding Path=Pinned, UpdateSourceTrigger=PropertyChanged}" Value="True">
-                    <Setter Property="FontWeight" Value="Bold" />
-                </DataTrigger>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="FontWeight" Value="Bold" />
-                </Trigger>-->
-
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="ComboBoxStyle" TargetType="ComboBox">
-            <Setter Property="Background" Value="LightGoldenrodYellow"></Setter>
-            <Setter Property="Validation.ErrorTemplate" Value="{x:Null}"/>
-            <Setter Property="BorderBrush" Value="LightSteelBlue"></Setter>
-            <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
-            <Setter Property="MaxDropDownHeight" Value="400"></Setter>
-            <Setter Property="Margin" Value="0,0,0,0"></Setter>
-        </Style>
-        <ControlTemplate x:Key="ComboBoxControlTemplate" TargetType="{x:Type ComboBox}">
-            <Grid x:Name="MainGrid" SnapsToDevicePixels="True">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition MinWidth="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" Width="0"/>
-                </Grid.ColumnDefinitions>
-                <Popup x:Name="PART_Popup" AllowsTransparency="True" Grid.ColumnSpan="2" IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}" Margin="1" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom">
-                    <Microsoft_Windows_Themes:SystemDropShadowChrome x:Name="Shdw" Color="Transparent" MaxHeight="{TemplateBinding MaxDropDownHeight}" MinWidth="{Binding ActualWidth, ElementName=MainGrid}">
-                        <Border x:Name="DropDownBorder" BorderBrush="{DynamicResource {x:Static SystemColors.WindowFrameBrushKey}}" BorderThickness="1" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
-                            <ScrollViewer x:Name="DropDownScrollViewer">
-                                <Grid RenderOptions.ClearTypeHint="Enabled">
-                                    <Canvas HorizontalAlignment="Left" Height="0" VerticalAlignment="Top" Width="0">
-                                        <Rectangle x:Name="OpaqueRect" Fill="{Binding Background, ElementName=DropDownBorder}" Height="{Binding ActualHeight, ElementName=DropDownBorder}" Width="{Binding ActualWidth, ElementName=DropDownBorder}"/>
-                                    </Canvas>
-                                    <ItemsPresenter x:Name="ItemsPresenter" KeyboardNavigation.DirectionalNavigation="Contained" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                                </Grid>
-                            </ScrollViewer>
-                        </Border>
-                    </Microsoft_Windows_Themes:SystemDropShadowChrome>
-                </Popup>
-                <ToggleButton BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" Grid.ColumnSpan="2" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
-                    <ToggleButton.Style>
-                        <Style TargetType="{x:Type ToggleButton}">
-                            <Setter Property="OverridesDefaultStyle" Value="True"/>
-                            <Setter Property="IsTabStop" Value="False"/>
-                            <Setter Property="Focusable" Value="False"/>
-                            <Setter Property="ClickMode" Value="Press"/>
-                            <Setter Property="Background" Value="Transparent"/>
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="{x:Type ToggleButton}">
-                                        <Microsoft_Windows_Themes:ButtonChrome x:Name="Chrome" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" RenderMouseOver="{TemplateBinding IsMouseOver}" RenderPressed="{TemplateBinding IsPressed}" SnapsToDevicePixels="True">
-                                            <Grid HorizontalAlignment="Right" Width="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}">
-                                                <Path x:Name="Arrow" Data="M0,0L3.5,4 7,0z" Fill="Black" HorizontalAlignment="Center" Margin="3,1,0,0" VerticalAlignment="Center"/>
-                                            </Grid>
-                                        </Microsoft_Windows_Themes:ButtonChrome>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsChecked" Value="True">
-                                                <Setter Property="RenderPressed" TargetName="Chrome" Value="True"/>
-                                            </Trigger>
-                                            <Trigger Property="IsEnabled" Value="False">
-                                                <Setter Property="Fill" TargetName="Arrow" Value="#FFAFAFAF"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </ToggleButton.Style>
-                </ToggleButton>
-                <ContentPresenter ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" Content="{TemplateBinding SelectionBoxItem}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" IsHitTestVisible="False" Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-            </Grid>
-            <ControlTemplate.Triggers>
-                <Trigger Property="HasDropShadow" SourceName="PART_Popup" Value="True">
-                    <Setter Property="Margin" TargetName="Shdw" Value="0,0,5,5"/>
-                    <Setter Property="Color" TargetName="Shdw" Value="#71000000"/>
-                </Trigger>
-                <Trigger Property="HasItems" Value="False">
-                    <Setter Property="Height" TargetName="DropDownBorder" Value="95"/>
-                </Trigger>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
-                    <Setter Property="Background" Value="#FFF4F4F4"/>
-                </Trigger>
-                <MultiTrigger>
-                    <MultiTrigger.Conditions>
-                        <Condition Property="IsGrouping" Value="True"/>
-                        <Condition Property="VirtualizingPanel.IsVirtualizingWhenGrouping" Value="False"/>
-                    </MultiTrigger.Conditions>
-                    <Setter Property="ScrollViewer.CanContentScroll" Value="False"/>
-                </MultiTrigger>
-                <Trigger Property="CanContentScroll" SourceName="DropDownScrollViewer" Value="False">
-                    <Setter Property="Canvas.Top" TargetName="OpaqueRect" Value="{Binding VerticalOffset, ElementName=DropDownScrollViewer}"/>
-                    <Setter Property="Canvas.Left" TargetName="OpaqueRect" Value="{Binding HorizontalOffset, ElementName=DropDownScrollViewer}"/>
-                </Trigger>
-            </ControlTemplate.Triggers>
-        </ControlTemplate>
+        <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" >
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="XAMLDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="{x:Type Button}"/>
+            <Style TargetType="{x:Type Label}"/>
+            <Style TargetType="{x:Type Border}"/>
+            <Style TargetType="{x:Type CheckBox}"/>
+            <Style TargetType="{x:Type DataGrid}"/>
+            <Style TargetType="{x:Type ToolTip}"/>
+            <Style TargetType="{x:Type TextBlock}"/>
+            <Style TargetType="{x:Type StackPanel}"/>
+            <Style TargetType="{x:Type GroupBox}"/>
+            <Style TargetType="{x:Type ScrollBar}"/>
+            <Style TargetType="{x:Type TabControl}"/>
+            <Style TargetType="{x:Type TabItem}"/>
+            <Style TargetType="{x:Type TextBox}"/>
+            <local:VisibilityConverter x:Key="VisibilityConverter"/>
+            <local:VisibilityMultiConverter x:Key="VisibilityMultiConverter"/>
+            <local:EnumDescriptionConverter x:Key="EnumDescriptionConverter" />
+        </ResourceDictionary>
     </Window.Resources>
 
     <Grid HorizontalAlignment="Stretch" Margin="10,10,10,10">
@@ -543,96 +222,75 @@
                     <TextBlock Text="Structure Label" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
                 </Border>
             </Grid>
-            <ListView Name="StructureListView" Grid.Row="2" ItemsSource="{Binding AlphaBetaMappings, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Style="{x:Null}"
+            <ScrollViewer Grid.Row="2" Grid.ColumnSpan="2" Focusable="true" VerticalAlignment="Stretch" VerticalScrollBarVisibility="Auto" PreviewMouseWheel="ScrollViewer_PreviewMouseWheel" HorizontalAlignment="Stretch"
+                              Template="{DynamicResource ScrollViewerControlTemplate1}" CanContentScroll="True" Background="Transparent" Visibility="{Binding ProtocolVisibility, UpdateSourceTrigger=PropertyChanged}">
+                <ListView Grid.Row="2" Grid.ColumnSpan="2" Name="StructureListView" ItemsSource="{Binding AlphaBetaMappings, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Style="{x:Null}"
                       SelectedItem="{Binding SelectedMapping, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding SelectedIndex}" dd:DragDrop.IsDragSource="True" HorizontalContentAlignment="Stretch" AlternationCount="2" ItemContainerStyle="{StaticResource DraggableListViewItemStyle}" 
-                      DragDrop.DragOver="DragConstraint_ListView_DragOver" DragDrop.Drop="DragConstraint_Drop" MouseLeave="Constraint_ListView_MouseLeave" Grid.ColumnSpan="2">
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid HorizontalAlignment="Stretch">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="90"/>
-                                <ColumnDefinition Width="Auto" MaxWidth="90"/>
-                                <ColumnDefinition Width="Auto" MaxWidth="110"/>
-                                <ColumnDefinition Width="Auto" MaxWidth="80"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Button Grid.Column="0" Command="{Binding ToggleIncludeCommand}" Style="{StaticResource ButtonStyle_Small}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                    >
-                                <Image RenderOptions.BitmapScalingMode="HighQuality">
-                                    <Image.Style>
-                                        <Style TargetType="Image">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="false">
-                                                    <Setter Property="Source" Value="Resources/appbar.add.png"/>
-                                                    <Setter Property="ToolTip" Value="Include structure in conversion"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="true">
-                                                    <Setter Property="Source" Value="Resources/x.png"/>
-                                                    <Setter Property="ToolTip" Value="Remove structure from conversion"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Image.Style>
-                                </Image>
-                            </Button>
-                            <Grid Grid.Column="1">
-                                <Image Name ="DragImage" Grid.Column="0" Height="20" Width="18" Stretch="Fill" RenderOptions.BitmapScalingMode="HighQuality" ToolTip="Drag to up or down to change priority" VerticalAlignment="Center"
-                                                               HorizontalAlignment="Center" MouseDown="DragConstraint_MouseDown">
-                                    <Image.Style>
-                                        <Style TargetType="Image">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="false">
-                                                    <Setter Property="Source" Value="Resources/align_grey.png"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="true">
-                                                    <Setter Property="Source" Value="Resources/align.png"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Image.Style>
-                                </Image>
-                            </Grid>
-                            <TextBlock Grid.Column="2" Text="{Binding StructureId}" VerticalAlignment="Center" Margin="5,0,0,0">
-                                <TextBlock.Style>
-                                    <Style>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
-                                                <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
-                                                <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                            <TextBox Grid.Column="3" Text="{Binding AlphaBetaRatio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Include, UpdateSourceTrigger=PropertyChanged}"
-                                     Padding="5,0,5,0"  HorizontalAlignment="Center" Margin="0,0,10,0" VerticalAlignment="Center">
-                                <TextBox.Style>
-                                    <Style>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
-                                                <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
-                                                <Setter Property="TextBlock.FontWeight" Value="Normal"></Setter>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
-                                                <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBox.Style>
-                            </TextBox>
-                            <Grid Grid.Column="4" Margin="5,0,0,0" Width="90" HorizontalAlignment="Center" 
-                                  Visibility="{Binding DataContext.ShowMaxEQD2, RelativeSource={RelativeSource AncestorLevel=1, AncestorType={x:Type ListView}}, UpdateSourceTrigger=PropertyChanged}">
+                      DragDrop.DragOver="DragConstraint_ListView_DragOver" DragDrop.Drop="DragConstraint_Drop" MouseLeave="Constraint_ListView_MouseLeave" >
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid HorizontalAlignment="Stretch">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="Auto" MaxWidth="90"/>
+                                    <ColumnDefinition Width="Auto" MaxWidth="110"/>
+                                    <ColumnDefinition Width="Auto" MaxWidth="80"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBox Grid.Column="0" Text="{Binding MaxEQD2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width ="35" IsEnabled="{Binding Include, UpdateSourceTrigger=PropertyChanged}"
-                                     Padding="5,0,5,0"  HorizontalAlignment="Right" VerticalAlignment="Center" HorizontalContentAlignment="Center">
+                                <Button Grid.Column="0" Command="{Binding ToggleIncludeCommand}" Style="{StaticResource ButtonStyle_Small}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Image RenderOptions.BitmapScalingMode="HighQuality">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="false">
+                                                        <Setter Property="Source" Value="Resources/appbar.add.png"/>
+                                                        <Setter Property="ToolTip" Value="Include structure in conversion"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="true">
+                                                        <Setter Property="Source" Value="Resources/x.png"/>
+                                                        <Setter Property="ToolTip" Value="Remove structure from conversion"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Button>
+                                <Grid Grid.Column="1">
+                                    <Image Name ="DragImage" Grid.Column="0" Height="20" Width="18" Stretch="Fill" RenderOptions.BitmapScalingMode="HighQuality" ToolTip="Drag to up or down to change priority" VerticalAlignment="Center"
+                                                               HorizontalAlignment="Center" MouseDown="DragConstraint_MouseDown">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="false">
+                                                        <Setter Property="Source" Value="Resources/align_grey.png"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="true">
+                                                        <Setter Property="Source" Value="Resources/align.png"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Grid>
+                                <TextBlock Grid.Column="2" Text="{Binding StructureId}" VerticalAlignment="Center" Margin="5,0,0,0">
+                                    <TextBlock.Style>
+                                        <Style>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
+                                                    <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
+                                                    <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBox Grid.Column="3" Text="{Binding AlphaBetaRatio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Include, UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="5,0,5,0"  HorizontalAlignment="Center" Margin="0,0,10,0" VerticalAlignment="Center">
                                     <TextBox.Style>
                                         <Style>
                                             <Style.Triggers>
@@ -647,26 +305,82 @@
                                         </Style>
                                     </TextBox.Style>
                                 </TextBox>
-                                <Label Grid.Column="1" Content="Gy2" HorizontalAlignment="Center">
-                                    <Label.Style>
-                                        <Style>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
-                                                    <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
-                                                    <Setter Property="TextBlock.FontWeight" Value="Normal"></Setter>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
-                                                    <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Label.Style>
-                                </Label>
-                            </Grid>
-                            <Grid Grid.Column="5" Margin="5,0,0,0" Width="110" HorizontalAlignment="Center" 
+                                <Grid Grid.Column="4" Margin="5,0,0,0" Width="90" HorizontalAlignment="Center" 
                                   Visibility="{Binding DataContext.ShowMaxEQD2, RelativeSource={RelativeSource AncestorLevel=1, AncestorType={x:Type ListView}}, UpdateSourceTrigger=PropertyChanged}">
-                                <TextBlock Text="{Binding DisplayMaxEQD2inBEDn2, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Include, UpdateSourceTrigger=PropertyChanged}"
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0" Text="{Binding MaxEQD2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width ="35" IsEnabled="{Binding Include, UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="5,0,5,0"  HorizontalAlignment="Right" VerticalAlignment="Center" HorizontalContentAlignment="Center">
+                                        <TextBox.Style>
+                                            <Style>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
+                                                        <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
+                                                        <Setter Property="TextBlock.FontWeight" Value="Normal"></Setter>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
+                                                        <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBox.Style>
+                                    </TextBox>
+                                    <Label Grid.Column="1" Content="Gy2" HorizontalAlignment="Center">
+                                        <Label.Style>
+                                            <Style>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
+                                                        <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
+                                                        <Setter Property="TextBlock.FontWeight" Value="Normal"></Setter>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
+                                                        <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Label.Style>
+                                    </Label>
+                                </Grid>
+                                <Grid Grid.Column="5" Margin="5,0,0,0" Width="110" HorizontalAlignment="Center" 
+                                  Visibility="{Binding DataContext.ShowMaxEQD2, RelativeSource={RelativeSource AncestorLevel=1, AncestorType={x:Type ListView}}, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBlock Text="{Binding DisplayMaxEQD2inBEDn2, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Include, UpdateSourceTrigger=PropertyChanged}"
                                        HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0">
+                                        <TextBlock.Style>
+                                            <Style>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
+                                                        <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
+                                                        <Setter Property="TextBlock.FontWeight" Value="Normal"></Setter>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
+                                                        <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+                                <Grid Grid.Column="6" Margin="5,0,0,0" Width="80" HorizontalAlignment="Center">
+                                    <CheckBox IsChecked="{Binding IncludeEdges, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0">
+                                        <CheckBox.Style>
+                                            <Style>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
+                                                        <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
+                                                        <Setter Property="TextBlock.FontWeight" Value="Normal"></Setter>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
+                                                        <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </CheckBox.Style>
+                                    </CheckBox>
+                                </Grid>
+                                <TextBlock Grid.Column="7" Text="{Binding StructureLabel}"  VerticalAlignment="Center" Margin="5,0,0,0">
                                     <TextBlock.Style>
                                         <Style>
                                             <Style.Triggers>
@@ -682,43 +396,10 @@
                                     </TextBlock.Style>
                                 </TextBlock>
                             </Grid>
-                            <Grid Grid.Column="6" Margin="5,0,0,0" Width="80" HorizontalAlignment="Center">
-                                <CheckBox IsChecked="{Binding IncludeEdges, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0">
-                                    <CheckBox.Style>
-                                        <Style>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
-                                                    <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
-                                                    <Setter Property="TextBlock.FontWeight" Value="Normal"></Setter>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
-                                                    <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </CheckBox.Style>
-                                </CheckBox>
-                            </Grid>
-                            <TextBlock Grid.Column="7" Text="{Binding StructureLabel}"  VerticalAlignment="Center" Margin="5,0,0,0">
-                                <TextBlock.Style>
-                                    <Style>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="False">
-                                                <Setter Property="TextBlock.Foreground" Value="LightSlateGray"></Setter>
-                                                <Setter Property="TextBlock.FontWeight" Value="Normal"></Setter>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Include, UpdateSourceTrigger=PropertyChanged}" Value="True">
-                                                <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </ScrollViewer>
         </Grid>
         <Grid Grid.Row="3" Margin="0,0,0,0" VerticalAlignment="Center">
             <Grid.ColumnDefinitions>

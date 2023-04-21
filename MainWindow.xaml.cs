@@ -31,20 +31,15 @@ namespace EQD2Converter
 
         public MainWindow(ViewModel vm)
         {
-        
             InitializeComponent();
-            
             DataContext = vm;
-
-            //this.ComboBox.ItemsSource = new List<string> { "Ascending", "Descending" };
-            //this.ComboBox.SelectedIndex = 0;
-
-            //this.ComboBox2.ItemsSource = new List<string> { "EQD2", "BED" , "Multiply by a/b"};
-            //this.ComboBox2.SelectedIndex = 0;
-
-          
         }
-
+        private void ScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            ScrollViewer scv = (ScrollViewer)sender;
+            scv.ScrollToVerticalOffset((scv.VerticalOffset - e.Delta/10));
+            e.Handled = true;
+        }
         private double ConvertTextToDouble(string text)
         {
             if (Double.TryParse(text, out double result))
