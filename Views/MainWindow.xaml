@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:EQD2Converter"
+        xmlns:behaviours="clr-namespace:EQD2Converter.Behaviours"
         xmlns:dd="urn:gong-wpf-dragdrop"
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         mc:Ignorable="d"
@@ -74,7 +75,7 @@
                 <StackPanel Orientation="Horizontal" Grid.Row="0">
                     <Label  Content="Select source dose distribution" VerticalAlignment="Bottom"></Label>
                     <Button Name="DoseSelectionInfoButton" Command="{Binding DoseSelectionInfoButtonCommand}" Style="{StaticResource ButtonStyle_Small}">
-                        <Image Source="Resources/circle-info-solid.png"/>
+                        <Image Source="../Resources/circle-info-solid.png"/>
                     </Button>
                     <Popup Name="DoseSelectionInfoButtonPopup" PlacementTarget="{Binding ElementName=DoseSelectionInfoButton}" Placement="Right" StaysOpen="False"
                            AllowsTransparency="True" PopupAnimation="Fade" IsOpen="{Binding isDoseSelectionInfoOpen, UpdateSourceTrigger=PropertyChanged}">
@@ -99,7 +100,7 @@
                 <StackPanel Orientation="Horizontal" Grid.Row="0">
                     <Label Grid.Row="0" Content="Convert to" VerticalAlignment="Bottom" HorizontalAlignment="Center"></Label>
                     <Button Name="ConvertToSelectionInfoButton" Command="{Binding ConvertToInfoButtonCommand}" Style="{StaticResource ButtonStyle_Small}">
-                        <Image Source="Resources/circle-info-solid.png"/>
+                        <Image Source="../Resources/circle-info-solid.png"/>
                     </Button>
                     <Popup Name="ConvertToSelectionInfoPopup" PlacementTarget="{Binding ElementName=ConvertToSelectionInfoButton}" Placement="Right" StaysOpen="False"
                            AllowsTransparency="True" PopupAnimation="Fade" IsOpen="{Binding isConvertToInfoOpen, UpdateSourceTrigger=PropertyChanged}">
@@ -123,7 +124,7 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <Label Grid.Row="0" Content="in # fx" VerticalAlignment="Bottom"/>
+                <TextBlock Grid.Row="0" VerticalAlignment="Center" behaviours:HtmlTextBoxProperties.HtmlText="{Binding n2html, Mode=OneWay}" />
                 <TextBox Grid.Row="1" Text="{Binding convParameterString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}" IsEnabled="{Binding NoFatalErrorOccurred, UpdateSourceTrigger=PropertyChanged}"
                          Height="30" VerticalContentAlignment="Center" Margin="0,1,0,-1" Background="{Binding convParameterTextBoxStatusColor, UpdateSourceTrigger=PropertyChanged}">
                     <TextBox.Style>
@@ -139,7 +140,7 @@
             </Grid>
             <Grid Grid.Column="3" Margin="5,0,5,0">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Label Grid.Row="0" Content="Output Plan Name:" VerticalAlignment="Center" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
@@ -199,7 +200,7 @@
                         <TextBlock Text="{Binding DisplayMaxGy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold" Margin="5,0,5,0" />
                     </Border>
                     <Button Name="MaxDoseInfoButton" Command="{Binding MaxDoseInfoButtonCommand}" Style="{StaticResource ButtonStyle_Small}" HorizontalAlignment="Left">
-                        <Image Source="Resources/circle-info-solid.png"/>
+                        <Image Source="../Resources/circle-info-solid.png"/>
                     </Button>
                     <Popup PlacementTarget="{Binding ElementName=MaxDoseInfoButton}" Placement="Right" StaysOpen="False"
                            AllowsTransparency="True" PopupAnimation="Fade" IsOpen="{Binding isMaxDoseInfoOpen, UpdateSourceTrigger=PropertyChanged}">
@@ -211,9 +212,9 @@
                         <TextBlock Text="+Edges" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold" Margin="5,0,5,0" />
                     </Border>
                     <Button Name="IncludeEdgesInfoButton" Command="{Binding IncludeEdgesInfoButtonCommand}" Style="{StaticResource ButtonStyle_Small}" HorizontalAlignment="Left">
-                        <Image Source="Resources/circle-info-solid.png"/>
+                        <Image Source="../Resources/circle-info-solid.png"/>
                     </Button>
-                    <Popup PlacementTarget="{Binding ElementName=MaxDoseInfoButton}" Placement="Right" StaysOpen="False"
+                    <Popup PlacementTarget="{Binding ElementName=IncludeEdgesInfoButton}" Placement="Right" StaysOpen="False"
                            AllowsTransparency="True" PopupAnimation="Fade" IsOpen="{Binding isIncludeEdgesInfoOpen, UpdateSourceTrigger=PropertyChanged}">
                         <local:DescriptionView HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" DataContext="{Binding IncludeEdgesInfoDescriptionViewModel}"/>
                     </Popup>
@@ -224,7 +225,7 @@
             </Grid>
             <ScrollViewer Grid.Row="2" Grid.ColumnSpan="2" Focusable="true" VerticalAlignment="Stretch" VerticalScrollBarVisibility="Auto" PreviewMouseWheel="ScrollViewer_PreviewMouseWheel" HorizontalAlignment="Stretch"
                               Template="{DynamicResource ScrollViewerControlTemplate1}" CanContentScroll="True" Background="Transparent" Visibility="{Binding ProtocolVisibility, UpdateSourceTrigger=PropertyChanged}">
-                <ListView Grid.Row="2" Grid.ColumnSpan="2" Name="StructureListView" ItemsSource="{Binding AlphaBetaMappings, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Style="{x:Null}"
+                <ListView Grid.Row="2" Grid.ColumnSpan="2" Name="StructureListView" ItemsSource="{Binding StructureDefinitions, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Style="{x:Null}"
                       SelectedItem="{Binding SelectedMapping, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding SelectedIndex}" dd:DragDrop.IsDragSource="True" HorizontalContentAlignment="Stretch" AlternationCount="2" ItemContainerStyle="{StaticResource DraggableListViewItemStyle}" 
                       DragDrop.DragOver="DragConstraint_ListView_DragOver" DragDrop.Drop="DragConstraint_Drop" MouseLeave="Constraint_ListView_MouseLeave" >
                     <ListView.ItemTemplate>
@@ -246,11 +247,11 @@
                                             <Style TargetType="Image">
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="false">
-                                                        <Setter Property="Source" Value="Resources/appbar.add.png"/>
+                                                        <Setter Property="Source" Value="../Resources/appbar.add.png"/>
                                                         <Setter Property="ToolTip" Value="Include structure in conversion"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="true">
-                                                        <Setter Property="Source" Value="Resources/x.png"/>
+                                                        <Setter Property="Source" Value="../Resources/x.png"/>
                                                         <Setter Property="ToolTip" Value="Remove structure from conversion"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
@@ -265,10 +266,10 @@
                                             <Style TargetType="Image">
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="false">
-                                                        <Setter Property="Source" Value="Resources/align_grey.png"/>
+                                                        <Setter Property="Source" Value="../Resources/align_grey.png"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding Path=Include, UpdateSourceTrigger=PropertyChanged}" Value="true">
-                                                        <Setter Property="Source" Value="Resources/align.png"/>
+                                                        <Setter Property="Source" Value="../Resources/align.png"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -415,11 +416,11 @@
                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Text="{Binding StatusMessage, FallbackValue=StatusMessage, UpdateSourceTrigger=PropertyChanged}" Margin="10,3,10,3"/>
                         <Grid Visibility="{Binding SuccessVisibility, UpdateSourceTrigger=PropertyChanged}">
                             <Ellipse Height="20" Width="20" Fill="PaleGreen"/>
-                            <Image Source="Resources/check_trans_light.png" Height="15" Width="15"/>
+                            <Image Source="../Resources/check_trans_light.png" Height="15" Width="15"/>
                         </Grid>
                         <Grid Visibility="{Binding ErrorVisibility, UpdateSourceTrigger=PropertyChanged}">
                             <Ellipse Height="20" Width="20" Fill="Tomato"/>
-                            <Image Source="Resources/exclamation_light.png" Height="15" Width="15" RenderOptions.BitmapScalingMode="Fant"/>
+                            <Image Source="../Resources/exclamation_light.png" Height="15" Width="15" RenderOptions.BitmapScalingMode="Fant"/>
                         </Grid>
                     </StackPanel>
 

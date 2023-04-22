@@ -22,73 +22,7 @@ using System.Drawing;
 
 namespace EQD2Converter
 {
-    public class DescriptionViewModel
-    {
-        public string Id { get; set; }
-        public string Description { get; set; } = "Default Description";
 
-        public DescriptionViewModel(string id, string description)
-        {
-            Id = id;
-            Description = description;
-        }
-        public DescriptionViewModel(OnlineHelpDefinitionsDefinition definition)
-        {
-            if (definition != null)
-            {
-                Id = definition.DefinitionId;
-                Description = definition.Text;
-            }
-            else
-            {
-                Description = "No online help";
-            }
-
-        }
-
-    }
-    public class PlanSelectionView : ObservableObject
-    {
-        public string Id { get; set; }
-        public string CourseId { get; set; }
-        public string SsId { get; set; }
-        public bool IsSum { get; set; }
-        public string DisplayString
-        {
-            get
-            {
-                if (IsSum)
-                    return string.Format(@"{0}/{1} [sum]", CourseId, Id);
-                else
-                    return string.Format(@"{0}/{1}", CourseId, Id);
-            }
-        }
-        public PlanSelectionView()
-        {
-
-        }
-        public PlanSelectionView(string id, string courseId, string ssId, bool isSum)
-        {
-            Id = id;
-            CourseId = courseId;
-            SsId = ssId;
-            IsSum = isSum;
-        }
-    }
-    public enum DoseFormat
-    {
-        [Description("None")] None,
-        [Description("EQD2")] EQD2,
-        [Description("BED")] BED,
-        [Description("EQDd")] EQDd,
-        [Description("BEDn2")] BEDn2,
-        [Description("BASE")] Base,
-    }
-    public enum AlphaBetaSortFormat
-    {
-        [Description("Ascending")] Ascending,
-        [Description("Descending")] Descending
-    }
     public class ViewModel : ObservableObject
     {
         private EsapiWorker _ew = null;
@@ -98,10 +32,17 @@ namespace EQD2Converter
         private EQD2ConverterConfig _scriptConfig;
         private OnlineHelpDefinitions _onlineHelpDefinitions;
         public StructureViewModel SelectedMapping { get; set; } = new StructureViewModel() { StructureId = "Design", AlphaBetaRatio = 3, StructureLabel = "Design" };
-        public ObservableCollection<StructureViewModel> AlphaBetaMappings { get; private set; } = new ObservableCollection<StructureViewModel>() { new StructureViewModel() { StructureId = "Design", AlphaBetaRatio = 3, StructureLabel = "Design" } };
+        public ObservableCollection<StructureViewModel> StructureDefinitions { get; private set; } = new ObservableCollection<StructureViewModel>() { new StructureViewModel() { StructureId = "Design", AlphaBetaRatio = 3, StructureLabel = "Design" } };
 
         public bool WasStructureSetCreated = false; // set to true when adding margins to structures
 
+        public string n2html
+        {
+            get
+            {
+                return @"<i>n2</i> fx";
+            }
+        }
         private string _convertedPlanName = "Design";
         public string ConvertedPlanName
         {
@@ -150,10 +91,10 @@ namespace EQD2Converter
                 switch (_selectedAlphaBetaSortFormat)
                 {
                     case AlphaBetaSortFormat.Ascending:
-                        AlphaBetaMappings = new ObservableCollection<StructureViewModel>(AlphaBetaMappings.OrderByDescending(x => x.Include).ThenBy(x => x.AlphaBetaRatio).ThenBy(x => x.StructureId));
+                        StructureDefinitions = new ObservableCollection<StructureViewModel>(StructureDefinitions.OrderByDescending(x => x.Include).ThenBy(x => x.AlphaBetaRatio).ThenBy(x => x.StructureId));
                         break;
                     case AlphaBetaSortFormat.Descending:
-                        AlphaBetaMappings = new ObservableCollection<StructureViewModel>(AlphaBetaMappings.OrderByDescending(x => x.Include).ThenByDescending(x => x.AlphaBetaRatio).ThenBy(x => x.StructureId));
+                        StructureDefinitions = new ObservableCollection<StructureViewModel>(StructureDefinitions.OrderByDescending(x => x.Include).ThenByDescending(x => x.AlphaBetaRatio).ThenBy(x => x.StructureId));
                         break;
                 }
             }
@@ -161,9 +102,9 @@ namespace EQD2Converter
 
         public ObservableCollection<AlphaBetaSortFormat> AlphaBetaSortFormatOptions { get; private set; } = new ObservableCollection<AlphaBetaSortFormat>() { AlphaBetaSortFormat.Ascending, AlphaBetaSortFormat.Descending };
 
-        public ObservableCollection<PlanSelectionView> PlanInputOptions { get; private set; } = new ObservableCollection<PlanSelectionView> { new PlanSelectionView("designPlan", "designCourse", "designSS", false) };
+        public ObservableCollection<PlanSelectionViewModel> PlanInputOptions { get; private set; } = new ObservableCollection<PlanSelectionViewModel> { new PlanSelectionViewModel("designPlan", "designCourse", "designSS", false) };
 
-        private PlanSelectionView _selectedInputOption;
+        private PlanSelectionViewModel _selectedInputOption;
 
         public bool NoFatalErrorOccurred
         {
@@ -172,7 +113,7 @@ namespace EQD2Converter
                 return !_fatalError;
             }
         }
-        public PlanSelectionView SelectedInputOption
+        public PlanSelectionViewModel SelectedInputOption
         {
             get { return _selectedInputOption; }
             set
@@ -181,7 +122,7 @@ namespace EQD2Converter
                 SetDefaultPlanName();
                 if (_selectedInputOption.IsSum)
                 {
-                    UpdateMapping(_selectedInputOption.SsId);
+                    UpdateStructureData(_selectedInputOption.SsId);
                     DoseOutputFormatOptions.Clear();
                     DoseOutputFormatOptions.Add(DoseFormat.Base);
                     SelectedOutputFormat = DoseFormat.Base;
@@ -212,14 +153,14 @@ namespace EQD2Converter
 
         public DescriptionViewModel MaxDoseInfoDescriptionViewModel { get; private set; } = new DescriptionViewModel("Default", "Design");
         public DescriptionViewModel IncludeEdgesInfoDescriptionViewModel { get; private set; } = new DescriptionViewModel("Default", "Design");
-        
+
         public Visibility ShowN2Fractions
         {
             get
             {
                 switch (_selectedOutputFormat)
                 {
-                    case DoseFormat.BEDn2:
+                    case DoseFormat.iBEDn2:
                         return Visibility.Visible;
                     case DoseFormat.Base:
                         return Visibility.Visible;
@@ -237,12 +178,12 @@ namespace EQD2Converter
         {
             get
             {
-                if (_selectedInputOption != null 
-                    && _isPlanNameValid 
-                    && _selectedOutputFormat != DoseFormat.None 
-                    && !string.IsNullOrEmpty(ConvertedPlanName) 
-                    && !_conversionComplete 
-                    && isConvParameterValid() 
+                if (_selectedInputOption != null
+                    && _isPlanNameValid
+                    && _selectedOutputFormat != DoseFormat.None
+                    && !string.IsNullOrEmpty(ConvertedPlanName)
+                    && !_conversionComplete
+                    && isConvParameterValid()
                     && !_fatalError)
                     return Visibility.Visible;
                 else
@@ -283,7 +224,7 @@ namespace EQD2Converter
                 {
                     switch (_selectedOutputFormat)
                     {
-                        case DoseFormat.BEDn2:
+                        case DoseFormat.iBEDn2:
                             if (int.TryParse(value, out int intVal))
                             {
                                 _convParameter = intVal;
@@ -315,7 +256,7 @@ namespace EQD2Converter
                                 _convParameter = intVal;
                                 _convParameterString = intVal.ToString();
                                 SetDefaultPlanName();
-                                foreach (var abm in AlphaBetaMappings)
+                                foreach (var abm in StructureDefinitions)
                                 {
                                     abm.n2 = ushort.Parse(value);
                                 }
@@ -325,7 +266,7 @@ namespace EQD2Converter
                             {
                                 _convParameter = null;
                                 _convParameterString = string.Empty;
-                                foreach (var abm in AlphaBetaMappings)
+                                foreach (var abm in StructureDefinitions)
                                 {
                                     abm.n2 = 0;
                                 }
@@ -353,7 +294,7 @@ namespace EQD2Converter
         {
             switch (_selectedOutputFormat)
             {
-                case DoseFormat.BEDn2:
+                case DoseFormat.iBEDn2:
                     {
                         if (_convParameter == null)
                             return false;
@@ -405,7 +346,7 @@ namespace EQD2Converter
                 }
                 switch (_selectedOutputFormat)
                 {
-                    case DoseFormat.BEDn2:
+                    case DoseFormat.iBEDn2:
                         ConversionInputWarning = "Ensure source distribution has units of physical dose. Plan fractionation will be used to determined BEDn2.";
                         break;
                     case DoseFormat.EQD2:
@@ -422,7 +363,7 @@ namespace EQD2Converter
             }
         }
 
-        private static List<DoseFormat> _doseOutputFormatOptionDefaults = new List<DoseFormat>() { DoseFormat.EQD2, DoseFormat.BEDn2, DoseFormat.BED, DoseFormat.Base };
+        private static List<DoseFormat> _doseOutputFormatOptionDefaults = new List<DoseFormat>() { DoseFormat.EQD2, DoseFormat.iBEDn2, DoseFormat.BED, DoseFormat.Base };
         private bool _fatalError = false;
 
         public ObservableCollection<DoseFormat> DoseOutputFormatOptions { get; private set; } = new ObservableCollection<DoseFormat>(_doseOutputFormatOptionDefaults);
@@ -442,7 +383,6 @@ namespace EQD2Converter
             StatusColor = new SolidColorBrush(Colors.Transparent);
             ClearDesignParameters();
             Initialize();
-
         }
 
         private async void SetDefaultPlanName()
@@ -453,7 +393,7 @@ namespace EQD2Converter
                 case DoseFormat.EQD2:
                     ConvertedPlanName = fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)) + "_" + SelectedOutputFormat.Display();
                     break;
-                case DoseFormat.BEDn2:
+                case DoseFormat.iBEDn2:
                     ConvertedPlanName = string.Format("{0}_{1}fx", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)), _convParameter);
                     break;
                 case DoseFormat.Base:
@@ -471,22 +411,23 @@ namespace EQD2Converter
         {
             DesignTime = false;
             ConversionInputWarning = "";
-            AlphaBetaMappings.Clear();
+            StructureDefinitions.Clear();
             ConvertedPlanName = "";
             PlanInputOptions.Clear();
         }
 
-        private async void Initialize()
+        public async void Initialize()
         {
             try
             {
                 // Read Script Configuration
-                _ui.Invoke(() => Working = true);
+                Working = true;
                 var AssemblyLocation = Assembly.GetExecutingAssembly().Location;
                 if (string.IsNullOrEmpty(AssemblyLocation))
                     AssemblyLocation = AppDomain.CurrentDomain.BaseDirectory;
                 var AssemblyPath = Path.GetDirectoryName(AssemblyLocation);
                 _dataPath = AssemblyPath;
+                Helpers.SeriLog.LogInfo("Resolved script path...");
             }
             catch (Exception ex)
             {
@@ -498,10 +439,10 @@ namespace EQD2Converter
             {
                 GetScriptConfigFromXML(); // note this will fail unless this config file is defined
                                           // Initialize other GUI settings
+                Helpers.SeriLog.LogInfo("Loaded script configuration data...");
             }
             catch (Exception ex)
             {
-                Helpers.SeriLog.LogError(string.Format("{0}\r\n{1}\r\n{2}", ex.Message, ex.InnerException, ex.StackTrace));
                 DisplayScriptError("Error loading script configuration file, please contact your Eclipse administrator.", ex.Message, true);
                 return;
             }
@@ -509,10 +450,10 @@ namespace EQD2Converter
             {
                 InitializeOnlineHelp(); // note this will fail unless this config file is defined
                                         // Initialize other GUI settings
+                Helpers.SeriLog.LogInfo("Initialized online help...");
             }
             catch (Exception ex)
             {
-                Helpers.SeriLog.LogError(string.Format("{0}\r\n{1}\r\n{2}", ex.Message, ex.InnerException, ex.StackTrace));
                 DisplayScriptError("Error loading online help file, please contact your Eclipse administrator.", ex.Message);
                 return;
             }
@@ -520,22 +461,21 @@ namespace EQD2Converter
             {
                 _model = new Model(_scriptConfig, _ew);
                 await _model.InitializeModel();
+                Helpers.SeriLog.LogInfo("Initialized ESAPI model...");
             }
             catch (Exception ex)
             {
-                Helpers.SeriLog.LogError(string.Format("{0}\r\n{1}\r\n{2}", ex.Message, ex.InnerException, ex.StackTrace));
                 DisplayScriptError("Error initializing ESAPI, please contact your Eclipse administrator.", ex.Message, true);
                 return;
             }
             // Get structures in plan
-            var ui2 = Dispatcher.CurrentDispatcher;
             try
             {
-                UpdateMapping();
+                UpdateStructureData();
+                Helpers.SeriLog.LogInfo("Structure configuration and settings updated...");
             }
             catch (Exception ex)
             {
-                Helpers.SeriLog.LogError(string.Format("{0}\r\n{1}\r\n{2}", ex.Message, ex.InnerException, ex.StackTrace));
                 DisplayScriptError("Error loading structures from plan, please contact your Eclipse administrator.", ex.Message, true);
                 return;
             }
@@ -543,29 +483,26 @@ namespace EQD2Converter
             try
             {
                 var plansInContext = await _model.GetPlans();
-                foreach (var p in plansInContext)
-                {
-                    _ui.Invoke(() =>
-                    {
-                        PlanInputOptions.Add(new PlanSelectionView(p.Item2, p.Item1, p.Item3, p.Item4));
-                    });
-                }
                 _ui.Invoke(() =>
                 {
+                    foreach (var p in plansInContext)
+                        PlanInputOptions.Add(new PlanSelectionViewModel(p.Item2, p.Item1, p.Item3, p.Item4));
                     SelectedInputOption = PlanInputOptions.FirstOrDefault();
+                    SetDefaultPlanName(); // This needs to be in the invoke due to threading
                 });
-                SetDefaultPlanName();
+                Helpers.SeriLog.LogInfo("Loaded available source distributions...");
             }
             catch (Exception ex)
             {
-                Helpers.SeriLog.LogError(string.Format("{0}\r\n{1}\r\n{2}", ex.Message, ex.InnerException, ex.StackTrace));
                 DisplayScriptError("Error loading plans, please contact your Eclipse administrator.");
+                Helpers.SeriLog.LogError("Error details", ex);
                 return;
             }
             if (!_fatalError)
             {
                 DisplayScriptReady();
-                _ui.Invoke(() => Working = false);
+                Working = false;
+                Helpers.SeriLog.LogInfo("Initialization complete!");
             }
         }
 
@@ -626,27 +563,37 @@ namespace EQD2Converter
             }
             catch (Exception ex)
             {
-                Helpers.SeriLog.LogFatal(string.Format("Unable to find/open online help file"), ex);
-                MessageBox.Show(string.Format("{0}\r\n{1}\r\n{2}", ex.Message, ex.InnerException, ex.StackTrace));
+                string errorMesssage = "Unable to find/open online help file";
+                Helpers.SeriLog.LogFatal(errorMesssage, ex);
+                throw new Exception(errorMesssage);
             }
         }
 
-        private async void UpdateMapping(string ssId = null)
+        private async void UpdateStructureData(string ssId = null)
         {
-            List<StructureViewModel> unsortedMappings = new List<StructureViewModel>();
-            if (ssId != null)
-                unsortedMappings = await _model.GetStructureDefinitions(ssId);
-            else
-                unsortedMappings = await _model.GetStructureDefinitions();
-            _ui.Invoke(() =>
+            try
             {
-                AlphaBetaMappings.Clear();
-                foreach (var mapping in unsortedMappings.OrderByDescending(x => x.Include).ThenBy(x => x.AlphaBetaRatio).ThenBy(x => x.StructureId))
+                List<StructureViewModel> unsortedMappings = new List<StructureViewModel>();
+                if (ssId != null)
+                    unsortedMappings = await _model.GetStructureDefinitions(ssId);
+                else
+                    unsortedMappings = await _model.GetStructureDefinitions();
+                _ui.Invoke(() =>
                 {
-                    //mapping.PropertyChanged += Mapping_PropertyChanged;
-                    AlphaBetaMappings.Add(mapping);
-                }
-            });
+                    StructureDefinitions.Clear();
+                    foreach (var mapping in unsortedMappings.OrderByDescending(x => x.Include).ThenBy(x => x.AlphaBetaRatio).ThenBy(x => x.StructureId))
+                    {
+                        //mapping.PropertyChanged += Mapping_PropertyChanged;
+                        StructureDefinitions.Add(mapping);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                string errorMessage = "Error updating structure mappings in UpdateMapping()";
+                Helpers.SeriLog.LogError(errorMessage, ex);
+                throw new Exception(errorMessage);
+            }
         }
         private void Mapping_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
@@ -654,7 +601,7 @@ namespace EQD2Converter
             {
                 case nameof(StructureViewModel.Include):
                     {
-                        AlphaBetaMappings = new ObservableCollection<StructureViewModel>(AlphaBetaMappings.OrderByDescending(x => x.Include).ThenBy(x => x.StructureId));
+                        StructureDefinitions = new ObservableCollection<StructureViewModel>(StructureDefinitions.OrderByDescending(x => x.Include).ThenBy(x => x.StructureId));
                         break;
                     }
                 default:
@@ -683,7 +630,7 @@ namespace EQD2Converter
             string unhandledExceptionMessage = "No further details.";
             try
             {
-                (convdose, success, handledExceptionMessage) = await _model.GetConvertedDose(SelectedInputOption.CourseId, SelectedInputOption.Id, SelectedInputOption.IsSum, ConvertedPlanName, AlphaBetaMappings.ToList(), SelectedOutputFormat, _convParameter);
+                (convdose, success, handledExceptionMessage) = await _model.GetConvertedDose(SelectedInputOption.CourseId, SelectedInputOption.Id, SelectedInputOption.IsSum, ConvertedPlanName, StructureDefinitions.ToList(), SelectedOutputFormat, _convParameter);
 
             }
             catch (Exception ex)
@@ -744,7 +691,7 @@ namespace EQD2Converter
 
         public bool isIncludeEdgesInfoOpen { get; set; }
 
-        
+
 
         public ICommand DoseSelectionInfoButtonCommand
         {
@@ -797,8 +744,9 @@ namespace EQD2Converter
             }
             catch (Exception ex)
             {
-                Helpers.SeriLog.LogFatal(string.Format("Unable to find/open config file"), ex);
-                MessageBox.Show(string.Format("{0}\r\n{1}\r\n{2}", ex.Message, ex.InnerException, ex.StackTrace));
+                string errorMessage = "Unable to find/open config file";
+                Helpers.SeriLog.LogFatal(errorMessage, ex);
+                throw new Exception(errorMessage);
             }
         }
     }

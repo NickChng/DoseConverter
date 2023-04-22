@@ -9,8 +9,8 @@
              xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
              mc:Ignorable="d" 
              d:DesignHeight="100" d:DesignWidth="300"
-             d:MinHeight="100" d:MinWidth="300" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
-    <Border CornerRadius="4,4,4,4" Background="White" Margin="5,0,5,0" BorderBrush="CornflowerBlue" BorderThickness="2" MaxHeight="500" MaxWidth="300" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+             d:MinHeight="100" d:MinWidth="400" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+    <Border CornerRadius="4,4,4,4" Background="White" Margin="5,0,5,0" BorderBrush="CornflowerBlue" BorderThickness="2" MaxHeight="500" MaxWidth="400" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,5,5,5">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

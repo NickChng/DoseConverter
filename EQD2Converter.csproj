@@ -120,28 +120,28 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="StructureViewModel.cs" />
-    <Compile Include="Converters.cs" />
-    <Compile Include="DelegateCommand.cs" />
-    <Compile Include="DescriptionView.xaml.cs" />
-    <Compile Include="EQD2ConverterConfig.cs" />
-    <Compile Include="Extensions.cs" />
+    <Compile Include="Model\ModelEnums.cs" />
+    <Compile Include="ViewModels\DescriptionViewModel.cs" />
+    <Compile Include="ViewModels\PlanSelectionViewModel.cs" />
+    <Compile Include="ViewModels\StructureViewModel.cs" />
+    <Compile Include="ViewModels\Converters.cs" />
+    <Compile Include="ViewModels\DelegateCommand.cs" />
+    <Compile Include="Views\DescriptionView.xaml.cs" />
+    <Compile Include="Configuration\EQD2ConverterConfig.cs" />
+    <Compile Include="ViewModels\Extensions.cs" />
     <Compile Include="Helpers.cs" />
-    <Compile Include="HelpWindow.xaml.cs">
+    <Compile Include="Views\HelpWindow.xaml.cs">
       <DependentUpon>HelpWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Behaviours.cs" />
-    <Compile Include="MainWindow.xaml.cs">
+    <Compile Include="Views\Behaviours.cs" />
+    <Compile Include="Views\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Model.cs" />
-    <Compile Include="ObservableObject.cs" />
-    <Compile Include="OnlineHelpDefinitions.cs" />
+    <Compile Include="Model\Model.cs" />
+    <Compile Include="ViewModels\ObservableObject.cs" />
+    <Compile Include="OnlineHelp\OnlineHelpDefinitions.cs" />
     <Compile Include="Script.cs" />
-    <Compile Include="ViewModel.cs" />
-    <Compile Include="WaitingWindow.xaml.cs">
-      <DependentUpon>WaitingWindow.xaml</DependentUpon>
-    </Compile>
+    <Compile Include="ViewModels\ViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
@@ -173,23 +173,19 @@
     <None Include="Schemas\StructureCodes.csv" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="DescriptionView.xaml">
+    <Page Include="Views\DescriptionView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="HelpWindow.xaml">
+    <Page Include="Views\HelpWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="MainWindow.xaml">
+    <Page Include="Views\MainWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="WaitingWindow.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="XAMLDictionary.xaml">
+    <Page Include="Views\XAMLDictionary.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

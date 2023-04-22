@@ -103,7 +103,7 @@ namespace EQD2Converter
                     //int Switch = VM.AlphaBetaMappings[CurrentIndex + inc].DisplayOrder;
                     //VM.AlphaBetaMappings[CurrentIndex + inc].DisplayOrder = VM.TemplateStructures[CurrentIndex].DisplayOrder;
                     //VM.AlphaBetaMappings[CurrentIndex].DisplayOrder = Switch;
-                    VM.AlphaBetaMappings.Move(CurrentIndex + inc, CurrentIndex);
+                    VM.StructureDefinitions.Move(CurrentIndex + inc, CurrentIndex);
                     CurrentIndex = CurrentIndex + inc;
                 }
 

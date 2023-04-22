@@ -136,25 +136,35 @@ namespace EQD2Converter
             DefaultAlphaBeta = _config.Defaults.AlphaBetaRatio;
         }
 
-        public async Task<List<Tuple<string, string, string, bool>>> GetPlans()
+        public async Task<List<Tuple<string, string, string, bool>>> GetPlans(bool includeSums = true)
         {
-            var AllPlans = new List<Tuple<string, string, string, bool>>();
-            await _ew.AsyncRunPlanContext((p, pl) =>
+            try
             {
-                AllPlans.Add(new Tuple<string, string, string, bool>(pl.Course.Id, pl.Id, pl.StructureSet.Id, false));
-                foreach (var otherPlan in pl.Course.PlanSetups)
+                var AllPlans = new List<Tuple<string, string, string, bool>>();
+                await _ew.AsyncRunPlanContext((p, pl) =>
                 {
-                    // Can't map between structure sets without registration info so no point allowing other plans, might as well launch from them
-                    if (otherPlan.StructureSet.Id == pl.StructureSet.Id && otherPlan != pl)
-                        AllPlans.Add(new Tuple<string, string, string, bool>(otherPlan.Course.Id, otherPlan.Id, otherPlan.StructureSet.Id, false));
-                }
-                foreach (var sum in pl.Course.PlanSums)
-                {
-                    if (sum.StructureSet.Id == pl.StructureSet.Id)
-                        AllPlans.Add(new Tuple<string, string, string, bool>(pl.Course.Id, sum.Id, sum.StructureSet.Id, true));
-                }
-            });
-            return AllPlans;
+                    AllPlans.Add(new Tuple<string, string, string, bool>(pl.Course.Id, pl.Id, pl.StructureSet.Id, false));
+                    foreach (var otherPlan in pl.Course.PlanSetups)
+                    {
+                        // Can't map between structure sets without registration info so no point allowing other plans, might as well launch from them
+                        if (otherPlan.StructureSet.Id == pl.StructureSet.Id && otherPlan != pl)
+                            AllPlans.Add(new Tuple<string, string, string, bool>(otherPlan.Course.Id, otherPlan.Id, otherPlan.StructureSet.Id, false));
+                    }
+                    if (includeSums)
+                        foreach (var sum in pl.Course.PlanSums)
+                        {
+                            if (sum.StructureSet.Id == pl.StructureSet.Id)
+                                AllPlans.Add(new Tuple<string, string, string, bool>(pl.Course.Id, sum.Id, sum.StructureSet.Id, true));
+                        }
+                });
+                return AllPlans;
+            }
+            catch (Exception ex)
+            {
+                string errorMessage = "Error enumerating plans in GetPlans().";
+                Helpers.SeriLog.LogError(errorMessage, ex);
+                throw new Exception(errorMessage);
+            }
         }
 
         public async Task<bool> ValidatePlanName(string proposedName)
@@ -194,55 +204,62 @@ namespace EQD2Converter
 
         public async Task<bool> InitializeModel()
         {
-            string resourceName = Assembly.GetExecutingAssembly().GetManifestResourceNames().Single(s => s.EndsWith("StructureCodes.csv"));
-            using (var labelData = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName)))
+            try
             {
-                while (!labelData.EndOfStream)
+                string resourceName = Assembly.GetExecutingAssembly().GetManifestResourceNames().Single(s => s.EndsWith("StructureCodes.csv"));
+                using (var labelData = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName)))
                 {
-                    string[] line = labelData.ReadLine().Split(',');
-                    StructureCodeLookup.Add(line[1].Trim(), line[2].Trim());
+                    while (!labelData.EndOfStream)
+                    {
+                        string[] line = labelData.ReadLine().Split(',');
+                        StructureCodeLookup.Add(line[1].Trim(), line[2].Trim());
+                    }
                 }
-            }
-            // Validate selected plan:
-            (bool success, string errorMessage) = await ValidatePlan();
-            if (!success)
-            {
-                string exceptionMessage = string.Format("Error with selected plan: {0}.\r\nPlease correct the error and relaunch the script.", errorMessage);
-                throw new Exception(exceptionMessage);
-            }
-            var StructureList = new List<Tuple<string, string>>();
-            await _ew.AsyncRunStructureContext((pat, ss) =>
-            {
-                pat.BeginModifications();
-                foreach (var structure in ss.Structures.Where(x => !x.IsEmpty))
+                // Validate selected plan:
+                (bool success, string errorMessage) = await ValidatePlan();
+                if (!success)
                 {
-                    var Code = structure.StructureCodeInfos.FirstOrDefault();
-                    bool codeMatched = false;
-                    if (Code != null)
-                        if (!string.IsNullOrEmpty(Code.Code))
-                            if (StructureCodeLookup.ContainsKey(Code.Code))
-                            {
-                                StructureList.Add(new Tuple<string, string>(structure.Id, StructureCodeLookup[Code.Code]));
-                                codeMatched = true;
-                            }
-                    if (!codeMatched)
-                        StructureList.Add(new Tuple<string, string>(structure.Id, ""));
+                    string exceptionMessage = string.Format("Error with selected plan: {0}.\r\nPlease correct the error and relaunch the script.", errorMessage);
+                    throw new Exception(exceptionMessage);
                 }
-            });
-            foreach (var structureRef in StructureList)
-            {
-                var matchingStructure = _config.Structures.FirstOrDefault(x => x.Aliases.Select(y => y.StructureId).Any(z => string.Equals(z.Replace("_", ""), structureRef.Item1.Replace("_", ""), StringComparison.OrdinalIgnoreCase))
-                || string.Equals(x.StructureLabel, structureRef.Item2, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(structureRef.Item2));
-                if (matchingStructure != null)
+                var StructureList = new List<Tuple<string, string>>();
+                await _ew.AsyncRunStructureContext((pat, ss) =>
                 {
-                    StructureDefinitions.Add(new StructureViewModel(this, structureRef.Item1, matchingStructure.AlphaBetaRatio, structureRef.Item2, matchingStructure.ForceEdgeConversion, matchingStructure.MaxEQD2, true));
+                    pat.BeginModifications();
+                    foreach (var structure in ss.Structures.Where(x => !x.IsEmpty))
+                    {
+                        var Code = structure.StructureCodeInfos.FirstOrDefault();
+                        bool codeMatched = false;
+                        if (Code != null)
+                            if (!string.IsNullOrEmpty(Code.Code))
+                                if (StructureCodeLookup.ContainsKey(Code.Code))
+                                {
+                                    StructureList.Add(new Tuple<string, string>(structure.Id, StructureCodeLookup[Code.Code]));
+                                    codeMatched = true;
+                                }
+                        if (!codeMatched)
+                            StructureList.Add(new Tuple<string, string>(structure.Id, ""));
+                    }
+                });
+                foreach (var structureRef in StructureList)
+                {
+                    var matchingStructure = _config.Structures.FirstOrDefault(x => x.Aliases.Select(y => y.StructureId).Any(z => string.Equals(z.Replace("_", ""), structureRef.Item1.Replace("_", ""), StringComparison.OrdinalIgnoreCase))
+                    || string.Equals(x.StructureLabel, structureRef.Item2, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(structureRef.Item2));
+                    if (matchingStructure != null)
+                    {
+                        StructureDefinitions.Add(new StructureViewModel(this, structureRef.Item1, matchingStructure.AlphaBetaRatio, structureRef.Item2, matchingStructure.ForceEdgeConversion, matchingStructure.MaxEQD2, true));
+                    }
+                    else
+                        StructureDefinitions.Add(new StructureViewModel(this, structureRef.Item1, DefaultAlphaBeta, structureRef.Item2, false, null, false));
                 }
-                else
-                    StructureDefinitions.Add(new StructureViewModel(this, structureRef.Item1, DefaultAlphaBeta, structureRef.Item2, false, null, false));
+                return true;
             }
-
-
-            return true;
+            catch (Exception ex)
+            {
+                string errorMessage = "Error during initialization.";
+                Helpers.SeriLog.LogFatal(errorMessage, ex);
+                throw new Exception(errorMessage);
+            }
         }
 
         public async Task<List<StructureViewModel>> GetStructureDefinitions(string ssId = null)
@@ -474,7 +491,7 @@ namespace EQD2Converter
                             OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
                          Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDd, convParameter);
                             break;
-                        case DoseFormat.BEDn2:
+                        case DoseFormat.iBEDn2:
                             OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
                          Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDn, convParameter);
                             break;
