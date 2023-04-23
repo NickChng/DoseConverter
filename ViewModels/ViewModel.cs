@@ -160,7 +160,7 @@ namespace EQD2Converter
             {
                 switch (_selectedOutputFormat)
                 {
-                    case DoseFormat.iBEDn2:
+                    case DoseFormat.BEDn2:
                         return Visibility.Visible;
                     case DoseFormat.Base:
                         return Visibility.Visible;
@@ -224,7 +224,7 @@ namespace EQD2Converter
                 {
                     switch (_selectedOutputFormat)
                     {
-                        case DoseFormat.iBEDn2:
+                        case DoseFormat.BEDn2:
                             if (int.TryParse(value, out int intVal))
                             {
                                 _convParameter = intVal;
@@ -294,7 +294,7 @@ namespace EQD2Converter
         {
             switch (_selectedOutputFormat)
             {
-                case DoseFormat.iBEDn2:
+                case DoseFormat.BEDn2:
                     {
                         if (_convParameter == null)
                             return false;
@@ -346,7 +346,7 @@ namespace EQD2Converter
                 }
                 switch (_selectedOutputFormat)
                 {
-                    case DoseFormat.iBEDn2:
+                    case DoseFormat.BEDn2:
                         ConversionInputWarning = "Ensure source distribution has units of physical dose. Plan fractionation will be used to determined BEDn2.";
                         break;
                     case DoseFormat.EQD2:
@@ -363,7 +363,7 @@ namespace EQD2Converter
             }
         }
 
-        private static List<DoseFormat> _doseOutputFormatOptionDefaults = new List<DoseFormat>() { DoseFormat.EQD2, DoseFormat.iBEDn2, DoseFormat.BED, DoseFormat.Base };
+        private static List<DoseFormat> _doseOutputFormatOptionDefaults = new List<DoseFormat>() { DoseFormat.EQD2, DoseFormat.BEDn2, DoseFormat.BED, DoseFormat.Base };
         private bool _fatalError = false;
 
         public ObservableCollection<DoseFormat> DoseOutputFormatOptions { get; private set; } = new ObservableCollection<DoseFormat>(_doseOutputFormatOptionDefaults);
@@ -393,7 +393,7 @@ namespace EQD2Converter
                 case DoseFormat.EQD2:
                     ConvertedPlanName = fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)) + "_" + SelectedOutputFormat.Display();
                     break;
-                case DoseFormat.iBEDn2:
+                case DoseFormat.BEDn2:
                     ConvertedPlanName = string.Format("{0}_{1}fx", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)), _convParameter);
                     break;
                 case DoseFormat.Base:
@@ -631,7 +631,6 @@ namespace EQD2Converter
             try
             {
                 (convdose, success, handledExceptionMessage) = await _model.GetConvertedDose(SelectedInputOption.CourseId, SelectedInputOption.Id, SelectedInputOption.IsSum, ConvertedPlanName, StructureDefinitions.ToList(), SelectedOutputFormat, _convParameter);
-
             }
             catch (Exception ex)
             {

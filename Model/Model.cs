@@ -81,7 +81,18 @@ namespace EQD2Converter
                                 errorMessage = "Error creating plan";
                                 success = false;
                             }
-                            outputDose = ConvertDose(format, newPlan, (ExternalPlanSetup)pl, sum, mappings, convParameter, false);
+                            try
+                            {
+                                outputDose = ConvertDose(format, newPlan, (ExternalPlanSetup)pl, sum, mappings, convParameter, false);
+                            }
+                            catch (Exception ex)
+                            {
+                                errorMessage = "Error converting plan sum dose...";
+                                Helpers.SeriLog.LogError(errorMessage, ex);
+                                pl.Course.RemovePlanSetup(newPlan);
+                                Helpers.SeriLog.LogInfo("Removed verification plan...");
+                                success = false;
+                            }
                         }
                         else
                         {
@@ -97,16 +108,29 @@ namespace EQD2Converter
                         {
                             try
                             {
+                                Helpers.SeriLog.LogInfo(string.Format("Creating new verification plan [{0}]", newPlanName));
                                 newPlan = pl.Course.AddExternalPlanSetupAsVerificationPlan(pl.StructureSet, (ExternalPlanSetup)plan);
                                 newPlan.Id = newPlanName;
                             }
                             catch (Exception ex)
                             {
                                 errorMessage = "Error creating plan";
+                                Helpers.SeriLog.LogError(errorMessage, ex);
                                 success = false;
                             }
-                            outputDose = ConvertDose(format, newPlan, (ExternalPlanSetup)pl, plan, mappings, convParameter, false);
+                            try
+                            {
+                                outputDose = ConvertDose(format, newPlan, (ExternalPlanSetup)pl, plan, mappings, convParameter, false);
+                            }
+                            catch (Exception ex)
+                            {
+                                errorMessage = "Error converting dose...";
+                                Helpers.SeriLog.LogError(errorMessage, ex);
+                                pl.Course.RemovePlanSetup(newPlan);
+                                Helpers.SeriLog.LogInfo("Removed verification plan...");
 
+                                success = false;
+                            }
                         }
                         else
                         {
@@ -310,29 +334,6 @@ namespace EQD2Converter
             return Label;
         }
 
-        public async void Start(string newPlanName)
-        {
-
-
-
-
-
-
-            //// Add a waiting window here
-            //this.Cursor = Cursors.Wait;
-            //var waitWindow = new WaitingWindow();
-            //waitWindow.Show();
-
-
-
-            //waitWindow.Close();
-            //this.Cursor = null;
-
-
-
-        }
-
-
         public int[,,] GetDoseVoxelsFromDose(Dose dose)
         {
             int Xsize = dose.XSize;
@@ -433,18 +434,6 @@ namespace EQD2Converter
                 Structure structure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, strVM.StructureId, StringComparison.InvariantCultureIgnoreCase));
                 double alphabeta = strVM.AlphaBetaRatio;
 
-
-                // transfer structure to auxiliary structure set and add margin:
-                //if ((bool)this.ForceConversionCheckBox.IsChecked)
-                //{
-                //    Structure newStructure = this.AuxStructureSet.AddStructure(structure.DicomType, structure.Id);
-                //    double margin = ConvertTextToDouble(this.ForceConversionMargin.Text);
-                //    var segmVolMargin = structure.SegmentVolume.Margin(margin);
-
-                //    newStructure.SegmentVolume = segmVolMargin;
-                //    structure = newStructure;
-                //}
-
                 if (structure.IsEmpty)
                 {
                     Helpers.SeriLog.LogWarning(string.Format("Structure {0} is empty, skipping conversion", structure.Id));
@@ -480,24 +469,29 @@ namespace EQD2Converter
                     switch (format)
                     {
                         case DoseFormat.EQD2:
+                            Helpers.SeriLog.LogInfo("Converting voxels to EQD2...");
                             OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
                          Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQD2);
                             break;
                         case DoseFormat.BED:
+                            Helpers.SeriLog.LogInfo("Converting voxels to BED...");
                             OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
                          Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateBED);
                             break;
                         case DoseFormat.EQDd:
+                            Helpers.SeriLog.LogInfo("Converting voxels to EQDd...");
                             OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
                          Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDd, convParameter);
                             break;
-                        case DoseFormat.iBEDn2:
+                        case DoseFormat.BEDn2:
+                            Helpers.SeriLog.LogInfo("Converting voxels to BEDn2...");
                             OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
                          Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDn, convParameter);
                             break;
                         case DoseFormat.Base:
+                            Helpers.SeriLog.LogInfo("Converting voxels to BASE...");
                             OverridePixels(structure, alphabeta, 0, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                        Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDose, convParameter, strVM.MaxEQD2);
+                        Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDoseFromEQD2, convParameter, strVM.MaxEQD2);
                             break;
                     }
                     CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, epl);
@@ -508,22 +502,23 @@ namespace EQD2Converter
                     switch (format)
                     {
                         case DoseFormat.Base:
+                            Helpers.SeriLog.LogInfo("Converting voxels to BASE...");
                             OverridePixels(structure, alphabeta, 0, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                       Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDose, convParameter, strVM.MaxEQD2);
+                       Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDoseFromEQD2, convParameter, strVM.MaxEQD2);
                             break;
 
                     }
                     CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, targetPlan, (PlanSum)source);
                 }
             }
-
-            existingIndexes = new HashSet<Tuple<int, int, int>>() { }; // Legacy code. In original implementation was used to track which voxels had been converted, but present approach is to rely on user setting order. 
-            // clean up edge conversion
             try
             {
                 var edgeStructure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, _config.Defaults.TempEdgeStructureName, StringComparison.InvariantCultureIgnoreCase));
                 if (edgeStructure != null)
+                {
+                    Helpers.SeriLog.LogInfo("Cleaning up edge conversion structure...");
                     ss.RemoveStructure(edgeStructure);
+                }
             }
             catch (Exception ex)
             {
@@ -741,7 +736,6 @@ namespace EQD2Converter
                             }
                             else
                                 doseMatrixOut[k, imin + p, j] = functionCalculate(dose, alphabeta, scaling, numFractions);
-                            // this.existingIndexes.Add(newIndices); // allow overwriting as I'm controlling the order from the list
                         }
                     }
 
@@ -752,38 +746,81 @@ namespace EQD2Converter
 
         public int CalculateEQD2(int dose, double alphabeta, double scaling, short numberOfFractions, double? convParam1 = null)
         {
-            return Convert.ToInt32(dose * (alphabeta + dose * scaling / numberOfFractions) / (alphabeta + 2.0));
+            try
+            {
+                return Convert.ToInt32(dose * (alphabeta + dose * scaling / numberOfFractions) / (alphabeta + 2.0));
+            }
+            catch (Exception ex)
+            {
+                string errorMessage = string.Format("Exception in CalculateEQD2 [dose = {0}, alphabeta = {1}, scaling = {2}, n1 = {3}]", dose, alphabeta, scaling, numberOfFractions);
+                throw new Exception(errorMessage, ex);
+            }
         }
 
-        public int CalculatePhysicalDose(int EQD2, double alphabeta, double scaling, short numberOfFractions, double? n2 = null)
+        public int CalculatePhysicalDoseFromEQD2(int EQD2, double alphabeta, double scaling, short numberOfFractions, double? n2 = null)
         {
-            return Convert.ToInt32((double)n2 * alphabeta / 2 / scaling * (Math.Sqrt(1 + 4 * scaling / (double)n2 / alphabeta * EQD2 * (1 + 2 / alphabeta)) - 1));
+            try
+            {
+                return Convert.ToInt32((double)n2 * alphabeta / 2 / scaling * (Math.Sqrt(1 + 4 * scaling / (double)n2 / alphabeta * EQD2 * (1 + 2 / alphabeta)) - 1));
+            }
+            catch (Exception ex)
+            {
+                string errorMessage = string.Format("Exception in CalculatePhysicalDose [EQD2 = {0}, alphabeta = {1}, scaling = {2}, n2 = {3}]", EQD2, alphabeta, scaling, n2);
+                throw new Exception(errorMessage, ex);
+            }
         }
 
         public int CalculateEQDd(int dose, double alphabeta, double scaling, short numberOfFractions, double? dFraction = null)
         {
-            return Convert.ToInt32((dose * (alphabeta + dose * scaling / numberOfFractions) / (alphabeta + dFraction)));
+            try
+            {
+                return Convert.ToInt32((dose * (alphabeta + dose * scaling / numberOfFractions) / (alphabeta + dFraction)));
+            }
+            catch (Exception ex)
+            {
+                string errorMessage = string.Format("Exception in CalculateEQDd [dose = {0}, alphabeta = {1}, scaling = {2}, n1 = {3}, dosePerFraction = {4}]", dose, alphabeta, scaling, numberOfFractions, dFraction);
+                throw new Exception(errorMessage, ex);
+            }
+
         }
 
         public int CalculateBED(int dose, double alphabeta, double scaling, short numberOfFractions, double? convParam1 = null)
         {
-            return Convert.ToInt32(dose * (1 + dose * scaling / (numberOfFractions * alphabeta)));
+            try
+            {
+                return Convert.ToInt32(dose * (1 + dose * scaling / (numberOfFractions * alphabeta)));
+            }
+            catch (Exception ex)
+            {
+                string errorMessage = string.Format("Exception in CalculateBED [dose = {0}, alphabeta = {1}, scaling = {2}, n1 = {3}]", dose, alphabeta, scaling, numberOfFractions);
+                throw new Exception(errorMessage, ex);
+            }
         }
 
         public int CalculateEQDn(int dose, double alphabeta, double scaling, short numberOfFractions, double? n2 = null)
         {
-            return Convert.ToInt32((double)n2 * alphabeta / 2 / scaling * (Math.Sqrt(1 + 4 * scaling / (double)n2 / alphabeta * (dose * (1 + dose * scaling / (numberOfFractions * alphabeta)))) - 1));
+            try
+            {
+                return Convert.ToInt32((double)n2 * alphabeta / 2 / scaling * (Math.Sqrt(1 + 4 * scaling / (double)n2 / alphabeta * (dose * (1 + dose * scaling / (numberOfFractions * alphabeta)))) - 1));
+            }
+            catch (Exception ex)
+            {
+                string errorMessage = string.Format("Exception in CalculateEQDn [dose = {0}, alphabeta = {1}, scaling = {2}, n1 = {3}, n2 = {4}]", dose, alphabeta, scaling, numberOfFractions, n2);
+                throw new Exception(errorMessage, ex);
+            }
         }
 
         public double ConvertEQD2toPhysical(double EQD2, double alphabeta, ushort n2)
         {
-            return (double)n2 * alphabeta / 2 * (Math.Sqrt(1 + 4 / (double)n2 / alphabeta * EQD2 * (1 + 2 / alphabeta)) - 1);
+            try
+            {
+                return (double)n2 * alphabeta / 2 * (Math.Sqrt(1 + 4 / (double)n2 / alphabeta * EQD2 * (1 + 2 / alphabeta)) - 1);
+            }
+            catch (Exception ex)
+            {
+                string errorMessage = string.Format("Exception in ConvertEQD2toPhysical [EQD2 = {0}, alphabeta = {1}, n2 = {2}]", EQD2, alphabeta, n2);
+                throw new Exception(errorMessage, ex);
+            }
         }
-
-        public int MultiplyByAlphaBeta(int dose, double alphabeta, double scaling)
-        {
-            return Convert.ToInt32(dose * alphabeta);
-        }
-
     }
 }

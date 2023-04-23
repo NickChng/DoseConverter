@@ -13,7 +13,7 @@ namespace EQD2Converter
         [Description("EQD2")] EQD2,
         [Description("BED")] BED,
         [Description("EQDd")] EQDd,
-        [Description("BEDn2")] iBEDn2,
+        [Description("BEDn2")] BEDn2,
         [Description("BASE")] Base,
     }
     public enum AlphaBetaSortFormat
