@@ -31,9 +31,9 @@ To run the script:
 
 ## Details
 
-1. The calculation is performed with the well known formulas: EQD2 = D ( a/b + D/n) / (a/b + 2) and BED = D (1 + D / ( n a/b)). The third option, Multiply by a/b, is for testing purposes, ie. it simply multiples each voxel value with a/b.
-2. The accuracy of conversion equals the width of the dose matrix box. Do some testing to see how it works.
-3. The determination of which voxels lie within structures is done only in the X direction.
+1. The calculation is performed with the well known formulas: EQD2 = D ( a/b + D/n) / (a/b + 2) and BED = D (1 + D / ( n a/b)). The third option, BEDn2, transforms the source dose distribution from the input fractionation to the selected output fractionation such that each distribution is BED equivalent. The fourth option, BASE, calculates a base dose distribution designed to be used as a base dose for re-treatment optimization. The base dose is determined so that when optimization is performed, each structure will not exceed its specified Max EQD2 if the optimization does not exceed the equivalent dose in n2 fractions. This is displayed for each structure for the convenience of the user.
+3. The accuracy of conversion equals the width of the dose matrix box. Do some testing to see how it works.
+4. The determination of which voxels lie within structures is done only in the X direction.
 5. If you need better accuracy, calculate the original plan with smaller dose box width.
 6. The conversion should (only) work for HFS, HFP, FFS, FFP orientations. If you are summing up plans based on different registered images, the result may be wrong. I haven't had time to test this.
 
