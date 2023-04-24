@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EQD2Converter
+namespace DoseConverter
 {
     public enum DoseFormat
     {
@@ -13,7 +13,7 @@ namespace EQD2Converter
         [Description("EQD2")] EQD2,
         [Description("BED")] BED,
         [Description("EQDd")] EQDd,
-        [Description("BEDn2")] BEDn2,
+        [Description("EQDn#")] EQDn,
         [Description("BASE")] Base,
     }
     public enum AlphaBetaSortFormat

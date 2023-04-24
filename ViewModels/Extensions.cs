@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EQD2Converter
+namespace DoseConverter
 {
     public static class Extensions
     {

@@ -1,6 +1,6 @@
 ﻿using System.Windows.Input;
 
-namespace EQD2Converter
+namespace DoseConverter
 {
     public class StructureViewModel : ObservableObject
     {

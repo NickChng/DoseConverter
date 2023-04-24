@@ -18,7 +18,7 @@ using System.Windows.Threading;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
 
-namespace EQD2Converter
+namespace DoseConverter
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

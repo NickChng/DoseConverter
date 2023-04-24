@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 
-namespace EQD2Converter
+namespace DoseConverter
 {
     public abstract class ObservableObject : INotifyPropertyChanged, INotifyDataErrorInfo
     {

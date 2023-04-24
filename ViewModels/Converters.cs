@@ -11,7 +11,7 @@ using System.Windows.Data;
 using System.Windows.Media;
 using ESAPIScript;
 
-namespace EQD2Converter
+namespace DoseConverter
 {
    
      public class SortStructuresConverter : IMultiValueConverter

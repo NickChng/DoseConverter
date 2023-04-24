@@ -1,4 +1,4 @@
-﻿using EQD2Converter;
+﻿using DoseConverter;
 using ESAPIScript;
 using System;
 using System.Collections.Generic;

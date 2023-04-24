@@ -13,7 +13,7 @@ using Serilog;
 using System.Diagnostics;
 using System.Collections.ObjectModel;
 
-namespace EQD2Converter
+namespace DoseConverter
 {
 
     public static class Helpers

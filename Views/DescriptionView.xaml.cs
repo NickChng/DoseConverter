@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace EQD2Converter
+namespace DoseConverter
 {
     /// <summary>
     /// Interaction logic for DescriptionView.xaml

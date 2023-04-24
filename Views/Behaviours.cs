@@ -3,7 +3,7 @@ using System.Windows.Documents;
 using HTMLConverter;
 using System.Windows.Controls;
 
-namespace EQD2Converter.Behaviours
+namespace DoseConverter.Behaviours
 {
     public static class HtmlTextBoxProperties
     {

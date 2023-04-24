@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EQD2Converter", "EQD2Converter.csproj", "{CEE30CDD-E864-4EC0-9F11-F070B578F782}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoseConverter", "DoseConverter.csproj", "{CEE30CDD-E864-4EC0-9F11-F070B578F782}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ESAPI", "ESAPIWorker\ESAPI.csproj", "{C23A4A64-DB11-4EEC-A740-E363642B7115}"
 EndProject

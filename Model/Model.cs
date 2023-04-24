@@ -6,7 +6,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
-using static EQD2Converter.MainWindow;
+using static DoseConverter.MainWindow;
 using System.Windows.Input;
 using System.Windows;
 using VMS.TPS.Common.Model.API;
@@ -19,7 +19,7 @@ using System.Runtime.InteropServices;
 using Serilog.Core;
 using System.Diagnostics;
 
-namespace EQD2Converter
+namespace DoseConverter
 {
     public class Model
     {
@@ -483,8 +483,8 @@ namespace EQD2Converter
                             OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
                          Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDd, convParameter);
                             break;
-                        case DoseFormat.BEDn2:
-                            Helpers.SeriLog.LogInfo("Converting voxels to BEDn2...");
+                        case DoseFormat.EQDn:
+                            Helpers.SeriLog.LogInfo("Converting voxels to EQDn#...");
                             OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
                          Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDn, convParameter);
                             break;

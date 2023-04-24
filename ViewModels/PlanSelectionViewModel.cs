@@ -1,4 +1,4 @@
-﻿namespace EQD2Converter
+﻿namespace DoseConverter
 {
     public class PlanSelectionViewModel : ObservableObject
     {

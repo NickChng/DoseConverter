@@ -20,7 +20,7 @@ using System.Net.Http.Headers;
 using System.Windows.Media.Animation;
 using System.Drawing;
 
-namespace EQD2Converter
+namespace DoseConverter
 {
 
     public class ViewModel : ObservableObject
@@ -40,7 +40,7 @@ namespace EQD2Converter
         {
             get
             {
-                return @"<i>n2</i> fx";
+                return @"<i>in n fx</i>";
             }
         }
         private string _convertedPlanName = "Design";
@@ -160,7 +160,7 @@ namespace EQD2Converter
             {
                 switch (_selectedOutputFormat)
                 {
-                    case DoseFormat.BEDn2:
+                    case DoseFormat.EQDn:
                         return Visibility.Visible;
                     case DoseFormat.Base:
                         return Visibility.Visible;
@@ -224,7 +224,7 @@ namespace EQD2Converter
                 {
                     switch (_selectedOutputFormat)
                     {
-                        case DoseFormat.BEDn2:
+                        case DoseFormat.EQDn:
                             if (int.TryParse(value, out int intVal))
                             {
                                 _convParameter = intVal;
@@ -294,7 +294,7 @@ namespace EQD2Converter
         {
             switch (_selectedOutputFormat)
             {
-                case DoseFormat.BEDn2:
+                case DoseFormat.EQDn:
                     {
                         if (_convParameter == null)
                             return false;
@@ -346,8 +346,8 @@ namespace EQD2Converter
                 }
                 switch (_selectedOutputFormat)
                 {
-                    case DoseFormat.BEDn2:
-                        ConversionInputWarning = "Ensure source distribution has units of physical dose. Plan fractionation will be used to determined BEDn2.";
+                    case DoseFormat.EQDn:
+                        ConversionInputWarning = "Ensure source distribution has units of physical dose. Plan fractionation will be used to determined EQDn#.";
                         break;
                     case DoseFormat.EQD2:
                         ConversionInputWarning = "Ensure source distribution has units of physical dose. Plan fractionation will be used to determined EQD2.";
@@ -363,7 +363,7 @@ namespace EQD2Converter
             }
         }
 
-        private static List<DoseFormat> _doseOutputFormatOptionDefaults = new List<DoseFormat>() { DoseFormat.EQD2, DoseFormat.BEDn2, DoseFormat.BED, DoseFormat.Base };
+        private static List<DoseFormat> _doseOutputFormatOptionDefaults = new List<DoseFormat>() { DoseFormat.EQD2, DoseFormat.EQDn, DoseFormat.BED, DoseFormat.Base };
         private bool _fatalError = false;
 
         public ObservableCollection<DoseFormat> DoseOutputFormatOptions { get; private set; } = new ObservableCollection<DoseFormat>(_doseOutputFormatOptionDefaults);
@@ -393,11 +393,11 @@ namespace EQD2Converter
                 case DoseFormat.EQD2:
                     ConvertedPlanName = fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)) + "_" + SelectedOutputFormat.Display();
                     break;
-                case DoseFormat.BEDn2:
+                case DoseFormat.EQDn:
                     ConvertedPlanName = string.Format("{0}_{1}fx", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)), _convParameter);
                     break;
                 case DoseFormat.Base:
-                    ConvertedPlanName = string.Format("{0}_{1}fxB", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)), _convParameter);
+                    ConvertedPlanName = string.Format("{0}_{1}fxB", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 8)), _convParameter);
                     break;
                 case DoseFormat.BED:
                     ConvertedPlanName = fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)) + "_" + SelectedOutputFormat.Display();
