@@ -22,16 +22,16 @@ namespace DoseConverter {
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
     [System.Xml.Serialization.XmlRootAttribute(Namespace="", IsNullable=false)]
-    public partial class EQD2ConverterConfig {
+    public partial class DoseConverterConfig {
         
-        private EQD2ConverterConfigVersion versionField;
+        private DoseConverterConfigVersion versionField;
         
-        private EQD2ConverterConfigDefaults defaultsField;
+        private DoseConverterConfigDefaults defaultsField;
         
-        private EQD2ConverterConfigStructure[] structuresField;
+        private DoseConverterConfigStructure[] structuresField;
         
         /// <remarks/>
-        public EQD2ConverterConfigVersion version {
+        public DoseConverterConfigVersion version {
             get {
                 return this.versionField;
             }
@@ -41,7 +41,7 @@ namespace DoseConverter {
         }
         
         /// <remarks/>
-        public EQD2ConverterConfigDefaults Defaults {
+        public DoseConverterConfigDefaults Defaults {
             get {
                 return this.defaultsField;
             }
@@ -52,7 +52,7 @@ namespace DoseConverter {
         
         /// <remarks/>
         [System.Xml.Serialization.XmlArrayItemAttribute("Structure", IsNullable=false)]
-        public EQD2ConverterConfigStructure[] Structures {
+        public DoseConverterConfigStructure[] Structures {
             get {
                 return this.structuresField;
             }
@@ -68,7 +68,7 @@ namespace DoseConverter {
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
-    public partial class EQD2ConverterConfigVersion {
+    public partial class DoseConverterConfigVersion {
         
         private string numberField;
         
@@ -90,7 +90,7 @@ namespace DoseConverter {
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
-    public partial class EQD2ConverterConfigDefaults {
+    public partial class DoseConverterConfigDefaults {
         
         private double alphaBetaRatioField;
         
@@ -125,9 +125,9 @@ namespace DoseConverter {
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
-    public partial class EQD2ConverterConfigStructure {
+    public partial class DoseConverterConfigStructure {
         
-        private EQD2ConverterConfigStructureAlias[] aliasesField;
+        private DoseConverterConfigStructureAlias[] aliasesField;
         
         private string structureLabelField;
         
@@ -139,13 +139,13 @@ namespace DoseConverter {
         
         private bool forceEdgeConversionField;
         
-        public EQD2ConverterConfigStructure() {
+        public DoseConverterConfigStructure() {
             this.forceEdgeConversionField = true;
         }
         
         /// <remarks/>
         [System.Xml.Serialization.XmlArrayItemAttribute("Alias", IsNullable=false)]
-        public EQD2ConverterConfigStructureAlias[] Aliases {
+        public DoseConverterConfigStructureAlias[] Aliases {
             get {
                 return this.aliasesField;
             }
@@ -217,7 +217,7 @@ namespace DoseConverter {
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
-    public partial class EQD2ConverterConfigStructureAlias {
+    public partial class DoseConverterConfigStructureAlias {
         
         private string structureIdField;
         

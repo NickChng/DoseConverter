@@ -7,13 +7,23 @@ namespace DoseConverter
         private Model _model;
         public double AlphaBetaRatio { get; set; }
 
-        private double? _maxEQD2 = null;
-        public double? MaxEQD2
+        public double MaxEQD2 { get; private set; } = double.NaN;
+        private string _maxEQDString = string.Empty;
+        public string MaxEQD2String
         {
-            get { return _maxEQD2; }
+            get { return _maxEQDString; }
             set
             {
-                _maxEQD2 = value;
+                if (double.TryParse(value, out double maxEQD2))
+                {
+                    _maxEQDString = value;
+                    MaxEQD2 = maxEQD2;
+                }
+                else
+                {
+                    _maxEQDString = string.Empty;
+                    MaxEQD2 = double.NaN;
+                }
                 RaisePropertyChangedEvent(nameof(DisplayMaxEQD2inBEDn2));
             }
         }
@@ -36,9 +46,9 @@ namespace DoseConverter
         {
             get
             {
-                if (MaxEQD2 != null && _n2 != 0)
+                if (!double.IsNaN(MaxEQD2) && _n2 != 0)
                 {
-                    double MaxEQD2inBEDn2 = _model.ConvertEQD2toPhysical((double)MaxEQD2, AlphaBetaRatio, _n2);
+                    double MaxEQD2inBEDn2 = _model.ConvertEQD2toPhysical(MaxEQD2, AlphaBetaRatio, _n2);
                     _displayMaxEQD2inBEDn2 = string.Format("{0:0.00} Gy", MaxEQD2inBEDn2, _n2);
                     return _displayMaxEQD2inBEDn2;
                 }
@@ -46,7 +56,7 @@ namespace DoseConverter
                 {
                     return string.Empty;
                 }
-                
+
             }
         }
 
@@ -58,7 +68,7 @@ namespace DoseConverter
 
         public StructureViewModel() { }
 
-        public StructureViewModel(Model model, string structureId, double alphaBetaRatio, string structureLabel, bool includeEdges=true, double? maxEQD2 = null, bool include = false)
+        public StructureViewModel(Model model, string structureId, double alphaBetaRatio, string structureLabel, bool includeEdges = true, double? maxEQD2 = null, bool include = false)
         {
             _model = model;
             _displayMaxEQD2inBEDn2 = string.Empty;
@@ -67,7 +77,14 @@ namespace DoseConverter
             StructureLabel = structureLabel;
             IncludeEdges = includeEdges;
             Include = include;
-            MaxEQD2 = maxEQD2;
+            if (maxEQD2 != null)
+            {
+                if (maxEQD2 > 0)
+                {
+                    MaxEQD2 = (double)maxEQD2;
+                    MaxEQD2String = maxEQD2.ToString();
+                }
+            }
         }
 
         public ICommand ToggleIncludeCommand

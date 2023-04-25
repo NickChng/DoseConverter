@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<EQD2ConverterConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  xsi:noNamespaceSchemaLocation="\\spvaimapcn\data$\Apps\EQD2Converter\Schemas\EQD2ConverterConfig.xsd">
+<DoseConverterConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  xsi:noNamespaceSchemaLocation="\\spvaimapcn\data$\Apps\EQD2Converter\Schemas\DoseConverterConfig.xsd">
   <version number="0.1"/>
   <Defaults AlphaBetaRatio="3" TempEdgeStructureName ="Temp_AutoEdge"/>
   <Structures>
@@ -47,4 +47,4 @@
       </Aliases>
     </Structure>
   </Structures>
-</EQD2ConverterConfig>
+</DoseConverterConfig>

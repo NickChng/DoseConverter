@@ -23,7 +23,7 @@ namespace DoseConverter
 {
     public class Model
     {
-        private EQD2ConverterConfig _config;
+        private DoseConverterConfig _config;
         private List<StructureViewModel> StructureDefinitions { get; set; } = new List<StructureViewModel>();
         public double DefaultAlphaBeta { get; private set; }
 
@@ -153,7 +153,7 @@ namespace DoseConverter
                 return (outputDose, success, "Complete!");
         }
 
-        public Model(EQD2ConverterConfig config, EsapiWorker ew)
+        public Model(DoseConverterConfig config, EsapiWorker ew)
         {
             _config = config;
             _ew = ew;

@@ -120,6 +120,7 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration\DoseConverterConfig.cs" />
     <Compile Include="Model\ModelEnums.cs" />
     <Compile Include="ViewModels\DescriptionViewModel.cs" />
     <Compile Include="ViewModels\PlanSelectionViewModel.cs" />
@@ -127,7 +128,6 @@
     <Compile Include="ViewModels\Converters.cs" />
     <Compile Include="ViewModels\DelegateCommand.cs" />
     <Compile Include="Views\DescriptionView.xaml.cs" />
-    <Compile Include="Configuration\EQD2ConverterConfig.cs" />
     <Compile Include="ViewModels\Extensions.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Views\HelpWindow.xaml.cs">
@@ -167,7 +167,7 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <EmbeddedResource Include="Resources\StructureCodes.csv" />
-    <None Include="Schemas\EQD2ConverterConfig.xsd">
+    <None Include="Schemas\DoseConverterConfig.xsd">
       <SubType>Designer</SubType>
     </None>
     <None Include="Schemas\StructureCodes.csv" />
@@ -209,7 +209,7 @@
     <Resource Include="Resources\align.png" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Configuration\EQD2ConverterConfig.xml">
+    <Content Include="Configuration\DoseConverterConfig.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

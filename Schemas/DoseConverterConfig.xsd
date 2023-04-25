@@ -24,7 +24,7 @@
       <xs:minInclusive value="0"/>
     </xs:restriction>
   </xs:simpleType>
-  <xs:element name="EQD2ConverterConfig">
+  <xs:element name="DoseConverterConfig">
     <xs:complexType>
       <xs:sequence>
         <xs:element name="version">

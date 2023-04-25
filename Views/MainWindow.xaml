@@ -312,7 +312,7 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBox Grid.Column="0" Text="{Binding MaxEQD2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width ="35" IsEnabled="{Binding Include, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox Grid.Column="0" Text="{Binding MaxEQD2String, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width ="35" IsEnabled="{Binding Include, UpdateSourceTrigger=PropertyChanged}"
                                      Padding="5,0,5,0"  HorizontalAlignment="Right" VerticalAlignment="Center" HorizontalContentAlignment="Center">
                                         <TextBox.Style>
                                             <Style>
@@ -365,7 +365,7 @@
                                 </Grid>
                                 <Grid Grid.Column="6" Margin="5,0,0,0" Width="80" HorizontalAlignment="Center">
                                     <CheckBox IsChecked="{Binding IncludeEdges, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0" IsEnabled="{Binding Include, UpdateSourceTrigger=PropertyChanged}">
+                                       HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0" Visibility="{Binding Include, Converter={StaticResource VisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
                                         <CheckBox.Style>
                                             <Style>
                                                 <Style.Triggers>

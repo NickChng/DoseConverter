@@ -29,7 +29,7 @@ namespace DoseConverter
         private Dispatcher _ui = null;
         private string _dataPath = string.Empty;
         private Model _model;
-        private EQD2ConverterConfig _scriptConfig;
+        private DoseConverterConfig _scriptConfig;
         private OnlineHelpDefinitions _onlineHelpDefinitions;
         public StructureViewModel SelectedMapping { get; set; } = new StructureViewModel() { StructureId = "Design", AlphaBetaRatio = 3, StructureLabel = "Design" };
         public ObservableCollection<StructureViewModel> StructureDefinitions { get; private set; } = new ObservableCollection<StructureViewModel>() { new StructureViewModel() { StructureId = "Design", AlphaBetaRatio = 3, StructureLabel = "Design" } };
@@ -397,7 +397,7 @@ namespace DoseConverter
                     ConvertedPlanName = string.Format("{0}_{1}fx", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)), _convParameter);
                     break;
                 case DoseFormat.Base:
-                    ConvertedPlanName = string.Format("{0}_{1}fxB", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 8)), _convParameter);
+                    ConvertedPlanName = string.Format("{0}_{1}Bfx", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 8)), _convParameter);
                     break;
                 case DoseFormat.BED:
                     ConvertedPlanName = fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)) + "_" + SelectedOutputFormat.Display();
@@ -725,13 +725,13 @@ namespace DoseConverter
         {
             try
             {
-                XmlSerializer Ser = new XmlSerializer(typeof(EQD2ConverterConfig));
-                var configFile = Path.Combine(_dataPath, @"Configuration\EQD2ConverterConfig.xml");
+                XmlSerializer Ser = new XmlSerializer(typeof(DoseConverterConfig));
+                var configFile = Path.Combine(_dataPath, @"Configuration\DoseConverterConfig.xml");
                 using (StreamReader config = new StreamReader(configFile))
                 {
                     try
                     {
-                        _scriptConfig = (EQD2ConverterConfig)Ser.Deserialize(config);
+                        _scriptConfig = (DoseConverterConfig)Ser.Deserialize(config);
                     }
                     catch (Exception ex)
                     {
