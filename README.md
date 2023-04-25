@@ -16,7 +16,7 @@ The script was developed for Eclipse version 15.6. It may not work with other ve
 
 Before your first run:
 
-1. Review the EQD2ConverterConfig.xml file in the Configuration folder, and add any default assignments of alpha/beta that are appropriate for your institution.
+1. Review the DoseConverterConfig.xml file in the Configuration folder, and add any default assignments of alpha/beta that are appropriate for your institution.
 2. Approve the script in Eclipse (it is a write-enabled script)
 
 To run the script:
