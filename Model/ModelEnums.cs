@@ -21,4 +21,11 @@ namespace DoseConverter
         [Description("Ascending")] Ascending,
         [Description("Descending")] Descending
     }
+    public enum ScriptStatus
+    {
+        [Description("Incomplete")] Incomplete,
+        [Description("Complete")] Complete,
+        [Description("Error")] Error,
+        [Description("Warning")] Warning
+    }
 }

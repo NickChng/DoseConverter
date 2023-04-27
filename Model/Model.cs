@@ -18,6 +18,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Serilog.Core;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 
 namespace DoseConverter
 {
@@ -52,15 +53,31 @@ namespace DoseConverter
         public double doseMax;
         public double doseMin;
 
-        public async Task<(int[,,], bool, string)> GetConvertedDose(string courseId, string planId, bool isSum, string newPlanName, List<StructureViewModel> mappings, DoseFormat format, double? convParameter = null)
+        public async Task<(int[,,], ScriptStatus, string, string)> GetConvertedDose(string courseId, string planId, bool isSum, string newPlanName, List<StructureViewModel> mappings, DoseFormat format, double? convParameter = null)
         {
             ExternalPlanSetup newPlan = (ExternalPlanSetup)null;
             int[,,] outputDose = null;
-            string errorMessage = "";
-            bool success = true;
+            string returnMessage = "";
+            ScriptStatus status = ScriptStatus.Incomplete;
+            string exceptionMessage = "";
+            bool overrideStructureSet = false;
 
             await _ew.AsyncRunPlanContext((p, pl) =>
             {
+                try
+                {
+                    if (!pl.StructureSet.CanAddStructure("Control", _config.Defaults.TempEdgeStructureName))
+                    {
+                        returnMessage = "Error: Edge conversion is not possible because structure set is approved/completed.";
+                        overrideStructureSet = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    status = ScriptStatus.Error;
+                    returnMessage = "Unexpected error - mouse over for details";
+                    exceptionMessage = ex.Message;
+                }
                 try
                 {
                     if (isSum)
@@ -73,31 +90,36 @@ namespace DoseConverter
                         {
                             try
                             {
+                                Helpers.SeriLog.LogInfo(string.Format("Creating new verification plan [{0}]", newPlanName));
                                 newPlan = pl.Course.AddExternalPlanSetupAsVerificationPlan(pl.StructureSet, (ExternalPlanSetup)pl);
                                 newPlan.Id = newPlanName;
                             }
-                            catch
+                            catch (Exception ex)
                             {
-                                errorMessage = "Error creating plan";
-                                success = false;
+                                returnMessage = "Error creating plan. Check that course is active.";
+                                Helpers.SeriLog.LogInfo(string.Format("Creating new verification plan [{0}]", newPlanName));
+                                exceptionMessage = ex.Message;
+                                status = ScriptStatus.Error;
+                                return;
                             }
                             try
                             {
-                                outputDose = ConvertDose(format, newPlan, (ExternalPlanSetup)pl, sum, mappings, convParameter, false);
+                                outputDose = ConvertDose(format, newPlan, (ExternalPlanSetup)pl, sum, mappings, convParameter, overrideStructureSet);
                             }
                             catch (Exception ex)
                             {
-                                errorMessage = "Error converting plan sum dose...";
-                                Helpers.SeriLog.LogError(errorMessage, ex);
-                                pl.Course.RemovePlanSetup(newPlan);
-                                Helpers.SeriLog.LogInfo("Removed verification plan...");
-                                success = false;
+                                returnMessage = "Error converting plan sum dose...";
+                                exceptionMessage = ex.Message;
+                                Helpers.SeriLog.LogError(returnMessage, ex);
+                                status = ScriptStatus.Error;
+                                return;
                             }
                         }
                         else
                         {
-                            errorMessage = "Selected plan sum has no dose.";
-                            success = false;
+                            returnMessage = "Selected plan sum has no dose.";
+                            status = ScriptStatus.Error;
+                            return;
                         }
 
                     }
@@ -114,43 +136,68 @@ namespace DoseConverter
                             }
                             catch (Exception ex)
                             {
-                                errorMessage = "Error creating plan";
-                                Helpers.SeriLog.LogError(errorMessage, ex);
-                                success = false;
+                                returnMessage = "Error creating plan. Check that course is active.";
+                                Helpers.SeriLog.LogError(returnMessage, ex);
+                                exceptionMessage = ex.Message;
+                                status = ScriptStatus.Error;
+                                return;
                             }
                             try
                             {
-                                outputDose = ConvertDose(format, newPlan, (ExternalPlanSetup)pl, plan, mappings, convParameter, false);
+                                outputDose = ConvertDose(format, newPlan, (ExternalPlanSetup)pl, plan, mappings, convParameter, overrideStructureSet);
                             }
                             catch (Exception ex)
                             {
-                                errorMessage = "Error converting dose...";
-                                Helpers.SeriLog.LogError(errorMessage, ex);
-                                pl.Course.RemovePlanSetup(newPlan);
-                                Helpers.SeriLog.LogInfo("Removed verification plan...");
-
-                                success = false;
+                                Helpers.SeriLog.LogError(returnMessage, ex);
+                                exceptionMessage = ex.Message;
+                                if (pl.Course.CanRemovePlanSetup(newPlan))
+                                {
+                                    returnMessage = "Error converting dose, plan removed.";
+                                    Helpers.SeriLog.LogInfo("Removed converted plan...");
+                                    pl.Course.RemovePlanSetup(newPlan);
+                                }
+                                else
+                                {
+                                    returnMessage = "Error converting dose, please delete plan!";
+                                    Helpers.SeriLog.LogInfo("Cannot remove converted plan...");
+                                }
+                                status = ScriptStatus.Error;
+                                return;
                             }
                         }
                         else
                         {
-                            errorMessage = "Selected plan sum has no dose.";
-                            success = false;
+                            returnMessage = "Selected plan has no dose.";
+                            status = ScriptStatus.Error;
+                            return;
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    success = false;
-                    errorMessage = ex.Message;
+                    status = ScriptStatus.Error;
+                    returnMessage = "Unexpected error - mouse over for details";
+                    exceptionMessage = ex.Message;
                 }
             });
-            if (!success)
+            if (status == ScriptStatus.Error)
             {
-                return (null, success, errorMessage);
+                return (null, status, returnMessage, exceptionMessage);
             }
             else
-                return (outputDose, success, "Complete!");
+            {
+                if (overrideStructureSet)
+                {
+                    returnMessage = "Complete! - Structure set was protected so creation of TEMP_DoseConv structure set was necessary. Please delete if necessary.";
+                    status = ScriptStatus.Warning;
+                }
+                else
+                {
+                    returnMessage = "Complete!";
+                    status = ScriptStatus.Complete;
+                }
+                return (outputDose, status, returnMessage, exceptionMessage);
+            }
         }
 
         public Model(DoseConverterConfig config, EsapiWorker ew)
@@ -386,7 +433,7 @@ namespace DoseConverter
             return maxDoseVal;
         }
 
-        private int[,,] ConvertDose(DoseFormat format, ExternalPlanSetup newPlan, ExternalPlanSetup targetPlan, PlanningItem source, List<StructureViewModel> mappings, double? convParameter = null, bool preview = false)
+        private int[,,] ConvertDose(DoseFormat format, ExternalPlanSetup newPlan, ExternalPlanSetup targetPlan, PlanningItem source, List<StructureViewModel> mappings, double? convParameter = null, bool overrideStructureSet = false)
         {
             Dose dose = source.Dose;
 
@@ -442,6 +489,34 @@ namespace DoseConverter
 
                 if (strVM.IncludeEdges)
                 {
+                    try
+                    {
+                        if (overrideStructureSet)
+                        {
+                            var ssOverride = plan.Course.Patient.StructureSets.FirstOrDefault(x => string.Equals(x.Id, _config.Defaults.TempStructureSetName, StringComparison.InvariantCultureIgnoreCase));
+                            if (ssOverride == null)
+                            {
+                                ssOverride = ss.Copy();
+                                ssOverride.Id = _config.Defaults.TempStructureSetName;
+                                ss = ssOverride;
+                                Helpers.SeriLog.LogWarning("Input structure set is protected, generating override structure set.");
+                            }
+                            else
+                            {
+                                ss = ssOverride;
+                                Helpers.SeriLog.LogWarning($"Input structure set is protected, using existing override structure set ({ssOverride.Id})");
+                                if (!ss.CanAddStructure("CONTROL", _config.Defaults.TempEdgeStructureName))
+                                {
+                                    throw new Exception("TEMP_DoseConv structure set must be accessible / not in a complete course.");
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        string errorMessage = "Coule not create or access TEMP_DoseConv structure set.";
+                        Helpers.SeriLog.LogError(errorMessage, ex); 
+                    }
                     try
                     {
                         var edgeStructure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, _config.Defaults.TempEdgeStructureName, StringComparison.InvariantCultureIgnoreCase));

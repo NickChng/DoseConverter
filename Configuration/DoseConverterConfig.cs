@@ -96,6 +96,8 @@ namespace DoseConverter {
         
         private string tempEdgeStructureNameField;
         
+        private string tempStructureSetNameField;
+        
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
         public double AlphaBetaRatio {
@@ -115,6 +117,17 @@ namespace DoseConverter {
             }
             set {
                 this.tempEdgeStructureNameField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public string TempStructureSetName {
+            get {
+                return this.tempStructureSetNameField;
+            }
+            set {
+                this.tempStructureSetNameField = value;
             }
         }
     }

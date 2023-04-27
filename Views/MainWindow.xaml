@@ -418,6 +418,10 @@
                             <Ellipse Height="20" Width="20" Fill="PaleGreen"/>
                             <Image Source="../Resources/check_trans_light.png" Height="15" Width="15"/>
                         </Grid>
+                        <Grid Visibility="{Binding WarningVisibility, UpdateSourceTrigger=PropertyChanged}">
+                            <Ellipse Height="20" Width="20" Fill="Goldenrod"/>
+                            <Image Source="../Resources/check_trans_light.png" Height="15" Width="15"/>
+                        </Grid>
                         <Grid Visibility="{Binding ErrorVisibility, UpdateSourceTrigger=PropertyChanged}">
                             <Ellipse Height="20" Width="20" Fill="Tomato"/>
                             <Image Source="../Resources/exclamation_light.png" Height="15" Width="15" RenderOptions.BitmapScalingMode="Fant"/>

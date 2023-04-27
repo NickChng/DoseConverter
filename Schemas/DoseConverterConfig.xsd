@@ -36,6 +36,7 @@
           <xs:complexType>
             <xs:attribute name="AlphaBetaRatio" type="PositiveDouble" use="required"/>
             <xs:attribute name="TempEdgeStructureName" type="xs:string" use="required"/>
+            <xs:attribute name="TempStructureSetName" type="xs:string" use="required"/>
           </xs:complexType>
         </xs:element>
         <xs:element name="Structures" >

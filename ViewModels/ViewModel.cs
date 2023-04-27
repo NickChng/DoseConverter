@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -19,6 +20,7 @@ using GongSolutions;
 using System.Net.Http.Headers;
 using System.Windows.Media.Animation;
 using System.Drawing;
+using System.Runtime.Remoting.Messaging;
 
 namespace DoseConverter
 {
@@ -373,6 +375,7 @@ namespace DoseConverter
         public string StatusDetails { get; set; } = "";
         public SolidColorBrush StatusColor { get; set; } = new SolidColorBrush(Colors.PapayaWhip);
         public Visibility SuccessVisibility { get; private set; } = Visibility.Collapsed;
+        public Visibility WarningVisibility { get; private set; } = Visibility.Collapsed;
         public Visibility ErrorVisibility { get; private set; } = Visibility.Collapsed;
 
         public ViewModel() { }
@@ -515,6 +518,19 @@ namespace DoseConverter
             Working = false;
             SuccessVisibility = Visibility.Visible;
             ErrorVisibility = Visibility.Collapsed;
+            WarningVisibility = Visibility.Collapsed;
+            RaisePropertyChangedEvent(nameof(StartButtonVisibility));
+        }
+        private void DisplayScriptWarning(string message, string details = "", bool fatalError = false)
+        {
+            StatusMessage = message;
+            StatusDetails = details;
+            _fatalError = fatalError;
+            Working = false;
+            _conversionComplete = false;
+            ErrorVisibility = Visibility.Collapsed;
+            SuccessVisibility = Visibility.Collapsed;
+            WarningVisibility = Visibility.Visible;
             RaisePropertyChangedEvent(nameof(StartButtonVisibility));
         }
         private void DisplayScriptError(string message, string details = "", bool fatalError = false)
@@ -526,6 +542,7 @@ namespace DoseConverter
             _conversionComplete = false;
             ErrorVisibility = Visibility.Visible;
             SuccessVisibility = Visibility.Collapsed;
+            WarningVisibility = Visibility.Collapsed;
             RaisePropertyChangedEvent(nameof(StartButtonVisibility));
         }
         private void DisplayScriptReady()
@@ -534,6 +551,7 @@ namespace DoseConverter
             Working = false;
             _conversionComplete = false;
             SuccessVisibility = Visibility.Collapsed;
+            WarningVisibility = Visibility.Collapsed;
             ErrorVisibility = Visibility.Collapsed;
         }
         private void InitializeOnlineHelp()
@@ -625,25 +643,29 @@ namespace DoseConverter
             StatusColor = new SolidColorBrush(Colors.Transparent);
             StatusMessage = "Converting...";
             int[,,] convdose = new int[0, 0, 0];
-            bool success = true;
-            string handledExceptionMessage = "";
-            string unhandledExceptionMessage = "No further details.";
+            ScriptStatus status = ScriptStatus.Incomplete;
+            string returnMessage = "";
+            string ExceptionMessage = "No further details.";
             try
             {
-                (convdose, success, handledExceptionMessage) = await _model.GetConvertedDose(SelectedInputOption.CourseId, SelectedInputOption.Id, SelectedInputOption.IsSum, ConvertedPlanName, StructureDefinitions.ToList(), SelectedOutputFormat, _convParameter);
+                (convdose, status, returnMessage, ExceptionMessage) = await _model.GetConvertedDose(SelectedInputOption.CourseId, SelectedInputOption.Id, SelectedInputOption.IsSum, ConvertedPlanName, StructureDefinitions.ToList(), SelectedOutputFormat, _convParameter);
             }
             catch (Exception ex)
             {
-                success = false;
-                unhandledExceptionMessage = ex.Message;
+                status = ScriptStatus.Error;
+                ExceptionMessage = ex.Message;
             }
-            if (success)
+            switch (status)
             {
-                DisplayScriptComplete();
-            }
-            else
-            {
-                DisplayScriptError(handledExceptionMessage, unhandledExceptionMessage);
+                case ScriptStatus.Complete:
+                    DisplayScriptComplete(returnMessage);
+                    break;
+                case ScriptStatus.Error:
+                    DisplayScriptError(returnMessage, ExceptionMessage);
+                    break;
+                case ScriptStatus.Warning:
+                    DisplayScriptWarning(returnMessage);
+                    break;
             }
         }
 
@@ -748,5 +770,9 @@ namespace DoseConverter
                 throw new Exception(errorMessage);
             }
         }
+
+
+
+
     }
 }
