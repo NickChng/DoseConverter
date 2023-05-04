@@ -215,14 +215,14 @@ namespace DoseConverter
                 await _ew.AsyncRunPlanContext((p, pl) =>
                 {
                     AllPlans.Add(new Tuple<string, string, string, bool>(pl.Course.Id, pl.Id, pl.StructureSet.Id, false));
-                    foreach (var otherPlan in pl.Course.PlanSetups)
+                    foreach (var otherPlan in pl.Course.PlanSetups.Where(x=>x.StructureSet != null && x.Dose != null))
                     {
                         // Can't map between structure sets without registration info so no point allowing other plans, might as well launch from them
                         if (otherPlan.StructureSet.Id == pl.StructureSet.Id && otherPlan != pl)
                             AllPlans.Add(new Tuple<string, string, string, bool>(otherPlan.Course.Id, otherPlan.Id, otherPlan.StructureSet.Id, false));
                     }
                     if (includeSums)
-                        foreach (var sum in pl.Course.PlanSums)
+                        foreach (var sum in pl.Course.PlanSums.Where(x => x.StructureSet != null && x.Dose != null))
                         {
                             if (sum.StructureSet.Id == pl.StructureSet.Id)
                                 AllPlans.Add(new Tuple<string, string, string, bool>(pl.Course.Id, sum.Id, sum.StructureSet.Id, true));
