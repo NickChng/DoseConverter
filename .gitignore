@@ -15,3 +15,4 @@ VMS.TPS.Common.Model.Types.xml
 *.p7s
 
 /Docs/Thumbs.db
+/DoseConverterTests

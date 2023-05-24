@@ -1,4 +1,4 @@
-﻿namespace DoseConverter
+﻿namespace DoseConverter.ViewModels
 {
     public class PlanSelectionViewModel : ObservableObject
     {

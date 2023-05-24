@@ -29,7 +29,7 @@ namespace VMS.TPS
 
         private void InitializeAndStartMainWindow(EsapiWorker esapiWorker)
         {
-            var viewModel = new ViewModel(esapiWorker);
+            var viewModel = new DoseConverter.ViewModels.ViewModel(esapiWorker);
             var mainWindow = new MainWindow(viewModel);
             mainWindow.ShowDialog();
         }

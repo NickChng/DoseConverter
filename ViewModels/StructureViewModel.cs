@@ -1,10 +1,13 @@
-﻿using System.Windows.Input;
+﻿using DoseConverter.Events;
+using Prism.Events;
+using System.Windows.Input;
 
-namespace DoseConverter
+namespace DoseConverter.ViewModels
 {
     public class StructureViewModel : ObservableObject
     {
         private Model _model;
+        private IEventAggregator _ea;
         public double AlphaBetaRatio { get; set; }
 
         public double MaxEQD2 { get; private set; } = double.NaN;
@@ -16,8 +19,11 @@ namespace DoseConverter
             {
                 if (double.TryParse(value, out double maxEQD2))
                 {
-                    _maxEQDString = value;
-                    MaxEQD2 = maxEQD2;
+                    if (maxEQD2 > 0)
+                    {
+                        _maxEQDString = value;
+                        MaxEQD2 = maxEQD2;
+                    }
                 }
                 else
                 {
@@ -25,6 +31,7 @@ namespace DoseConverter
                     MaxEQD2 = double.NaN;
                 }
                 RaisePropertyChangedEvent(nameof(DisplayMaxEQD2inBEDn2));
+                ValidateInputs();
             }
         }
 
@@ -64,13 +71,46 @@ namespace DoseConverter
 
         public string StructureLabel { get; set; }
 
-        public bool Include { get; set; } = false;
+        private bool _include = false;
+        public bool Include
+        {
+            get { return _include; }
+            set
+            {
+                _include = value;
+                ValidateInputs();
+            }
+        }
+
+        private void ValidateInputs()
+        {
+            if (Include)
+            {
+                if (double.IsNaN(MaxEQD2))
+                {
+                    AddError(nameof(MaxEQD2String), "Max EQD2 value not defined");
+                    AddError(nameof(MaxEQD2), "Max EQD2 value not defined");
+                }
+                else
+                {
+                    ClearErrors(nameof(MaxEQD2String));
+                    ClearErrors(nameof(MaxEQD2));
+                }
+            }
+            else
+            {
+                ClearErrors(nameof(MaxEQD2String));
+                ClearErrors(nameof(MaxEQD2));
+            }
+            _ea.GetEvent<StructureChanged>().Publish();
+        }
 
         public StructureViewModel() { }
 
-        public StructureViewModel(Model model, string structureId, double alphaBetaRatio, string structureLabel, bool includeEdges = true, double? maxEQD2 = null, bool include = false)
+        public StructureViewModel(IEventAggregator ea, Model model, string structureId, double alphaBetaRatio, string structureLabel, bool includeEdges = true, double? maxEQD2 = null, bool include = false)
         {
             _model = model;
+            _ea = ea;
             _displayMaxEQD2inBEDn2 = string.Empty;
             StructureId = structureId;
             AlphaBetaRatio = alphaBetaRatio;

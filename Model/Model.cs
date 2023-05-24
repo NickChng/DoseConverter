@@ -19,13 +19,50 @@ using System.Runtime.InteropServices;
 using Serilog.Core;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
+using DoseConverter.ViewModels;
 
 namespace DoseConverter
 {
     public class Model
     {
         private DoseConverterConfig _config;
-        private List<StructureViewModel> StructureDefinitions { get; set; } = new List<StructureViewModel>();
+
+        public struct StructureMapping
+        {
+            public string StructureId;
+            public double AlphaBetaRatio;
+            public bool Include;
+            public bool IncludeEdges;
+            public double MaxEQD2;
+            public StructureMapping(string structureId, double alphaBetaRatio, double maxEQD2,  bool include, bool edgeConversion)
+            {
+                StructureId = structureId;
+                AlphaBetaRatio = alphaBetaRatio;
+                MaxEQD2 = maxEQD2;
+                Include = include;
+                IncludeEdges = edgeConversion;
+            }
+        }
+        
+        public struct StructureOptions
+        {
+            public string StructureId;
+            public double DefaultAlphaBetaRatio;
+            public bool DefaultInclude;
+            public bool DefaultEdgeConversion;
+            public double DefaultMaxEQD2;
+            public string DefaultStructureLabel;
+            public StructureOptions(string structureId, double defaultAlphaBetaRatio, double defaultMaxEQD2, string defaultStructureLabel, bool defaultInclude, bool defaultEdgeConversion)
+            {
+                StructureId = structureId;
+                DefaultAlphaBetaRatio = defaultAlphaBetaRatio;
+                DefaultMaxEQD2 = defaultMaxEQD2;
+                DefaultStructureLabel = defaultStructureLabel;
+                DefaultInclude = defaultInclude;
+                DefaultEdgeConversion = defaultEdgeConversion;
+            }
+        }
+        private List<StructureOptions> StructureDefinitions { get; set; } = new List<StructureOptions>();
         public double DefaultAlphaBeta { get; private set; }
 
         public int[,,] originalArray { get; private set; }
@@ -53,7 +90,7 @@ namespace DoseConverter
         public double doseMax;
         public double doseMin;
 
-        public async Task<(int[,,], ScriptStatus, string, string)> GetConvertedDose(string courseId, string planId, bool isSum, string newPlanName, List<StructureViewModel> mappings, DoseFormat format, double? convParameter = null)
+        public async Task<(int[,,], ScriptStatus, string, string)> GetConvertedDose(string courseId, string planId, bool isSum, string newPlanName, List<StructureMapping> mappings, DoseFormat format, double? convParameter = null)
         {
             ExternalPlanSetup newPlan = (ExternalPlanSetup)null;
             int[,,] outputDose = null;
@@ -66,7 +103,7 @@ namespace DoseConverter
             {
                 try
                 {
-                    if (!pl.StructureSet.CanAddStructure("Control", _config.Defaults.TempEdgeStructureName))
+                    if (!pl.StructureSet.CanAddStructure("Control", _config.Defaults.TempEdgeStructureName) && mappings.Any(x=>x.IncludeEdges))
                     {
                         returnMessage = "Error: Edge conversion is not possible because structure set is approved/completed.";
                         overrideStructureSet = true;
@@ -152,13 +189,13 @@ namespace DoseConverter
                                 exceptionMessage = ex.Message;
                                 if (pl.Course.CanRemovePlanSetup(newPlan))
                                 {
-                                    returnMessage = "Error converting dose, plan removed.";
+                                    returnMessage = "Error converting dose.";
                                     Helpers.SeriLog.LogInfo("Removed converted plan...");
                                     pl.Course.RemovePlanSetup(newPlan);
                                 }
                                 else
                                 {
-                                    returnMessage = "Error converting dose, please delete plan!";
+                                    returnMessage = "Error converting dose, please delete plan.";
                                     Helpers.SeriLog.LogInfo("Cannot remove converted plan...");
                                 }
                                 status = ScriptStatus.Error;
@@ -215,7 +252,7 @@ namespace DoseConverter
                 await _ew.AsyncRunPlanContext((p, pl) =>
                 {
                     AllPlans.Add(new Tuple<string, string, string, bool>(pl.Course.Id, pl.Id, pl.StructureSet.Id, false));
-                    foreach (var otherPlan in pl.Course.PlanSetups.Where(x=>x.StructureSet != null && x.Dose != null))
+                    foreach (var otherPlan in pl.Course.PlanSetups.Where(x => x.StructureSet != null && x.Dose != null))
                     {
                         // Can't map between structure sets without registration info so no point allowing other plans, might as well launch from them
                         if (otherPlan.StructureSet.Id == pl.StructureSet.Id && otherPlan != pl)
@@ -294,9 +331,11 @@ namespace DoseConverter
                     throw new Exception(exceptionMessage);
                 }
                 var StructureList = new List<Tuple<string, string>>();
+                string ssId = string.Empty;
                 await _ew.AsyncRunStructureContext((pat, ss) =>
                 {
                     pat.BeginModifications();
+                    ssId = ss.Id;
                     foreach (var structure in ss.Structures.Where(x => !x.IsEmpty))
                     {
                         var Code = structure.StructureCodeInfos.FirstOrDefault();
@@ -312,17 +351,7 @@ namespace DoseConverter
                             StructureList.Add(new Tuple<string, string>(structure.Id, ""));
                     }
                 });
-                foreach (var structureRef in StructureList)
-                {
-                    var matchingStructure = _config.Structures.FirstOrDefault(x => x.Aliases.Select(y => y.StructureId).Any(z => string.Equals(z.Replace("_", ""), structureRef.Item1.Replace("_", ""), StringComparison.OrdinalIgnoreCase))
-                    || string.Equals(x.StructureLabel, structureRef.Item2, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(structureRef.Item2));
-                    if (matchingStructure != null)
-                    {
-                        StructureDefinitions.Add(new StructureViewModel(this, structureRef.Item1, matchingStructure.AlphaBetaRatio, structureRef.Item2, matchingStructure.ForceEdgeConversion, matchingStructure.MaxEQD2, true));
-                    }
-                    else
-                        StructureDefinitions.Add(new StructureViewModel(this, structureRef.Item1, DefaultAlphaBeta, structureRef.Item2, false, null, false));
-                }
+                StructureDefinitions = await GetStructureDefinitions(ssId);
                 return true;
             }
             catch (Exception ex)
@@ -333,7 +362,7 @@ namespace DoseConverter
             }
         }
 
-        public async Task<List<StructureViewModel>> GetStructureDefinitions(string ssId = null)
+        public async Task<List<StructureOptions>> GetStructureDefinitions(string ssId = null)
         {
             if (ssId == null)
                 return StructureDefinitions.ToList();
@@ -353,10 +382,13 @@ namespace DoseConverter
                                     structureLabel = StructureCodeLookup[Code.Code];
                         var matchingStructure = _config.Structures.FirstOrDefault(x => x.Aliases.Select(y => y.StructureId).Any(z => string.Equals(z.Replace("_", ""), structure.Id.Replace("_", ""), StringComparison.OrdinalIgnoreCase))
                            || string.Equals(x.StructureLabel, structureLabel, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(structureLabel));
-                        if (matchingStructure != null)
-                            StructureDefinitions.Add(new StructureViewModel(this, structure.Id, matchingStructure.AlphaBetaRatio, structureLabel, matchingStructure.ForceEdgeConversion, matchingStructure.MaxEQD2, true));
-                        else
-                            StructureDefinitions.Add(new StructureViewModel(this, structure.Id, DefaultAlphaBeta, "", false, null, false));
+                        StructureDefinitions.Add(new StructureOptions(
+                            structure.Id,
+                            matchingStructure != null ? matchingStructure.AlphaBetaRatio : DefaultAlphaBeta,
+                            matchingStructure != null ? matchingStructure.MaxEQD2 : double.NaN,
+                            structureLabel,
+                            matchingStructure != null,
+                            matchingStructure != null ? matchingStructure.ForceEdgeConversion : false));
                     }
                 });
             }
@@ -433,7 +465,7 @@ namespace DoseConverter
             return maxDoseVal;
         }
 
-        private int[,,] ConvertDose(DoseFormat format, ExternalPlanSetup newPlan, ExternalPlanSetup targetPlan, PlanningItem source, List<StructureViewModel> mappings, double? convParameter = null, bool overrideStructureSet = false)
+        private int[,,] ConvertDose(DoseFormat format, ExternalPlanSetup newPlan, ExternalPlanSetup targetPlan, PlanningItem source, List<StructureMapping> mappings, double? convParameter = null, bool overrideStructureSet = false)
         {
             Dose dose = source.Dose;
 
@@ -476,10 +508,11 @@ namespace DoseConverter
             else
                 ss = source.StructureSet;
 
-            foreach (var strVM in mappings.Where(x => x.Include).Reverse())
+            foreach (var sM in mappings.Where(x => x.Include).Reverse())
             {
-                Structure structure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, strVM.StructureId, StringComparison.InvariantCultureIgnoreCase));
-                double alphabeta = strVM.AlphaBetaRatio;
+                Structure structure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, sM.StructureId, StringComparison.InvariantCultureIgnoreCase));
+                double alphabeta = sM.AlphaBetaRatio;
+                string origStructureId = structure.Id;
 
                 if (structure.IsEmpty)
                 {
@@ -487,7 +520,7 @@ namespace DoseConverter
                     continue;
                 }
 
-                if (strVM.IncludeEdges)
+                if (sM.Include)
                 {
                     try
                     {
@@ -511,32 +544,36 @@ namespace DoseConverter
                                 }
                             }
                         }
+                        if (sM.IncludeEdges)
+                        {
+                            try
+                            {
+                                var edgeStructure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, _config.Defaults.TempEdgeStructureName, StringComparison.InvariantCultureIgnoreCase));
+                                if (edgeStructure == null)
+                                    edgeStructure = ss.AddStructure("CONTROL", _config.Defaults.TempEdgeStructureName);
+                                var margin = DetermineMargin(source);
+                                edgeStructure.SegmentVolume = structure.AsymmetricMargin(new AxisAlignedMargins(StructureMarginGeometry.Outer, margin.Item1, margin.Item2, margin.Item3, margin.Item1, margin.Item2, margin.Item3));
+                                Helpers.SeriLog.LogInfo(string.Format("Added inclusion margins to structure {0} of X={1}, Y={2}, Z={3}.", structure.Id, margin.Item1, margin.Item2, margin.Item3));
+                                structure = edgeStructure;
+                            }
+                            catch (Exception ex)
+                            {
+                                string errorMessage = "Error creating edge volume. Check that configuration file defines TempEdgeStructureName and that structure set isn't locked";
+                                Helpers.SeriLog.LogError(errorMessage, ex);
+                                throw new Exception(errorMessage);
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
                         string errorMessage = "Coule not create or access TEMP_DoseConv structure set.";
-                        Helpers.SeriLog.LogError(errorMessage, ex); 
-                    }
-                    try
-                    {
-                        var edgeStructure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, _config.Defaults.TempEdgeStructureName, StringComparison.InvariantCultureIgnoreCase));
-                        if (edgeStructure == null)
-                            edgeStructure = ss.AddStructure("CONTROL", _config.Defaults.TempEdgeStructureName);
-                        var margin = DetermineMargin(source);
-                        edgeStructure.SegmentVolume = structure.AsymmetricMargin(new AxisAlignedMargins(StructureMarginGeometry.Outer, margin.Item1, margin.Item2, margin.Item3, margin.Item1, margin.Item2, margin.Item3));
-                        Helpers.SeriLog.LogInfo(string.Format("Added inclusion margins to structure {0} of X={1}, Y={2}, Z={3}.", structure.Id, margin.Item1, margin.Item2, margin.Item3));
-                        structure = edgeStructure;
-                    }
-                    catch (Exception ex)
-                    {
-                        string errorMessage = "Error creating edge volume. Check that configuration file defines TempEdgeStructureName and that structure set isn't locked";
                         Helpers.SeriLog.LogError(errorMessage, ex);
-                        throw new Exception(errorMessage);
                     }
+                 
                 }
                 else
                 {
-                    structure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, strVM.StructureId, StringComparison.InvariantCultureIgnoreCase));
+                    structure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, sM.StructureId, StringComparison.InvariantCultureIgnoreCase));
                 }
 
                 if (epl != null)
@@ -545,28 +582,28 @@ namespace DoseConverter
                     {
                         case DoseFormat.EQD2:
                             Helpers.SeriLog.LogInfo("Converting voxels to EQD2...");
-                            OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                            OverridePixels(structure, origStructureId, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
                          Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQD2);
                             break;
                         case DoseFormat.BED:
                             Helpers.SeriLog.LogInfo("Converting voxels to BED...");
-                            OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                            OverridePixels(structure, origStructureId, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
                          Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateBED);
                             break;
                         case DoseFormat.EQDd:
                             Helpers.SeriLog.LogInfo("Converting voxels to EQDd...");
-                            OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                            OverridePixels(structure, origStructureId, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
                          Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDd, convParameter);
                             break;
                         case DoseFormat.EQDn:
                             Helpers.SeriLog.LogInfo("Converting voxels to EQDn#...");
-                            OverridePixels(structure, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                            OverridePixels(structure, origStructureId, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
                          Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDn, convParameter);
                             break;
                         case DoseFormat.Base:
                             Helpers.SeriLog.LogInfo("Converting voxels to BASE...");
-                            OverridePixels(structure, alphabeta, 0, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                        Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDoseFromEQD2, convParameter, strVM.MaxEQD2);
+                            OverridePixels(structure, origStructureId, alphabeta, 0, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                        Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDoseFromEQD2, convParameter, sM.MaxEQD2);
                             break;
                     }
                     CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, epl);
@@ -578,8 +615,8 @@ namespace DoseConverter
                     {
                         case DoseFormat.Base:
                             Helpers.SeriLog.LogInfo("Converting voxels to BASE...");
-                            OverridePixels(structure, alphabeta, 0, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                       Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDoseFromEQD2, convParameter, strVM.MaxEQD2);
+                            OverridePixels(structure, origStructureId, alphabeta, 0, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                       Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDoseFromEQD2, convParameter, sM.MaxEQD2);
                             break;
 
                     }
@@ -691,7 +728,7 @@ namespace DoseConverter
 
         public delegate int calculateFunction(int dose, double alphabeta, double scaling, short numberOfFractions, double? nOut = null);
 
-        public void OverridePixels(Structure structure, double alphabeta, short numFractions, int[,,] doseMatrixOrig, int[,,] doseMatrixOut, double scaling, int Xsize, int Ysize, int Zsize,
+        public void OverridePixels(Structure structure, string origStructureId, double alphabeta, short numFractions, int[,,] doseMatrixOrig, int[,,] doseMatrixOut, double scaling, int Xsize, int Ysize, int Zsize,
             double Xres, double Yres, double Zres, VVector Xdir, VVector Ydir, VVector Zdir, VVector doseOrigin, calculateFunction functionCalculate, double? nOut = null, double? maxEQD2 = null)
         {
             // The following is valid only for HFS, HFP, FFS, FFP orientations that do not mix x,y,z
@@ -799,10 +836,21 @@ namespace DoseConverter
                                 {
                                     int maxEQD2_scaled = Convert.ToInt32(Math.Abs((double)maxEQD2 / scaling));
                                     if (maxEQD2_scaled > dose)
-                                        doseMatrixOut[k, imin + p, j] = Math.Max(functionCalculate(maxEQD2_scaled, alphabeta, scaling, numFractions, nOut)
+                                    {
+                                        var newDose = Math.Max(functionCalculate(maxEQD2_scaled, alphabeta, scaling, numFractions, nOut)
                                          - functionCalculate(maxEQD2_scaled - dose, alphabeta, scaling, numFractions, nOut), 0);
+                                        if (newDose >= 0)
+                                            doseMatrixOut[k, imin + p, j] = newDose;
+                                        else
+                                        {
+                                            throw new Exception($"The Max EQD2 for {origStructureId} is less than has already been delivered.");
+                                        }
+                                    }
                                     else
-                                        doseMatrixOut[k, imin + p, j] = functionCalculate(maxEQD2_scaled, alphabeta, scaling, numFractions, nOut);
+                                    {
+                                        throw new Exception($"The Max EQD2 for {origStructureId} is less than has already been delivered.");
+                                        //doseMatrixOut[k, imin + p, j] = functionCalculate(maxEQD2_scaled, alphabeta, scaling, numFractions, nOut);
+                                    }
 
                                 }
                                 else

@@ -29,7 +29,7 @@ namespace DoseConverter
         private int SelectedIndex;
         private bool DragSelected = false;
 
-        public MainWindow(ViewModel vm)
+        public MainWindow(ViewModels.ViewModel vm)
         {
             InitializeComponent();
             DataContext = vm;
@@ -80,7 +80,7 @@ namespace DoseConverter
         delegate Point GetPositionDelegate(IInputElement element);
         private void DragConstraint_ListView_DragOver(object sender, DragEventArgs e)
         {
-            var VM = DataContext as ViewModel;
+            var VM = DataContext as ViewModels.ViewModel;
             var SelectedIndex = DragConstraint_GetCurrentIndex(e.GetPosition);
             //
 

@@ -21,8 +21,12 @@ using System.Net.Http.Headers;
 using System.Windows.Media.Animation;
 using System.Drawing;
 using System.Runtime.Remoting.Messaging;
+using Prism.Events;
+using DoseConverter.Events;
+using System.Windows.Controls;
+using static DoseConverter.Model;
 
-namespace DoseConverter
+namespace DoseConverter.ViewModels
 {
 
     public class ViewModel : ObservableObject
@@ -33,6 +37,7 @@ namespace DoseConverter
         private Model _model;
         private DoseConverterConfig _scriptConfig;
         private OnlineHelpDefinitions _onlineHelpDefinitions;
+        private EventAggregator _ea = new EventAggregator();
         public StructureViewModel SelectedMapping { get; set; } = new StructureViewModel() { StructureId = "Design", AlphaBetaRatio = 3, StructureLabel = "Design" };
         public ObservableCollection<StructureViewModel> StructureDefinitions { get; private set; } = new ObservableCollection<StructureViewModel>() { new StructureViewModel() { StructureId = "Design", AlphaBetaRatio = 3, StructureLabel = "Design" } };
 
@@ -76,7 +81,7 @@ namespace DoseConverter
                     ConvertedPlanNameBackgroundColor = new SolidColorBrush(Colors.Transparent);
                 }
                 RaisePropertyChangedEvent(nameof(ConvertedPlanNameBackgroundColor));
-                RaisePropertyChangedEvent(nameof(StartButtonVisibility));
+                ValidateControls();
             }
         }
 
@@ -139,7 +144,7 @@ namespace DoseConverter
                     SelectedOutputFormat = DoseFormat.None;
                 }
                 RaisePropertyChangedEvent(nameof(SelectedOutputFormat));
-                RaisePropertyChangedEvent(nameof(StartButtonVisibility));
+                ValidateControls();
             }
         }
         public bool DesignTime { get; private set; } = true;
@@ -149,7 +154,9 @@ namespace DoseConverter
 
         public bool isConvertToInfoOpen { get; set; } = false;
 
+        public bool isErrorInfoPopupOpen { get; set; } = false;
 
+        public DescriptionViewModel ErrorDescriptionViewModel { get; private set; } = new DescriptionViewModel("Default", "Design");
         public DescriptionViewModel DoseDescriptionViewModel { get; private set; } = new DescriptionViewModel("Default", "Design");
         public DescriptionViewModel ConvertToDescriptionViewModel { get; private set; } = new DescriptionViewModel("Default", "Design");
 
@@ -176,22 +183,8 @@ namespace DoseConverter
         }
 
         private bool _conversionComplete = false;
-        public Visibility StartButtonVisibility
-        {
-            get
-            {
-                if (_selectedInputOption != null
-                    && _isPlanNameValid
-                    && _selectedOutputFormat != DoseFormat.None
-                    && !string.IsNullOrEmpty(ConvertedPlanName)
-                    && !_conversionComplete
-                    && isConvParameterValid()
-                    && !_fatalError)
-                    return Visibility.Visible;
-                else
-                    return Visibility.Collapsed;
-            }
-        }
+        public Visibility StartButtonVisibility { get; set; }
+
         public Visibility ShowMaxEQD2
         {
             get
@@ -206,6 +199,7 @@ namespace DoseConverter
         public int SelectedIndex { get; set; }
 
         private double? _convParameter = null;
+
         private string _convParameterString;
         public string convParameterString
         {
@@ -277,8 +271,8 @@ namespace DoseConverter
                             break;
                     }
                 }
-                RaisePropertyChangedEvent(nameof(StartButtonVisibility));
                 RaisePropertyChangedEvent(nameof(convParameterTextBoxStatusColor));
+                ValidateControls();
             }
         }
 
@@ -361,7 +355,7 @@ namespace DoseConverter
                 RaisePropertyChangedEvent(nameof(convParameterTextBoxStatusColor));
                 RaisePropertyChangedEvent(nameof(ShowN2Fractions));
                 RaisePropertyChangedEvent(nameof(ShowMaxEQD2));
-                RaisePropertyChangedEvent(nameof(StartButtonVisibility));
+                ValidateControls();
             }
         }
 
@@ -386,6 +380,86 @@ namespace DoseConverter
             StatusColor = new SolidColorBrush(Colors.Transparent);
             ClearDesignParameters();
             Initialize();
+            
+        }
+
+        private void SubscribeToEvents()
+        {
+            _ea.GetEvent<StructureChanged>().Subscribe(OnStructureChanged);
+        }
+
+        private void OnStructureChanged()
+        {
+            ValidateControls();
+        }
+
+        private void ValidateControls()
+        {
+            // If any errors, hide the start button
+            bool valid = true;
+            ErrorVisibility = Visibility.Collapsed;
+            WarningVisibility = Visibility.Collapsed;
+            SuccessVisibility = Visibility.Collapsed;
+            if (_selectedInputOption == null)
+            {
+                StatusMessage = "Please select source distribution.";
+                valid = false;
+            }
+            if (!_isPlanNameValid || string.IsNullOrEmpty(ConvertedPlanName))
+            {
+                StatusMessage = "Please select a valid/unique plan name.";
+                valid = false;
+            }
+            if (_selectedOutputFormat == DoseFormat.None)
+            {
+                StatusMessage = "Please select output format.";
+                valid = false;
+            }
+            if (_selectedOutputFormat == DoseFormat.None)
+            {
+                StatusMessage = "Please select output format.";
+                valid = false;
+            }
+            if (_conversionComplete)
+                valid = false;
+            if (!StructureDefinitions.Any(x=>x.Include))
+            {
+                StatusMessage = "At least one structure must be included.";
+                valid = false;
+            }
+            if (StructureDefinitionHasErrors())
+            {
+                StatusMessage = "Structure options are incomplete or have errors.";
+                valid = false;
+            }
+            if (!isConvParameterValid())
+            {
+                StatusMessage = "Please verify conversion parameters.";
+                valid = false;
+            }
+            if (_fatalError)
+                StatusMessage = "Application error, please restart.";
+            RaisePropertyChangedEvent(nameof(StatusMessage));
+            if (valid)
+            {
+                StatusMessage = "Ready to convert...";
+                StartButtonVisibility = Visibility.Visible;
+            }
+            else
+                StartButtonVisibility = Visibility.Collapsed;
+        }
+        private bool StructureDefinitionHasErrors()
+        {
+            if (_selectedOutputFormat == DoseFormat.Base)
+            {
+                foreach (var sVM in StructureDefinitions.Where(x => x.Include))
+                {
+                    if (sVM.HasErrors)
+                        return true;
+                }
+                return false;
+            }
+            return false;
         }
 
         private async void SetDefaultPlanName()
@@ -504,6 +578,7 @@ namespace DoseConverter
             if (!_fatalError)
             {
                 DisplayScriptReady();
+                SubscribeToEvents();
                 Working = false;
                 Helpers.SeriLog.LogInfo("Initialization complete!");
             }
@@ -519,7 +594,7 @@ namespace DoseConverter
             SuccessVisibility = Visibility.Visible;
             ErrorVisibility = Visibility.Collapsed;
             WarningVisibility = Visibility.Collapsed;
-            RaisePropertyChangedEvent(nameof(StartButtonVisibility));
+            //ValidateControls();
         }
         private void DisplayScriptWarning(string message, string details = "", bool fatalError = false)
         {
@@ -531,19 +606,20 @@ namespace DoseConverter
             ErrorVisibility = Visibility.Collapsed;
             SuccessVisibility = Visibility.Collapsed;
             WarningVisibility = Visibility.Visible;
-            RaisePropertyChangedEvent(nameof(StartButtonVisibility));
+            //ValidateControls();
         }
         private void DisplayScriptError(string message, string details = "", bool fatalError = false)
         {
-            StatusMessage = message;
-            StatusDetails = details;
+            StatusMessage = $"Error during dose conversion. Click for details:";
+            //StatusDetails = details;
             _fatalError = fatalError;
             Working = false;
             _conversionComplete = false;
             ErrorVisibility = Visibility.Visible;
             SuccessVisibility = Visibility.Collapsed;
             WarningVisibility = Visibility.Collapsed;
-            RaisePropertyChangedEvent(nameof(StartButtonVisibility));
+            ErrorDescriptionViewModel = new DescriptionViewModel(new OnlineHelpDefinitionsDefinition() { DefinitionId = "Error Details", Text = details });
+            //ValidateControls();
         }
         private void DisplayScriptReady()
         {
@@ -591,7 +667,7 @@ namespace DoseConverter
         {
             try
             {
-                List<StructureViewModel> unsortedMappings = new List<StructureViewModel>();
+                List<Model.StructureOptions> unsortedMappings = new List<Model.StructureOptions>();
                 if (ssId != null)
                     unsortedMappings = await _model.GetStructureDefinitions(ssId);
                 else
@@ -599,10 +675,9 @@ namespace DoseConverter
                 _ui.Invoke(() =>
                 {
                     StructureDefinitions.Clear();
-                    foreach (var mapping in unsortedMappings.OrderByDescending(x => x.Include).ThenBy(x => x.AlphaBetaRatio).ThenBy(x => x.StructureId))
+                    foreach (var mapping in unsortedMappings.OrderByDescending(x => x.DefaultInclude).ThenBy(x => x.DefaultAlphaBetaRatio).ThenBy(x => x.StructureId))
                     {
-                        //mapping.PropertyChanged += Mapping_PropertyChanged;
-                        StructureDefinitions.Add(mapping);
+                        StructureDefinitions.Add(new StructureViewModel(_ea, _model, mapping.StructureId, mapping.DefaultAlphaBetaRatio, mapping.DefaultStructureLabel, mapping.DefaultEdgeConversion, mapping.DefaultMaxEQD2, mapping.DefaultInclude));
                     }
                 });
             }
@@ -648,7 +723,8 @@ namespace DoseConverter
             string ExceptionMessage = "No further details.";
             try
             {
-                (convdose, status, returnMessage, ExceptionMessage) = await _model.GetConvertedDose(SelectedInputOption.CourseId, SelectedInputOption.Id, SelectedInputOption.IsSum, ConvertedPlanName, StructureDefinitions.ToList(), SelectedOutputFormat, _convParameter);
+                var structureMappings = GenerateStructureMappings(StructureDefinitions);
+                (convdose, status, returnMessage, ExceptionMessage) = await _model.GetConvertedDose(SelectedInputOption.CourseId, SelectedInputOption.Id, SelectedInputOption.IsSum, ConvertedPlanName, structureMappings, SelectedOutputFormat, _convParameter);
             }
             catch (Exception ex)
             {
@@ -669,6 +745,16 @@ namespace DoseConverter
             }
         }
 
+        private List<StructureMapping> GenerateStructureMappings(ObservableCollection<StructureViewModel> structureDefinitions)
+        {
+            List<StructureMapping> structureOptions = new List<StructureMapping>();
+            foreach (StructureViewModel strVM in structureDefinitions)
+            {
+                structureOptions.Add(new StructureMapping(strVM.StructureId, strVM.AlphaBetaRatio, strVM.MaxEQD2, strVM.Include, strVM.IncludeEdges));
+            }
+            return structureOptions;
+        }
+
         public ICommand ConvertToInfoButtonCommand
         {
             get
@@ -677,6 +763,18 @@ namespace DoseConverter
             }
         }
 
+        public ICommand ErrorButtonInfoCommand
+        {
+            get
+            {
+                return new DelegateCommand(ToggleErrorInfo);
+            }
+        }
+
+        private void ToggleErrorInfo(object param = null)
+        {
+            isErrorInfoPopupOpen ^= true;
+        }
         private void ToggleConvertToInfo(object param = null)
         {
             isConvertToInfoOpen ^= true;
