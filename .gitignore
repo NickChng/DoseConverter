@@ -16,3 +16,5 @@ VMS.TPS.Common.Model.Types.xml
 
 /Docs/Thumbs.db
 /DoseConverterTests
+/ESAPIWorker/bin/Release
+/ESAPIWorker/obj/Release
