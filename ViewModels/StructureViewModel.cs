@@ -8,7 +8,43 @@ namespace DoseConverter.ViewModels
     {
         private Model _model;
         private IEventAggregator _ea;
-        public double AlphaBetaRatio { get; set; }
+        private double _alphaBetaRatio;
+        public double AlphaBetaRatio
+        {
+            get { return _alphaBetaRatio; }
+            set { _alphaBetaRatio = value; _alphaBetaRatioString = _alphaBetaRatio.ToString(); }
+        }
+               
+        private string _alphaBetaRatioString;
+        public string AlphaBetaRatioString
+        {
+            get
+            {
+                return _alphaBetaRatioString;
+            }
+            set
+            {
+                if (double.TryParse(value, out double alphaBetaRatio))
+                {
+                    if (alphaBetaRatio > 0)
+                    {
+                        AlphaBetaRatio = alphaBetaRatio;
+                        _alphaBetaRatioString = value;
+                    }
+                    else
+                    {
+                        _alphaBetaRatioString = string.Empty;
+                        AlphaBetaRatio = double.NaN;
+                    }
+                }
+                else
+                {
+                    _alphaBetaRatioString = string.Empty;
+                    _alphaBetaRatio = double.NaN;
+                }
+                ValidateInputs();
+            }
+        }
 
         public double MaxEQD2 { get; private set; } = double.NaN;
         private string _maxEQDString = string.Empty;
@@ -96,13 +132,23 @@ namespace DoseConverter.ViewModels
                     ClearErrors(nameof(MaxEQD2String));
                     ClearErrors(nameof(MaxEQD2));
                 }
+                if (!double.IsNaN(AlphaBetaRatio))
+                {
+                    ClearErrors(nameof(AlphaBetaRatio));
+                    ClearErrors(nameof(AlphaBetaRatioString));
+                }
+                else
+                {
+                    AddError(nameof(AlphaBetaRatio), "Alpha-beta ratio not defined");
+                    AddError(nameof(AlphaBetaRatioString), "Alpha-beta ratio not defined");
+                }
             }
             else
             {
                 ClearErrors(nameof(MaxEQD2String));
                 ClearErrors(nameof(MaxEQD2));
             }
-            _ea.GetEvent<StructureChanged>().Publish();
+            _ea?.GetEvent<StructureValidationOccurred>().Publish();
         }
 
         public StructureViewModel() { }
@@ -135,6 +181,7 @@ namespace DoseConverter.ViewModels
         public void ToggleInclude(object parameter = null)
         {
             Include = !Include;
+            _ea.GetEvent<StructureInclusionChanged>().Publish(); 
         }
     }
 }

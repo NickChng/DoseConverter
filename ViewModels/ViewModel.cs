@@ -380,12 +380,13 @@ namespace DoseConverter.ViewModels
             StatusColor = new SolidColorBrush(Colors.Transparent);
             ClearDesignParameters();
             Initialize();
-            
+
         }
 
         private void SubscribeToEvents()
         {
-            _ea.GetEvent<StructureChanged>().Subscribe(OnStructureChanged);
+            _ea.GetEvent<StructureInclusionChanged>().Subscribe(OnStructureInclusionChanged);
+            _ea.GetEvent<StructureValidationOccurred>().Subscribe(ValidateControls);
         }
 
         private void OnStructureChanged()
@@ -393,7 +394,7 @@ namespace DoseConverter.ViewModels
             ValidateControls();
         }
 
-        private void ValidateControls()
+        private async void ValidateControls()
         {
             // If any errors, hide the start button
             bool valid = true;
@@ -405,6 +406,7 @@ namespace DoseConverter.ViewModels
                 StatusMessage = "Please select source distribution.";
                 valid = false;
             }
+            _isPlanNameValid = await _model.ValidatePlanName(ConvertedPlanName);
             if (!_isPlanNameValid || string.IsNullOrEmpty(ConvertedPlanName))
             {
                 StatusMessage = "Please select a valid/unique plan name.";
@@ -422,7 +424,7 @@ namespace DoseConverter.ViewModels
             }
             if (_conversionComplete)
                 valid = false;
-            if (!StructureDefinitions.Any(x=>x.Include))
+            if (!StructureDefinitions.Any(x => x.Include))
             {
                 StatusMessage = "At least one structure must be included.";
                 valid = false;
@@ -450,427 +452,422 @@ namespace DoseConverter.ViewModels
         }
         private bool StructureDefinitionHasErrors()
         {
-            if (_selectedOutputFormat == DoseFormat.Base)
+            foreach (var sVM in StructureDefinitions.Where(x => x.Include))
             {
-                foreach (var sVM in StructureDefinitions.Where(x => x.Include))
+                if (SelectedOutputFormat == DoseFormat.Base)
                 {
-                    if (sVM.HasErrors)
+                    if (sVM.HasError(nameof(StructureViewModel.MaxEQD2)))
                         return true;
                 }
-                return false;
+                if (sVM.HasError(nameof(StructureViewModel.AlphaBetaRatio)))
+                    return true;
             }
             return false;
         }
 
-        private async void SetDefaultPlanName()
+    private async void SetDefaultPlanName()
+    {
+        string fullPlanName = await _model.GetCurrentPlanName();
+        switch (SelectedOutputFormat)
         {
-            string fullPlanName = await _model.GetCurrentPlanName();
-            switch (SelectedOutputFormat)
-            {
-                case DoseFormat.EQD2:
-                    ConvertedPlanName = fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)) + "_" + SelectedOutputFormat.Display();
-                    break;
-                case DoseFormat.EQDn:
-                    ConvertedPlanName = string.Format("{0}_{1}fx", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)), _convParameter);
-                    break;
-                case DoseFormat.Base:
-                    ConvertedPlanName = string.Format("{0}_{1}Bfx", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 8)), _convParameter);
-                    break;
-                case DoseFormat.BED:
-                    ConvertedPlanName = fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)) + "_" + SelectedOutputFormat.Display();
-                    break;
-                default:
-                    ConvertedPlanName = fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)) + "_" + "eval";
-                    break;
-            }
+            case DoseFormat.EQD2:
+                ConvertedPlanName = fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)) + "_" + SelectedOutputFormat.Display();
+                break;
+            case DoseFormat.EQDn:
+                ConvertedPlanName = string.Format("{0}_{1}fx", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)), _convParameter);
+                break;
+            case DoseFormat.Base:
+                ConvertedPlanName = string.Format("{0}_{1}Bfx", fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 8)), _convParameter);
+                break;
+            case DoseFormat.BED:
+                ConvertedPlanName = fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)) + "_" + SelectedOutputFormat.Display();
+                break;
+            default:
+                ConvertedPlanName = fullPlanName.Substring(0, Math.Min(fullPlanName.Length, 9)) + "_" + "eval";
+                break;
         }
-        private void ClearDesignParameters()
-        {
-            DesignTime = false;
-            ConversionInputWarning = "";
-            StructureDefinitions.Clear();
-            ConvertedPlanName = "";
-            PlanInputOptions.Clear();
-        }
-
-        public async void Initialize()
-        {
-            try
-            {
-                // Read Script Configuration
-                Working = true;
-                var AssemblyLocation = Assembly.GetExecutingAssembly().Location;
-                if (string.IsNullOrEmpty(AssemblyLocation))
-                    AssemblyLocation = AppDomain.CurrentDomain.BaseDirectory;
-                var AssemblyPath = Path.GetDirectoryName(AssemblyLocation);
-                _dataPath = AssemblyPath;
-                Helpers.SeriLog.LogInfo("Resolved script path...");
-            }
-            catch (Exception ex)
-            {
-                Helpers.SeriLog.LogError(string.Format("{0}\r\n{1}\r\n{2}", ex.Message, ex.InnerException, ex.StackTrace));
-                DisplayScriptError("Error resolving script path, please contact your Eclipse administrator.", ex.Message, true);
-                return;
-            }
-            try
-            {
-                GetScriptConfigFromXML(); // note this will fail unless this config file is defined
-                                          // Initialize other GUI settings
-                Helpers.SeriLog.LogInfo("Loaded script configuration data...");
-            }
-            catch (Exception ex)
-            {
-                DisplayScriptError("Error loading script configuration file, please contact your Eclipse administrator.", ex.Message, true);
-                return;
-            }
-            try
-            {
-                InitializeOnlineHelp(); // note this will fail unless this config file is defined
-                                        // Initialize other GUI settings
-                Helpers.SeriLog.LogInfo("Initialized online help...");
-            }
-            catch (Exception ex)
-            {
-                DisplayScriptError("Error loading online help file, please contact your Eclipse administrator.", ex.Message);
-                return;
-            }
-            try
-            {
-                _model = new Model(_scriptConfig, _ew);
-                await _model.InitializeModel();
-                Helpers.SeriLog.LogInfo("Initialized ESAPI model...");
-            }
-            catch (Exception ex)
-            {
-                DisplayScriptError("Error initializing ESAPI, please contact your Eclipse administrator.", ex.Message, true);
-                return;
-            }
-            // Get structures in plan
-            try
-            {
-                UpdateStructureData();
-                Helpers.SeriLog.LogInfo("Structure configuration and settings updated...");
-            }
-            catch (Exception ex)
-            {
-                DisplayScriptError("Error loading structures from plan, please contact your Eclipse administrator.", ex.Message, true);
-                return;
-            }
-            // Get plans in context
-            try
-            {
-                var plansInContext = await _model.GetPlans();
-                _ui.Invoke(() =>
-                {
-                    foreach (var p in plansInContext)
-                        PlanInputOptions.Add(new PlanSelectionViewModel(p.Item2, p.Item1, p.Item3, p.Item4));
-                    SelectedInputOption = PlanInputOptions.FirstOrDefault();
-                    SetDefaultPlanName(); // This needs to be in the invoke due to threading
-                });
-                Helpers.SeriLog.LogInfo("Loaded available source distributions...");
-            }
-            catch (Exception ex)
-            {
-                DisplayScriptError("Error loading plans, please contact your Eclipse administrator.");
-                Helpers.SeriLog.LogError("Error details", ex);
-                return;
-            }
-            if (!_fatalError)
-            {
-                DisplayScriptReady();
-                SubscribeToEvents();
-                Working = false;
-                Helpers.SeriLog.LogInfo("Initialization complete!");
-            }
-        }
-
-        private void DisplayScriptComplete(string message = "Conversion complete!")
-        {
-            StatusMessage = message;
-            StatusDetails = "No errors or warnings.";
-            StatusColor = new SolidColorBrush(Colors.Transparent);
-            _conversionComplete = true;
-            Working = false;
-            SuccessVisibility = Visibility.Visible;
-            ErrorVisibility = Visibility.Collapsed;
-            WarningVisibility = Visibility.Collapsed;
-            //ValidateControls();
-        }
-        private void DisplayScriptWarning(string message, string details = "", bool fatalError = false)
-        {
-            StatusMessage = message;
-            StatusDetails = details;
-            _fatalError = fatalError;
-            Working = false;
-            _conversionComplete = false;
-            ErrorVisibility = Visibility.Collapsed;
-            SuccessVisibility = Visibility.Collapsed;
-            WarningVisibility = Visibility.Visible;
-            //ValidateControls();
-        }
-        private void DisplayScriptError(string message, string details = "", bool fatalError = false)
-        {
-            StatusMessage = $"Error during dose conversion. Click for details:";
-            //StatusDetails = details;
-            _fatalError = fatalError;
-            Working = false;
-            _conversionComplete = false;
-            ErrorVisibility = Visibility.Visible;
-            SuccessVisibility = Visibility.Collapsed;
-            WarningVisibility = Visibility.Collapsed;
-            ErrorDescriptionViewModel = new DescriptionViewModel(new OnlineHelpDefinitionsDefinition() { DefinitionId = "Error Details", Text = details });
-            //ValidateControls();
-        }
-        private void DisplayScriptReady()
-        {
-            StatusMessage = "Ready to convert...";
-            Working = false;
-            _conversionComplete = false;
-            SuccessVisibility = Visibility.Collapsed;
-            WarningVisibility = Visibility.Collapsed;
-            ErrorVisibility = Visibility.Collapsed;
-        }
-        private void InitializeOnlineHelp()
-        {
-            try
-            {
-                XmlSerializer Ser = new XmlSerializer(typeof(OnlineHelpDefinitions));
-                var helpFile = Path.Combine(_dataPath, @"OnlineHelp\OnlineHelp.xml");
-                using (StreamReader help = new StreamReader(helpFile))
-                {
-                    try
-                    {
-                        _onlineHelpDefinitions = (OnlineHelpDefinitions)Ser.Deserialize(help);
-                    }
-                    catch (Exception ex)
-                    {
-                        Helpers.SeriLog.LogFatal(string.Format("Unable to deserialize online help file: {0}\r\n", helpFile), ex);
-                        MessageBox.Show(string.Format("Unable to read online help file {0}\r\n\r\nDetails: {1}", helpFile, ex.InnerException));
-
-                    }
-                }
-
-                DoseDescriptionViewModel = new DescriptionViewModel(_onlineHelpDefinitions.Definitions.FirstOrDefault(x => string.Equals(x.DefinitionId, "Source dose", StringComparison.OrdinalIgnoreCase)));
-                ConvertToDescriptionViewModel = new DescriptionViewModel(_onlineHelpDefinitions.Definitions.FirstOrDefault(x => string.Equals(x.DefinitionId, "Convert to", StringComparison.OrdinalIgnoreCase)));
-                MaxDoseInfoDescriptionViewModel = new DescriptionViewModel(_onlineHelpDefinitions.Definitions.FirstOrDefault(x => string.Equals(x.DefinitionId, "Max Equivalent Dose", StringComparison.OrdinalIgnoreCase)));
-                IncludeEdgesInfoDescriptionViewModel = new DescriptionViewModel(_onlineHelpDefinitions.Definitions.FirstOrDefault(x => string.Equals(x.DefinitionId, "Include structure edges", StringComparison.OrdinalIgnoreCase)));
-            }
-            catch (Exception ex)
-            {
-                string errorMesssage = "Unable to find/open online help file";
-                Helpers.SeriLog.LogFatal(errorMesssage, ex);
-                throw new Exception(errorMesssage);
-            }
-        }
-
-        private async void UpdateStructureData(string ssId = null)
-        {
-            try
-            {
-                List<Model.StructureOptions> unsortedMappings = new List<Model.StructureOptions>();
-                if (ssId != null)
-                    unsortedMappings = await _model.GetStructureDefinitions(ssId);
-                else
-                    unsortedMappings = await _model.GetStructureDefinitions();
-                _ui.Invoke(() =>
-                {
-                    StructureDefinitions.Clear();
-                    foreach (var mapping in unsortedMappings.OrderByDescending(x => x.DefaultInclude).ThenBy(x => x.DefaultAlphaBetaRatio).ThenBy(x => x.StructureId))
-                    {
-                        StructureDefinitions.Add(new StructureViewModel(_ea, _model, mapping.StructureId, mapping.DefaultAlphaBetaRatio, mapping.DefaultStructureLabel, mapping.DefaultEdgeConversion, mapping.DefaultMaxEQD2, mapping.DefaultInclude));
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                string errorMessage = "Error updating structure mappings in UpdateMapping()";
-                Helpers.SeriLog.LogError(errorMessage, ex);
-                throw new Exception(errorMessage);
-            }
-        }
-        private void Mapping_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            switch (e.PropertyName)
-            {
-                case nameof(StructureViewModel.Include):
-                    {
-                        StructureDefinitions = new ObservableCollection<StructureViewModel>(StructureDefinitions.OrderByDescending(x => x.Include).ThenBy(x => x.StructureId));
-                        break;
-                    }
-                default:
-                    break;
-            }
-        }
-
-        public ICommand button1Command
-        {
-            get
-            {
-                return new DelegateCommand(ConvertDose);
-            }
-        }
-
-        private async void ConvertDose(object param = null)
-        {
-            Working = true;
-            SuccessVisibility = Visibility.Collapsed;
-            ErrorVisibility = Visibility.Collapsed;
-            StatusColor = new SolidColorBrush(Colors.Transparent);
-            StatusMessage = "Converting...";
-            int[,,] convdose = new int[0, 0, 0];
-            ScriptStatus status = ScriptStatus.Incomplete;
-            string returnMessage = "";
-            string ExceptionMessage = "No further details.";
-            try
-            {
-                var structureMappings = GenerateStructureMappings(StructureDefinitions);
-                (convdose, status, returnMessage, ExceptionMessage) = await _model.GetConvertedDose(SelectedInputOption.CourseId, SelectedInputOption.Id, SelectedInputOption.IsSum, ConvertedPlanName, structureMappings, SelectedOutputFormat, _convParameter);
-            }
-            catch (Exception ex)
-            {
-                status = ScriptStatus.Error;
-                ExceptionMessage = ex.Message;
-            }
-            switch (status)
-            {
-                case ScriptStatus.Complete:
-                    DisplayScriptComplete(returnMessage);
-                    break;
-                case ScriptStatus.Error:
-                    DisplayScriptError(returnMessage, ExceptionMessage);
-                    break;
-                case ScriptStatus.Warning:
-                    DisplayScriptWarning(returnMessage);
-                    break;
-            }
-        }
-
-        private List<StructureMapping> GenerateStructureMappings(ObservableCollection<StructureViewModel> structureDefinitions)
-        {
-            List<StructureMapping> structureOptions = new List<StructureMapping>();
-            foreach (StructureViewModel strVM in structureDefinitions)
-            {
-                structureOptions.Add(new StructureMapping(strVM.StructureId, strVM.AlphaBetaRatio, strVM.MaxEQD2, strVM.Include, strVM.IncludeEdges));
-            }
-            return structureOptions;
-        }
-
-        public ICommand ConvertToInfoButtonCommand
-        {
-            get
-            {
-                return new DelegateCommand(ToggleConvertToInfo);
-            }
-        }
-
-        public ICommand ErrorButtonInfoCommand
-        {
-            get
-            {
-                return new DelegateCommand(ToggleErrorInfo);
-            }
-        }
-
-        private void ToggleErrorInfo(object param = null)
-        {
-            isErrorInfoPopupOpen ^= true;
-        }
-        private void ToggleConvertToInfo(object param = null)
-        {
-            isConvertToInfoOpen ^= true;
-        }
-
-        public ICommand MaxDoseInfoButtonCommand
-        {
-            get
-            {
-                return new DelegateCommand(ToggleMaxDoseInfo);
-            }
-        }
-
-        private void ToggleMaxDoseInfo(object param = null)
-        {
-            isMaxDoseInfoOpen ^= true;
-        }
-
-        public bool isMaxDoseInfoOpen { get; set; }
-
-        public ICommand IncludeEdgesInfoButtonCommand
-        {
-            get
-            {
-                return new DelegateCommand(ToggleIncludeEdgesInfo);
-            }
-        }
-
-        private void ToggleIncludeEdgesInfo(object param = null)
-        {
-            isIncludeEdgesInfoOpen ^= true;
-        }
-
-        public bool isIncludeEdgesInfoOpen { get; set; }
-
-
-
-        public ICommand DoseSelectionInfoButtonCommand
-        {
-            get
-            {
-                return new DelegateCommand(ToggleDoseSelectionInfo);
-            }
-        }
-
-        private void ToggleDoseSelectionInfo(object param = null)
-        {
-            isDoseSelectionInfoOpen ^= true;
-        }
-
-        public ICommand button_ToggleAlphaBetaOrderCommand
-        {
-            get
-            {
-                return new DelegateCommand(ToggleAlphaBetaOrder);
-            }
-        }
-
-        private void ToggleAlphaBetaOrder(object param = null)
-        {
-            if (SelectedAlphaBetaSortFormat == AlphaBetaSortFormat.Ascending)
-                SelectedAlphaBetaSortFormat = AlphaBetaSortFormat.Descending;
-            else
-                SelectedAlphaBetaSortFormat = AlphaBetaSortFormat.Ascending;
-        }
-
-        public void GetScriptConfigFromXML()
-        {
-            try
-            {
-                XmlSerializer Ser = new XmlSerializer(typeof(DoseConverterConfig));
-                var configFile = Path.Combine(_dataPath, @"Configuration\DoseConverterConfig.xml");
-                using (StreamReader config = new StreamReader(configFile))
-                {
-                    try
-                    {
-                        _scriptConfig = (DoseConverterConfig)Ser.Deserialize(config);
-                    }
-                    catch (Exception ex)
-                    {
-                        Helpers.SeriLog.LogFatal(string.Format("Unable to deserialize config file: {0}\r\n", configFile), ex);
-                        MessageBox.Show(string.Format("Unable to read protocol file {0}\r\n\r\nDetails: {1}", configFile, ex.InnerException));
-
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                string errorMessage = "Unable to find/open config file";
-                Helpers.SeriLog.LogFatal(errorMessage, ex);
-                throw new Exception(errorMessage);
-            }
-        }
-
-
-
-
     }
+    private void ClearDesignParameters()
+    {
+        DesignTime = false;
+        ConversionInputWarning = "";
+        StructureDefinitions.Clear();
+        ConvertedPlanName = "";
+        PlanInputOptions.Clear();
+    }
+
+    public async void Initialize()
+    {
+        try
+        {
+            // Read Script Configuration
+            Working = true;
+            var AssemblyLocation = Assembly.GetExecutingAssembly().Location;
+            if (string.IsNullOrEmpty(AssemblyLocation))
+                AssemblyLocation = AppDomain.CurrentDomain.BaseDirectory;
+            var AssemblyPath = Path.GetDirectoryName(AssemblyLocation);
+            _dataPath = AssemblyPath;
+            Helpers.SeriLog.LogInfo("Resolved script path...");
+        }
+        catch (Exception ex)
+        {
+            Helpers.SeriLog.LogError(string.Format("{0}\r\n{1}\r\n{2}", ex.Message, ex.InnerException, ex.StackTrace));
+            DisplayScriptError("Error resolving script path, please contact your Eclipse administrator.", ex.Message, true);
+            return;
+        }
+        try
+        {
+            GetScriptConfigFromXML(); // note this will fail unless this config file is defined
+                                      // Initialize other GUI settings
+            Helpers.SeriLog.LogInfo("Loaded script configuration data...");
+        }
+        catch (Exception ex)
+        {
+            DisplayScriptError("Error loading script configuration file, please contact your Eclipse administrator.", ex.Message, true);
+            return;
+        }
+        try
+        {
+            InitializeOnlineHelp(); // note this will fail unless this config file is defined
+                                    // Initialize other GUI settings
+            Helpers.SeriLog.LogInfo("Initialized online help...");
+        }
+        catch (Exception ex)
+        {
+            DisplayScriptError("Error loading online help file, please contact your Eclipse administrator.", ex.Message);
+            return;
+        }
+        try
+        {
+            _model = new Model(_scriptConfig, _ew);
+            await _model.InitializeModel();
+            Helpers.SeriLog.LogInfo("Initialized ESAPI model...");
+        }
+        catch (Exception ex)
+        {
+            DisplayScriptError("Error initializing ESAPI, please contact your Eclipse administrator.", ex.Message, true);
+            return;
+        }
+        // Get structures in plan
+        try
+        {
+            UpdateStructureData();
+            Helpers.SeriLog.LogInfo("Structure configuration and settings updated...");
+        }
+        catch (Exception ex)
+        {
+            DisplayScriptError("Error loading structures from plan, please contact your Eclipse administrator.", ex.Message, true);
+            return;
+        }
+        // Get plans in context
+        try
+        {
+            var plansInContext = await _model.GetPlans();
+            _ui.Invoke(() =>
+            {
+                foreach (var p in plansInContext)
+                    PlanInputOptions.Add(new PlanSelectionViewModel(p.Item2, p.Item1, p.Item3, p.Item4));
+                SelectedInputOption = PlanInputOptions.FirstOrDefault();
+                SetDefaultPlanName(); // This needs to be in the invoke due to threading
+            });
+            Helpers.SeriLog.LogInfo("Loaded available source distributions...");
+        }
+        catch (Exception ex)
+        {
+            DisplayScriptError("Error loading plans, please contact your Eclipse administrator.");
+            Helpers.SeriLog.LogError("Error details", ex);
+            return;
+        }
+        if (!_fatalError)
+        {
+            DisplayScriptReady();
+            SubscribeToEvents();
+            Working = false;
+            Helpers.SeriLog.LogInfo("Initialization complete!");
+        }
+        // Subscribe to events
+        _ea.GetEvent<StructureInclusionChanged>().Subscribe(OnStructureChanged);
+    }
+
+    private void DisplayScriptComplete(string message = "Conversion complete!")
+    {
+        StatusMessage = message;
+        StatusDetails = "No errors or warnings.";
+        StatusColor = new SolidColorBrush(Colors.Transparent);
+        _conversionComplete = true;
+        Working = false;
+        SuccessVisibility = Visibility.Visible;
+        ErrorVisibility = Visibility.Collapsed;
+        WarningVisibility = Visibility.Collapsed;
+        //ValidateControls();
+    }
+    private void DisplayScriptWarning(string message, string details = "", bool fatalError = false)
+    {
+        StatusMessage = message;
+        StatusDetails = details;
+        _fatalError = fatalError;
+        Working = false;
+        _conversionComplete = false;
+        ErrorVisibility = Visibility.Collapsed;
+        SuccessVisibility = Visibility.Collapsed;
+        WarningVisibility = Visibility.Visible;
+        //ValidateControls();
+    }
+    private void DisplayScriptError(string message, string details = "", bool fatalError = false)
+    {
+        StatusMessage = $"Error during dose conversion. Click for details:";
+        //StatusDetails = details;
+        _fatalError = fatalError;
+        Working = false;
+        _conversionComplete = false;
+        ErrorVisibility = Visibility.Visible;
+        SuccessVisibility = Visibility.Collapsed;
+        WarningVisibility = Visibility.Collapsed;
+        ErrorDescriptionViewModel = new DescriptionViewModel(new OnlineHelpDefinitionsDefinition() { DefinitionId = "Error Details", Text = details });
+        //ValidateControls();
+    }
+    private void DisplayScriptReady()
+    {
+        StatusMessage = "Ready to convert...";
+        Working = false;
+        _conversionComplete = false;
+        SuccessVisibility = Visibility.Collapsed;
+        WarningVisibility = Visibility.Collapsed;
+        ErrorVisibility = Visibility.Collapsed;
+    }
+    private void InitializeOnlineHelp()
+    {
+        try
+        {
+            XmlSerializer Ser = new XmlSerializer(typeof(OnlineHelpDefinitions));
+            var helpFile = Path.Combine(_dataPath, @"OnlineHelp\OnlineHelp.xml");
+            using (StreamReader help = new StreamReader(helpFile))
+            {
+                try
+                {
+                    _onlineHelpDefinitions = (OnlineHelpDefinitions)Ser.Deserialize(help);
+                }
+                catch (Exception ex)
+                {
+                    Helpers.SeriLog.LogFatal(string.Format("Unable to deserialize online help file: {0}\r\n", helpFile), ex);
+                    MessageBox.Show(string.Format("Unable to read online help file {0}\r\n\r\nDetails: {1}", helpFile, ex.InnerException));
+
+                }
+            }
+
+            DoseDescriptionViewModel = new DescriptionViewModel(_onlineHelpDefinitions.Definitions.FirstOrDefault(x => string.Equals(x.DefinitionId, "Source dose", StringComparison.OrdinalIgnoreCase)));
+            ConvertToDescriptionViewModel = new DescriptionViewModel(_onlineHelpDefinitions.Definitions.FirstOrDefault(x => string.Equals(x.DefinitionId, "Convert to", StringComparison.OrdinalIgnoreCase)));
+            MaxDoseInfoDescriptionViewModel = new DescriptionViewModel(_onlineHelpDefinitions.Definitions.FirstOrDefault(x => string.Equals(x.DefinitionId, "Max Equivalent Dose", StringComparison.OrdinalIgnoreCase)));
+            IncludeEdgesInfoDescriptionViewModel = new DescriptionViewModel(_onlineHelpDefinitions.Definitions.FirstOrDefault(x => string.Equals(x.DefinitionId, "Include structure edges", StringComparison.OrdinalIgnoreCase)));
+        }
+        catch (Exception ex)
+        {
+            string errorMesssage = "Unable to find/open online help file";
+            Helpers.SeriLog.LogFatal(errorMesssage, ex);
+            throw new Exception(errorMesssage);
+        }
+    }
+
+    private async void UpdateStructureData(string ssId = null)
+    {
+        try
+        {
+            List<Model.StructureOptions> unsortedMappings = new List<Model.StructureOptions>();
+            if (ssId != null)
+                unsortedMappings = await _model.GetStructureDefinitions(ssId);
+            else
+                unsortedMappings = await _model.GetStructureDefinitions();
+            _ui.Invoke(() =>
+            {
+                StructureDefinitions.Clear();
+                foreach (var mapping in unsortedMappings.OrderByDescending(x => x.DefaultInclude).ThenBy(x => x.DefaultAlphaBetaRatio).ThenBy(x => x.StructureId))
+                {
+                    var structureVM = new StructureViewModel(_ea, _model, mapping.StructureId, mapping.DefaultAlphaBetaRatio, mapping.DefaultStructureLabel, mapping.DefaultEdgeConversion, mapping.DefaultMaxEQD2, mapping.DefaultInclude);
+                    StructureDefinitions.Add(structureVM);
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            string errorMessage = "Error updating structure mappings in UpdateMapping()";
+            Helpers.SeriLog.LogError(errorMessage, ex);
+            throw new Exception(errorMessage);
+        }
+    }
+    private void OnStructureInclusionChanged()
+    {
+        StructureDefinitions = new ObservableCollection<StructureViewModel>(StructureDefinitions.Where(x => x.Include).Concat(StructureDefinitions.Where(x => !x.Include).OrderBy(x => x.StructureId)));
+    }
+
+    public ICommand button1Command
+    {
+        get
+        {
+            return new DelegateCommand(ConvertDose);
+        }
+    }
+
+    private async void ConvertDose(object param = null)
+    {
+        Working = true;
+        SuccessVisibility = Visibility.Collapsed;
+        ErrorVisibility = Visibility.Collapsed;
+        StatusColor = new SolidColorBrush(Colors.Transparent);
+        StatusMessage = "Converting...";
+        int[,,] convdose = new int[0, 0, 0];
+        ScriptStatus status = ScriptStatus.Incomplete;
+        string returnMessage = "";
+        string ExceptionMessage = "No further details.";
+        try
+        {
+            var structureMappings = GenerateStructureMappings(StructureDefinitions);
+            (convdose, status, returnMessage, ExceptionMessage) = await _model.GetConvertedDose(SelectedInputOption.CourseId, SelectedInputOption.Id, SelectedInputOption.IsSum, ConvertedPlanName, structureMappings, SelectedOutputFormat, _convParameter);
+        }
+        catch (Exception ex)
+        {
+            status = ScriptStatus.Error;
+            ExceptionMessage = ex.Message;
+        }
+        switch (status)
+        {
+            case ScriptStatus.Complete:
+                DisplayScriptComplete(returnMessage);
+                break;
+            case ScriptStatus.Error:
+                DisplayScriptError(returnMessage, ExceptionMessage);
+                break;
+            case ScriptStatus.Warning:
+                DisplayScriptWarning(returnMessage);
+                break;
+        }
+    }
+
+    private List<StructureMapping> GenerateStructureMappings(ObservableCollection<StructureViewModel> structureDefinitions)
+    {
+        List<StructureMapping> structureOptions = new List<StructureMapping>();
+        foreach (StructureViewModel strVM in structureDefinitions)
+        {
+            structureOptions.Add(new StructureMapping(strVM.StructureId, (double)strVM.AlphaBetaRatio, strVM.MaxEQD2, strVM.Include, strVM.IncludeEdges));
+        }
+        return structureOptions;
+    }
+
+    public ICommand ConvertToInfoButtonCommand
+    {
+        get
+        {
+            return new DelegateCommand(ToggleConvertToInfo);
+        }
+    }
+
+    public ICommand ErrorButtonInfoCommand
+    {
+        get
+        {
+            return new DelegateCommand(ToggleErrorInfo);
+        }
+    }
+
+    private void ToggleErrorInfo(object param = null)
+    {
+        isErrorInfoPopupOpen ^= true;
+    }
+    private void ToggleConvertToInfo(object param = null)
+    {
+        isConvertToInfoOpen ^= true;
+    }
+
+    public ICommand MaxDoseInfoButtonCommand
+    {
+        get
+        {
+            return new DelegateCommand(ToggleMaxDoseInfo);
+        }
+    }
+
+    private void ToggleMaxDoseInfo(object param = null)
+    {
+        isMaxDoseInfoOpen ^= true;
+    }
+
+    public bool isMaxDoseInfoOpen { get; set; }
+
+    public ICommand IncludeEdgesInfoButtonCommand
+    {
+        get
+        {
+            return new DelegateCommand(ToggleIncludeEdgesInfo);
+        }
+    }
+
+    private void ToggleIncludeEdgesInfo(object param = null)
+    {
+        isIncludeEdgesInfoOpen ^= true;
+    }
+
+    public bool isIncludeEdgesInfoOpen { get; set; }
+
+
+
+    public ICommand DoseSelectionInfoButtonCommand
+    {
+        get
+        {
+            return new DelegateCommand(ToggleDoseSelectionInfo);
+        }
+    }
+
+    private void ToggleDoseSelectionInfo(object param = null)
+    {
+        isDoseSelectionInfoOpen ^= true;
+    }
+
+    public ICommand button_ToggleAlphaBetaOrderCommand
+    {
+        get
+        {
+            return new DelegateCommand(ToggleAlphaBetaOrder);
+        }
+    }
+
+    private void ToggleAlphaBetaOrder(object param = null)
+    {
+        if (SelectedAlphaBetaSortFormat == AlphaBetaSortFormat.Ascending)
+            SelectedAlphaBetaSortFormat = AlphaBetaSortFormat.Descending;
+        else
+            SelectedAlphaBetaSortFormat = AlphaBetaSortFormat.Ascending;
+    }
+
+    public void GetScriptConfigFromXML()
+    {
+        try
+        {
+            XmlSerializer Ser = new XmlSerializer(typeof(DoseConverterConfig));
+            var configFile = Path.Combine(_dataPath, @"Configuration\DoseConverterConfig.xml");
+            using (StreamReader config = new StreamReader(configFile))
+            {
+                try
+                {
+                    _scriptConfig = (DoseConverterConfig)Ser.Deserialize(config);
+                }
+                catch (Exception ex)
+                {
+                    Helpers.SeriLog.LogFatal(string.Format("Unable to deserialize config file: {0}\r\n", configFile), ex);
+                    MessageBox.Show(string.Format("Unable to read protocol file {0}\r\n\r\nDetails: {1}", configFile, ex.InnerException));
+
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            string errorMessage = "Unable to find/open config file";
+            Helpers.SeriLog.LogFatal(errorMessage, ex);
+            throw new Exception(errorMessage);
+        }
+    }
+
+
+
+
+}
 }

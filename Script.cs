@@ -37,38 +37,48 @@ namespace VMS.TPS
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void Execute(ScriptContext scriptcontext)
         {
-            if (scriptcontext.ExternalPlanSetup == null)
+            try
             {
-                MessageBox.Show("No plan is open.", "Error");
-                return;
+                if (scriptcontext.ExternalPlanSetup == null)
+                {
+                    MessageBox.Show("No plan is open.", "Error");
+                    return;
+                }
+
+                Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
+
+                Helpers.SeriLog.Initialize(scriptcontext.CurrentUser.Id);
+                // The ESAPI worker needs to be created in the main thread
+                //EsapiWorker esapiWorker = null;
+                //if (scriptcontext.PlanSumsInScope.Count()>0)
+                //    esapiWorker = new EsapiWorker(scriptcontext.Patient, scriptcontext.PlanSum);
+                //else
+                var esapiWorker = new EsapiWorker(scriptcontext.Patient, scriptcontext.PlanSetup);
+
+                // This new queue of tasks will prevent the script
+                // for exiting until the new window is closed
+                DispatcherFrame frame = new DispatcherFrame();
+
+                RunOnNewStaThread(() =>
+                {
+                    // This method won't return until the window is closed
+
+                    InitializeAndStartMainWindow(esapiWorker);
+
+                    // End the queue so that the script can exit
+                    frame.Continue = false;
+                });
+
+                // Start the new queue, waiting until the window is closed
+                Dispatcher.PushFrame(frame);
+
             }
-
-            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
-
-            Helpers.SeriLog.Initialize(scriptcontext.CurrentUser.Id);
-            // The ESAPI worker needs to be created in the main thread
-            //EsapiWorker esapiWorker = null;
-            //if (scriptcontext.PlanSumsInScope.Count()>0)
-            //    esapiWorker = new EsapiWorker(scriptcontext.Patient, scriptcontext.PlanSum);
-            //else
-            var esapiWorker = new EsapiWorker(scriptcontext.Patient, scriptcontext.PlanSetup);
-
-            // This new queue of tasks will prevent the script
-            // for exiting until the new window is closed
-            DispatcherFrame frame = new DispatcherFrame();
-
-            RunOnNewStaThread(() =>
+            catch (Exception ex)
             {
-                // This method won't return until the window is closed
+                Helpers.SeriLog.LogError(ex.Message, ex);
+            }
+           
 
-                InitializeAndStartMainWindow(esapiWorker);
-
-                // End the queue so that the script can exit
-                frame.Continue = false;
-            });
-
-            // Start the new queue, waiting until the window is closed
-            Dispatcher.PushFrame(frame);
         }
     }
 }

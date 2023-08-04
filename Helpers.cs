@@ -46,7 +46,7 @@ namespace DoseConverter
                 if (ex == null)
                     Log.Error(log_info);
                 else
-                    Log.Error(ex, log_info);
+                    Log.Error($"{log_info}\r\n{ex.Message}\r\n{ex.StackTrace}");
             }
             public static void LogFatal(string log_info, Exception ex)
             {

@@ -20,6 +20,7 @@ using Serilog.Core;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using DoseConverter.ViewModels;
+using System.Threading;
 
 namespace DoseConverter
 {
@@ -34,7 +35,7 @@ namespace DoseConverter
             public bool Include;
             public bool IncludeEdges;
             public double MaxEQD2;
-            public StructureMapping(string structureId, double alphaBetaRatio, double maxEQD2,  bool include, bool edgeConversion)
+            public StructureMapping(string structureId, double alphaBetaRatio, double maxEQD2, bool include, bool edgeConversion)
             {
                 StructureId = structureId;
                 AlphaBetaRatio = alphaBetaRatio;
@@ -43,7 +44,7 @@ namespace DoseConverter
                 IncludeEdges = edgeConversion;
             }
         }
-        
+
         public struct StructureOptions
         {
             public string StructureId;
@@ -103,7 +104,7 @@ namespace DoseConverter
             {
                 try
                 {
-                    if (!pl.StructureSet.CanAddStructure("Control", _config.Defaults.TempEdgeStructureName) && mappings.Any(x=>x.IncludeEdges))
+                    if (!pl.StructureSet.CanAddStructure("Control", _config.Defaults.TempEdgeStructureName) && mappings.Any(x => x.IncludeEdges))
                     {
                         returnMessage = "Error: Edge conversion is not possible because structure set is approved/completed.";
                         overrideStructureSet = true;
@@ -508,6 +509,43 @@ namespace DoseConverter
             else
                 ss = source.StructureSet;
 
+            StructureSet ssOverride = null;
+            bool structureSetCleanedUp = false;
+
+            if (mappings.Any(x => x.Include && x.IncludeEdges) && overrideStructureSet)
+            {
+                // Determine if temp structure set is needed
+                Helpers.SeriLog.LogWarning("Input structure set is protected, generating override structure set.");
+                try
+                {
+                    Helpers.SeriLog.LogWarning($"Creating temporary override structure set");
+                    ssOverride = ss.Copy();
+                    bool imageNamed = false;
+                    string imageName = _config.Defaults.TempStructureSetName;
+                    int imageNumber = 1;
+                    while (!imageNamed) // necessary in case image has the temp structure set name
+                    {
+                        try
+                        {
+                            ssOverride.Id = imageName;
+                            ssOverride.Image.Id = imageName;
+                            imageNamed = true;
+                        }
+                        catch // image name already exists
+                        {
+                            imageName = $"{_config.Defaults.TempStructureSetName}{imageNumber++}";
+                        }
+                    } 
+                    ss = ssOverride;
+                }
+                catch (Exception ex)
+                {
+                    string errorMessage = $"Error creating temporary structure set {_config.Defaults.TempStructureSetName}.";
+                    Helpers.SeriLog.LogError(errorMessage, ex);
+                    throw new Exception(errorMessage);
+                }
+            }
+
             foreach (var sM in mappings.Where(x => x.Include).Reverse())
             {
                 Structure structure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, sM.StructureId, StringComparison.InvariantCultureIgnoreCase));
@@ -524,26 +562,6 @@ namespace DoseConverter
                 {
                     try
                     {
-                        if (overrideStructureSet)
-                        {
-                            var ssOverride = plan.Course.Patient.StructureSets.FirstOrDefault(x => string.Equals(x.Id, _config.Defaults.TempStructureSetName, StringComparison.InvariantCultureIgnoreCase));
-                            if (ssOverride == null)
-                            {
-                                ssOverride = ss.Copy();
-                                ssOverride.Id = _config.Defaults.TempStructureSetName;
-                                ss = ssOverride;
-                                Helpers.SeriLog.LogWarning("Input structure set is protected, generating override structure set.");
-                            }
-                            else
-                            {
-                                ss = ssOverride;
-                                Helpers.SeriLog.LogWarning($"Input structure set is protected, using existing override structure set ({ssOverride.Id})");
-                                if (!ss.CanAddStructure("CONTROL", _config.Defaults.TempEdgeStructureName))
-                                {
-                                    throw new Exception("TEMP_DoseConv structure set must be accessible / not in a complete course.");
-                                }
-                            }
-                        }
                         if (sM.IncludeEdges)
                         {
                             try
@@ -552,7 +570,8 @@ namespace DoseConverter
                                 if (edgeStructure == null)
                                     edgeStructure = ss.AddStructure("CONTROL", _config.Defaults.TempEdgeStructureName);
                                 var margin = DetermineMargin(source);
-                                edgeStructure.SegmentVolume = structure.AsymmetricMargin(new AxisAlignedMargins(StructureMarginGeometry.Outer, margin.Item1, margin.Item2, margin.Item3, margin.Item1, margin.Item2, margin.Item3));
+                                edgeStructure.SegmentVolume = structure.SegmentVolume.AsymmetricMargin(new AxisAlignedMargins(StructureMarginGeometry.Outer, margin.Item1, margin.Item2, margin.Item3, margin.Item1, margin.Item2, margin.Item3));
+                                Thread.Sleep(300); // wait for structure to be created, potentially helps reduce crashes
                                 Helpers.SeriLog.LogInfo(string.Format("Added inclusion margins to structure {0} of X={1}, Y={2}, Z={3}.", structure.Id, margin.Item1, margin.Item2, margin.Item3));
                                 structure = edgeStructure;
                             }
@@ -568,59 +587,72 @@ namespace DoseConverter
                     {
                         string errorMessage = "Coule not create or access TEMP_DoseConv structure set.";
                         Helpers.SeriLog.LogError(errorMessage, ex);
+                        throw new Exception(errorMessage);
                     }
-                 
+
                 }
                 else
                 {
                     structure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, sM.StructureId, StringComparison.InvariantCultureIgnoreCase));
                 }
-
-                if (epl != null)
+                try
                 {
-                    switch (format)
+                    if (epl != null)
                     {
-                        case DoseFormat.EQD2:
-                            Helpers.SeriLog.LogInfo("Converting voxels to EQD2...");
-                            OverridePixels(structure, origStructureId, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQD2);
-                            break;
-                        case DoseFormat.BED:
-                            Helpers.SeriLog.LogInfo("Converting voxels to BED...");
-                            OverridePixels(structure, origStructureId, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateBED);
-                            break;
-                        case DoseFormat.EQDd:
-                            Helpers.SeriLog.LogInfo("Converting voxels to EQDd...");
-                            OverridePixels(structure, origStructureId, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDd, convParameter);
-                            break;
-                        case DoseFormat.EQDn:
-                            Helpers.SeriLog.LogInfo("Converting voxels to EQDn#...");
-                            OverridePixels(structure, origStructureId, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                         Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDn, convParameter);
-                            break;
-                        case DoseFormat.Base:
-                            Helpers.SeriLog.LogInfo("Converting voxels to BASE...");
-                            OverridePixels(structure, origStructureId, alphabeta, 0, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                        Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDoseFromEQD2, convParameter, sM.MaxEQD2);
-                            break;
+                        switch (format)
+                        {
+                            case DoseFormat.EQD2:
+                                Helpers.SeriLog.LogInfo("Converting voxels to EQD2...");
+                                OverridePixels(structure, origStructureId, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                             Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQD2);
+                                break;
+                            case DoseFormat.BED:
+                                Helpers.SeriLog.LogInfo("Converting voxels to BED...");
+                                OverridePixels(structure, origStructureId, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                             Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateBED);
+                                break;
+                            case DoseFormat.EQDd:
+                                Helpers.SeriLog.LogInfo("Converting voxels to EQDd...");
+                                OverridePixels(structure, origStructureId, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                             Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDd, convParameter);
+                                break;
+                            case DoseFormat.EQDn:
+                                Helpers.SeriLog.LogInfo("Converting voxels to EQDn#...");
+                                OverridePixels(structure, origStructureId, alphabeta, (short)epl.NumberOfFractions, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                             Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculateEQDn, convParameter);
+                                break;
+                            case DoseFormat.Base:
+                                Helpers.SeriLog.LogInfo("Converting voxels to BASE...");
+                                OverridePixels(structure, origStructureId, alphabeta, 0, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                            Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDoseFromEQD2, convParameter, sM.MaxEQD2);
+                                break;
+                        }
+                        CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, epl);
                     }
-                    CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, epl);
+                    else
+                    {
+                        // plansum, assume dose is in EQD2 already
+                        switch (format)
+                        {
+                            case DoseFormat.Base:
+                                Helpers.SeriLog.LogInfo("Converting voxels to BASE...");
+                                OverridePixels(structure, origStructureId, alphabeta, 0, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
+                           Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDoseFromEQD2, convParameter, sM.MaxEQD2);
+                                break;
+
+                        }
+                        CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, targetPlan, (PlanSum)source);
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    // plansum, assume dose is in EQD2 already
-                    switch (format)
+                    if (!structureSetCleanedUp)
                     {
-                        case DoseFormat.Base:
-                            Helpers.SeriLog.LogInfo("Converting voxels to BASE...");
-                            OverridePixels(structure, origStructureId, alphabeta, 0, originalArray, doseMatrix, scaling, Xsize, Ysize, Zsize,
-                       Xres, Yres, Zres, Xdir, Ydir, Zdir, doseOrigin, CalculatePhysicalDoseFromEQD2, convParameter, sM.MaxEQD2);
-                            break;
-
+                        CleanUpTempStructureSet(ssOverride);
+                        structureSetCleanedUp = true;
                     }
-                    CreatePlanAndAddDose(Xsize, Ysize, Zsize, doseMatrix, maxDoseVal, newPlan, targetPlan, (PlanSum)source);
+                    throw ex;
+
                 }
             }
             try
@@ -638,10 +670,28 @@ namespace DoseConverter
                 Helpers.SeriLog.LogError(errorMessage, ex);
                 throw new Exception(errorMessage);
             }
+
+            if (overrideStructureSet && !structureSetCleanedUp)
+            {
+                CleanUpTempStructureSet(ssOverride);
+                structureSetCleanedUp = true;
+            }
+
             return doseMatrix;
 
         }
 
+        private void CleanUpTempStructureSet(StructureSet ssOverride)
+        {
+            Helpers.SeriLog.LogInfo("Removing temporary structure set");
+            if (ssOverride != null)
+            {
+                if (ssOverride.Id.Contains(_config.Defaults.TempStructureSetName)) // double check that we're not deleting the wrong structure set
+                {
+                    ssOverride.Delete();
+                }
+            }
+        }
         public void CreatePlanAndAddDose(int Xsize, int Ysize, int Zsize, int[,,] doseMatrix, double doseMaxOriginal, ExternalPlanSetup newPlan, ExternalPlanSetup thisPlan, PlanSum sum = null)
         {
             int fractions = (int)thisPlan.NumberOfFractions;

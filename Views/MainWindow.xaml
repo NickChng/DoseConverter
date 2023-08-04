@@ -10,7 +10,7 @@
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=ViewModels:ViewModel, IsDesignTimeCreatable=True}"
-        Title="Dose Converter v1.2" Height="600" Width="950" Background="White" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize">
+        Title="Dose Converter v1.3" Height="600" Width="950" Background="White" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize">
     <Window.Resources>
         <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" >
@@ -291,7 +291,7 @@
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
-                                <TextBox Grid.Column="3" Text="{Binding AlphaBetaRatio, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Include, UpdateSourceTrigger=PropertyChanged}"
+                                <TextBox Grid.Column="3" Text="{Binding AlphaBetaRatioString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Include, UpdateSourceTrigger=PropertyChanged}"
                                      Padding="5,0,5,0"  HorizontalAlignment="Center" Margin="0,0,10,0" VerticalAlignment="Center">
                                     <TextBox.Style>
                                         <Style>

@@ -7,7 +7,9 @@ using Prism.Events;
 
 namespace DoseConverter.Events
 {
-    public class StructureChanged : PubSubEvent { };
-   
     
+    public class StructureInclusionChanged : PubSubEvent { };
+    public class StructureParameterChanged : PubSubEvent { };
+    public class StructureValidationOccurred : PubSubEvent { };
+
 }
