@@ -286,7 +286,7 @@ namespace DoseConverter
             return planWithNameExists;
         }
 
-        private async Task<Tuple<bool, string>> ValidatePlan()
+        private async Task<(bool, string)> ValidatePlan()
         {
             bool success = true;
             string errorMessage = string.Empty;
@@ -308,7 +308,7 @@ namespace DoseConverter
                     errorMessage = "Plan's total dose must be defined.";
                 }
             });
-            return new Tuple<bool, string>(success, errorMessage);
+            return (success, errorMessage);
         }
 
         public async Task<bool> InitializeModel()

@@ -29,3 +29,14 @@
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\Debug\ESAPI.csproj.CopyComplete
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\Debug\ESAPIWorker.dll
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\Debug\ESAPIWorker.pdb
+Z:\DoseConverter\ESAPIWorker\obj\Debug\ESAPI.csproj.AssemblyReference.cache
+Z:\DoseConverter\ESAPIWorker\obj\Debug\ESAPI.csproj.CoreCompileInputs.cache
+Z:\DoseConverter\ESAPIWorker\bin\Debug\ESAPIWorker.dll
+Z:\DoseConverter\ESAPIWorker\bin\Debug\ESAPIWorker.pdb
+Z:\DoseConverter\ESAPIWorker\bin\Debug\VMS.TPS.Common.Model.API.dll
+Z:\DoseConverter\ESAPIWorker\bin\Debug\VMS.TPS.Common.Model.Types.dll
+Z:\DoseConverter\ESAPIWorker\bin\Debug\VMS.TPS.Common.Model.API.xml
+Z:\DoseConverter\ESAPIWorker\bin\Debug\VMS.TPS.Common.Model.Types.xml
+Z:\DoseConverter\ESAPIWorker\obj\Debug\ESAPI.csproj.Up2Date
+Z:\DoseConverter\ESAPIWorker\obj\Debug\ESAPIWorker.dll
+Z:\DoseConverter\ESAPIWorker\obj\Debug\ESAPIWorker.pdb
