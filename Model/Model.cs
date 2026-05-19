@@ -489,7 +489,7 @@ namespace DoseConverter
             int[,,] doseMatrix = new int[originalArray.GetLength(0), originalArray.GetLength(1), originalArray.GetLength(2)];
 
             double maxDoseVal = GetMaxDoseVal(dose, source);
-
+            
             Tuple<int, int> minMaxDose = Helpers.GetMinMaxValues(originalArray, Xsize, Ysize, Zsize);
 
             scaling = maxDoseVal / minMaxDose.Item2;
