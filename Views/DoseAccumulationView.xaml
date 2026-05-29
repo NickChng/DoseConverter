@@ -1,0 +1,156 @@
+<UserControl x:Class="DoseConverter.Views.DoseAccumulationView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:DoseConverter"
+             xmlns:ViewModels="clr-namespace:DoseConverter.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=ViewModels:DoseAccumulationViewModel, IsDesignTimeCreatable=True}"
+             Background="White">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="XAMLDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="{x:Type Button}"/>
+            <Style TargetType="{x:Type Label}"/>
+            <Style TargetType="{x:Type Border}"/>
+            <Style TargetType="{x:Type TextBox}"/>
+            <Style TargetType="{x:Type TextBlock}"/>
+            <Style TargetType="{x:Type GroupBox}"/>
+            <local:VisibilityConverter x:Key="VisibilityConverter"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal">
+            <TextBlock Text="EQD2 Dose Accumulation" FontWeight="Bold"/>
+            <TextBlock Text="EVALUATION ONLY" Margin="10,0,0,0" Foreground="Tomato" FontWeight="Bold"/>
+        </StackPanel>
+        <Border Grid.Row="1" Height="1" Background="Black" Margin="0,5,0,8"/>
+
+        <!-- Body -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- Target plan + global params -->
+                <GroupBox Header="Target plan and global parameters" Padding="6" Margin="0,0,0,8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="120"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Content="Target plan (defines output grid):"/>
+                        <ComboBox Grid.Column="1" Height="28"
+                                  ItemsSource="{Binding AllPlanOptions}"
+                                  SelectedItem="{Binding SelectedTargetPlan, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  VerticalContentAlignment="Center">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayString}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Label Grid.Column="2" Content="α/β (Gy):" Margin="10,0,0,0"/>
+                        <TextBox Grid.Column="3" Height="28" VerticalContentAlignment="Center"
+                                 Text="{Binding AlphaBeta, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label Grid.Column="4" Content="Output plan Id:" Margin="10,0,0,0"/>
+                        <TextBox Grid.Column="5" Height="28" VerticalContentAlignment="Center"
+                                 MaxLength="13"
+                                 Text="{Binding OutputPlanName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+                </GroupBox>
+
+                <!-- Source plans list -->
+                <GroupBox Header="Source plans to accumulate" Padding="6" Margin="0,0,0,8">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="80"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Plan" FontWeight="Bold"/>
+                            <TextBlock Grid.Column="1" Text="Override # fractions" FontWeight="Bold" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="" FontWeight="Bold"/>
+                        </Grid>
+
+                        <ItemsControl ItemsSource="{Binding SourceRows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2,0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="80"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0" Height="26"
+                                                  ItemsSource="{Binding AvailablePlans}"
+                                                  SelectedItem="{Binding Plan, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  VerticalContentAlignment="Center">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding DisplayString}"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <TextBox Grid.Column="1" Height="26" Margin="6,0,6,0"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding FractionsOverride, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 ToolTip="Leave blank to use the plan's own number of fractions."/>
+                                        <Button Grid.Column="2" Height="26" Content="Remove"
+                                                Command="{Binding DataContext.RemoveSourceCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Button HorizontalAlignment="Left" Margin="0,6,0,0" Padding="10,2,10,2"
+                                Content="+ Add source plan"
+                                Command="{Binding AddSourceCommand}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Notes -->
+                <TextBlock TextWrapping="Wrap" Margin="0,4,0,0" Foreground="DimGray"
+                           Text="For each source plan, the tool deformably registers its CT onto the target plan's CT, resamples the source dose onto the target dose grid, converts every voxel to EQD2 (using the source plan's fractionation unless overridden), and sums the result. The accumulated EQD2 dose is written as a verification plan on the target plan's course."/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Status -->
+        <Grid Grid.Row="3" Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+            <Button Grid.Column="1" Content="Details"
+                    Visibility="{Binding ErrorVisibility}"
+                    Command="{Binding ErrorDetailsButtonCommand}" Margin="6,0,0,0"/>
+        </Grid>
+
+        <!-- Run -->
+        <Grid Grid.Row="4">
+            <Button Content="Run Accumulation"
+                    Width="180" Height="36"
+                    HorizontalAlignment="Right" VerticalAlignment="Center"
+                    Visibility="{Binding RunButtonVisibility}"
+                    Command="{Binding RunAccumulationCommand}"/>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -135,7 +135,7 @@ namespace DoseConverter
                             catch (Exception ex)
                             {
                                 returnMessage = "Error creating plan. Check that course is active.";
-                                Helpers.SeriLog.LogInfo(string.Format("Creating new verification plan [{0}]", newPlanName));
+                                Helpers.SeriLog.LogError(string.Format("Failed to create new verification plan [{0}]", newPlanName), ex);
                                 exceptionMessage = ex.Message;
                                 status = ScriptStatus.Error;
                                 return;
@@ -245,6 +245,8 @@ namespace DoseConverter
             DefaultAlphaBeta = _config.Defaults.AlphaBetaRatio;
         }
 
+        public DoseConverterConfig Config => _config;
+
         public async Task<List<Tuple<string, string, string, bool>>> GetPlans(bool includeSums = true)
         {
             try
@@ -274,6 +276,35 @@ namespace DoseConverter
                 Helpers.SeriLog.LogError(errorMessage, ex);
                 throw new Exception(errorMessage);
             }
+        }
+
+        /// <summary>
+        /// Returns all plans with calculated dose in the current course,
+        /// excluding plans that are Completed, CompletedEarly, TreatmentApproved, or Retired.
+        /// Used to populate the DIR source/target selectors.
+        /// </summary>
+        public async Task<List<Tuple<string, string, string, bool>>> GetAllDIRPlans()
+        {
+            var result = new List<Tuple<string, string, string, bool>>();
+            await _ew.AsyncRunPlanContext((patient, launchPlan) =>
+            {
+                var excludedStatuses = new[]
+                {
+                    VMS.TPS.Common.Model.Types.PlanSetupApprovalStatus.Completed,
+                    VMS.TPS.Common.Model.Types.PlanSetupApprovalStatus.CompletedEarly,
+                    VMS.TPS.Common.Model.Types.PlanSetupApprovalStatus.TreatmentApproved,
+                    VMS.TPS.Common.Model.Types.PlanSetupApprovalStatus.Retired,
+                };
+
+                foreach (var plan in launchPlan.Course.PlanSetups
+                    .Where(p => p.Dose != null && p.StructureSet != null
+                           && !excludedStatuses.Contains(p.ApprovalStatus)))
+                {
+                    result.Add(new Tuple<string, string, string, bool>(
+                        launchPlan.Course.Id, plan.Id, plan.StructureSet.Id, false));
+                }
+            });
+            return result;
         }
 
         public async Task<bool> ValidatePlanName(string proposedName)
@@ -320,8 +351,14 @@ namespace DoseConverter
                 {
                     while (!labelData.EndOfStream)
                     {
-                        string[] line = labelData.ReadLine().Split(',');
-                        StructureCodeLookup.Add(line[1].Trim(), line[2].Trim());
+                        string rawLine = labelData.ReadLine();
+                        if (string.IsNullOrWhiteSpace(rawLine)) continue;
+                        string[] line = rawLine.Split(',');
+                        if (line.Length < 3) continue;
+                        string key = line[1].Trim();
+                        if (string.IsNullOrEmpty(key)) continue;
+                        // Use indexer so duplicate keys don't crash initialization (last-wins).
+                        StructureCodeLookup[key] = line[2].Trim();
                     }
                 }
                 // Validate selected plan:
@@ -405,9 +442,10 @@ namespace DoseConverter
                 if (matchingStructure != null)
                 {
                     var CodeInfo = matchingStructure.StructureCodeInfos.FirstOrDefault();
-                    if (CodeInfo != null)
+                    if (CodeInfo != null && !string.IsNullOrEmpty(CodeInfo.Code)
+                        && StructureCodeLookup.TryGetValue(CodeInfo.Code, out string mapped))
                     {
-                        Label = StructureCodeLookup[CodeInfo.Code];
+                        Label = mapped;
                     }
                 }
             });
@@ -437,6 +475,103 @@ namespace DoseConverter
                 }
             }
             return doseMatrix;
+        }
+
+        /// <summary>
+        /// Returns dose as a float[Z,X,Y] array in Gy (physical dose).
+        /// scalingFactor = maxDoseGy / maxIntegerValue (from GetMaxDoseVal / GetMinMaxValues).
+        /// </summary>
+        public float[,,] GetDoseVoxelsAsFloat(Dose dose, double scalingFactor)
+        {
+            int Xsize = dose.XSize;
+            int Ysize = dose.YSize;
+            int Zsize = dose.ZSize;
+            float[,,] doseMatrix = new float[Zsize, Xsize, Ysize];
+            for (int k = 0; k < Zsize; k++)
+            {
+                int[,] plane = new int[Xsize, Ysize];
+                dose.GetVoxels(k, plane);
+                for (int i = 0; i < Xsize; i++)
+                {
+                    for (int j = 0; j < Ysize; j++)
+                    {
+                        doseMatrix[k, i, j] = (float)(plane[i, j] * scalingFactor);
+                    }
+                }
+            }
+            return doseMatrix;
+        }
+
+        /// <summary>
+        /// Creates a new verification plan on the target plan's course, copies the target plan's dose as
+        /// a scaffold, then overwrites every voxel with the supplied deformed dose (in Gy).
+        /// Returns the new plan's Id on success, or throws on failure.
+        /// </summary>
+        public string CreateDeformedDosePlan(
+            string newPlanName,
+            ExternalPlanSetup targetContextPlan,
+            float[,,] deformedDoseGy,
+            Dose targetDoseReference)
+        {
+            // Clamp plan name to 13 characters (Eclipse limit)
+            if (string.IsNullOrEmpty(newPlanName))
+                throw new ArgumentException("New plan name must not be null or empty.", nameof(newPlanName));
+            newPlanName = newPlanName.Substring(0, Math.Min(newPlanName.Length, 13));
+
+            ExternalPlanSetup newPlan = targetContextPlan.Course.AddExternalPlanSetupAsVerificationPlan(
+                targetContextPlan.StructureSet, targetContextPlan);
+            newPlan.Id = newPlanName;
+
+            int fractions = (int)targetContextPlan.NumberOfFractions;
+            newPlan.SetPrescription(fractions, targetContextPlan.DosePerFraction, targetContextPlan.TreatmentPercentage);
+            double normalization = targetContextPlan.PlanNormalizationValue;
+            newPlan.PlanNormalizationValue = double.IsNaN(normalization) ? 100 : normalization;
+
+            // Scaffold the evaluation dose from the target plan dose
+            EvaluationDose evalDose = newPlan.CopyEvaluationDose(targetDoseReference);
+
+            int Xsize = evalDose.XSize;
+            int Ysize = evalDose.YSize;
+            int Zsize = evalDose.ZSize;
+
+            // Find the current max integer in the scaffold evaluation dose
+            double evalMaxGy = GetMaxDoseVal(evalDose, newPlan);
+            Tuple<int, int> minMax = Helpers.GetMinMaxValues(GetDoseVoxelsFromDose(evalDose), Xsize, Ysize, Zsize);
+            if (minMax.Item2 <= 0 || evalMaxGy <= 0)
+            {
+                throw new InvalidOperationException(
+                    "Target plan's scaffold evaluation dose has no positive values; cannot derive integer scaling for deformed dose.");
+            }
+            double evalScaling = evalMaxGy / minMax.Item2;
+            if (evalScaling <= 0 || double.IsNaN(evalScaling) || double.IsInfinity(evalScaling))
+            {
+                throw new InvalidOperationException("Computed evaluation-dose scaling is invalid.");
+            }
+
+            // Conversion factor: deformed Gy -> integer in the scaffold's integer space
+            // We want  intValue * evalScaling == Gy  =>  intValue = Gy / evalScaling
+            for (int k = 0; k < Zsize; k++)
+            {
+                int[,] plane = new int[Xsize, Ysize];
+                for (int i = 0; i < Xsize; i++)
+                {
+                    for (int j = 0; j < Ysize; j++)
+                    {
+                        int ki = Math.Min(k, deformedDoseGy.GetLength(0) - 1);
+                        int ii = Math.Min(i, deformedDoseGy.GetLength(1) - 1);
+                        int ji = Math.Min(j, deformedDoseGy.GetLength(2) - 1);
+                        double physicalGy = deformedDoseGy[ki, ii, ji];
+                        if (physicalGy < 0 || double.IsNaN(physicalGy)) physicalGy = 0;
+                        double scaled = Math.Round(physicalGy / evalScaling);
+                        if (scaled > int.MaxValue) scaled = int.MaxValue;
+                        else if (scaled < 0) scaled = 0;
+                        plane[i, j] = (int)scaled;
+                    }
+                }
+                evalDose.SetVoxels(k, plane);
+            }
+            Helpers.SeriLog.LogInfo(string.Format("Deformed dose plan [{0}] created successfully.", newPlanName));
+            return newPlan.Id;
         }
 
         public double GetMaxDoseVal(Dose dose, PlanningItem source)
@@ -550,6 +685,11 @@ namespace DoseConverter
             {
                 Structure structure = ss.Structures.FirstOrDefault(x => string.Equals(x.Id, sM.StructureId, StringComparison.InvariantCultureIgnoreCase));
                 double alphabeta = sM.AlphaBetaRatio;
+                if (structure == null)
+                {
+                    Helpers.SeriLog.LogWarning(string.Format("Structure {0} not found in structure set, skipping conversion", sM.StructureId));
+                    continue;
+                }
                 string origStructureId = structure.Id;
 
                 if (structure.IsEmpty)
@@ -651,7 +791,7 @@ namespace DoseConverter
                         CleanUpTempStructureSet(ssOverride);
                         structureSetCleanedUp = true;
                     }
-                    throw ex;
+                    throw;
 
                 }
             }

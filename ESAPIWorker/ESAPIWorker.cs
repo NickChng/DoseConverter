@@ -45,6 +45,12 @@ namespace ESAPIScript
             await Dispatcher.BeginInvoke(a, _p, _pl);
             return true;
         }
-     
+
+        public async Task<bool> AsyncRunPatientContext(Action<Patient> a)
+        {
+            await Dispatcher.BeginInvoke(a, _p);
+            return true;
+        }
+
     }
 }

@@ -1,0 +1,5 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
+
+[assembly: AssemblyTitle("DoseConverter.Tests")]
+[assembly: AssemblyVersion("1.0.0.0")]

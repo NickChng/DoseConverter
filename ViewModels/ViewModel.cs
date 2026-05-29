@@ -38,6 +38,12 @@ namespace DoseConverter.ViewModels
         private DoseConverterConfig _scriptConfig;
         private OnlineHelpDefinitions _onlineHelpDefinitions;
         private EventAggregator _ea = new EventAggregator();
+
+        public DeformableRegistrationViewModel DirViewModel { get; private set; }
+            = new DeformableRegistrationViewModel();
+
+        public DoseAccumulationViewModel AccumulationViewModel { get; private set; }
+            = new DoseAccumulationViewModel();
         public StructureViewModel SelectedMapping { get; set; } = new StructureViewModel() { StructureId = "Design", AlphaBetaRatio = 3, StructureLabel = "Design" };
         public ObservableCollection<StructureViewModel> StructureDefinitions { get; private set; } = new ObservableCollection<StructureViewModel>() { new StructureViewModel() { StructureId = "Design", AlphaBetaRatio = 3, StructureLabel = "Design" } };
 
@@ -56,7 +62,8 @@ namespace DoseConverter.ViewModels
             get { return _convertedPlanName; }
             set
             {
-                _convertedPlanName = value.Substring(0, Math.Min(value.Length, 13));
+                string safe = value ?? string.Empty;
+                _convertedPlanName = safe.Substring(0, Math.Min(safe.Length, 13));
                 _isPlanNameValid = false;
                 _conversionComplete = false;
                 ValidatePlanName(_convertedPlanName);
@@ -541,6 +548,10 @@ namespace DoseConverter.ViewModels
         {
             _model = new Model(_scriptConfig, _ew);
             await _model.InitializeModel();
+            DirViewModel = new DeformableRegistrationViewModel(_ew, _model, _ui);
+            RaisePropertyChangedEvent(nameof(DirViewModel));
+            AccumulationViewModel = new DoseAccumulationViewModel(_ew, _model, _ui);
+            RaisePropertyChangedEvent(nameof(AccumulationViewModel));
             Helpers.SeriLog.LogInfo("Initialized ESAPI model...");
         }
         catch (Exception ex)
@@ -577,6 +588,24 @@ namespace DoseConverter.ViewModels
             DisplayScriptError("Error loading plans, please contact your Eclipse administrator.");
             Helpers.SeriLog.LogError("Error details", ex);
             return;
+        }
+        // Populate DIR selectors independently: all plans with dose across all courses,
+        // excluding completed/retired plans.
+        try
+        {
+            var dirPlans = await _model.GetAllDIRPlans();
+            var dirPlanVMs = new ObservableCollection<PlanSelectionViewModel>(
+                dirPlans.Select(p => new PlanSelectionViewModel(p.Item2, p.Item1, p.Item3, p.Item4)));
+            DirViewModel.SetAvailablePlans(dirPlanVMs);
+            AccumulationViewModel.SetAvailablePlans(dirPlanVMs);
+            Helpers.SeriLog.LogInfo($"Loaded {dirPlans.Count} plan(s) for DIR tab.");
+        }
+        catch (Exception ex)
+        {
+            Helpers.SeriLog.LogError("Error loading DIR plan list.", ex);
+            // Non-fatal: fall back to the EQD2 plan list
+            DirViewModel.SetAvailablePlans(PlanInputOptions);
+            AccumulationViewModel.SetAvailablePlans(PlanInputOptions);
         }
         if (!_fatalError)
         {

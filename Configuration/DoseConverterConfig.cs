@@ -30,6 +30,8 @@ namespace DoseConverter {
         
         private DoseConverterConfigStructure[] structuresField;
         
+        private DoseConverterConfigRegistrationParameters registrationParametersField;
+        
         /// <remarks/>
         public DoseConverterConfigVersion version {
             get {
@@ -58,6 +60,16 @@ namespace DoseConverter {
             }
             set {
                 this.structuresField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public DoseConverterConfigRegistrationParameters RegistrationParameters {
+            get {
+                return this.registrationParametersField;
+            }
+            set {
+                this.registrationParametersField = value;
             }
         }
     }
@@ -242,6 +254,168 @@ namespace DoseConverter {
             }
             set {
                 this.structureIdField = value;
+            }
+        }
+    }
+    
+    /// <remarks/>
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("xsd", "4.8.3928.0")]
+    [System.SerializableAttribute()]
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.ComponentModel.DesignerCategoryAttribute("code")]
+    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
+    public partial class DoseConverterConfigRegistrationParameters {
+        
+        private string bSplineGridNodesField;
+        
+        private string bSplineOrderField;
+        
+        private double metricSamplingPercentageField;
+        
+        private double gradientConvergenceToleranceField;
+        
+        private string maxIterationsField;
+        
+        private string maxCorrectionsField;
+        
+        private string maxFunctionEvaluationsField;
+        
+        private double costFunctionConvergenceFactorField;
+        
+        private string shrinkFactorsPerLevelField;
+        
+        private string smoothingSigmasPerLevelField;
+        
+        public DoseConverterConfigRegistrationParameters() {
+            this.bSplineGridNodesField = "5 5 5";
+            this.bSplineOrderField = "3";
+            this.metricSamplingPercentageField = 0.1D;
+            this.gradientConvergenceToleranceField = 1E-05D;
+            this.maxIterationsField = "100";
+            this.maxCorrectionsField = "5";
+            this.maxFunctionEvaluationsField = "1000";
+            this.costFunctionConvergenceFactorField = 10000000D;
+            this.shrinkFactorsPerLevelField = "4 2 1";
+            this.smoothingSigmasPerLevelField = "2.0 1.0 0.0";
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [System.ComponentModel.DefaultValueAttribute("5 5 5")]
+        public string BSplineGridNodes {
+            get {
+                return this.bSplineGridNodesField;
+            }
+            set {
+                this.bSplineGridNodesField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute(DataType="positiveInteger")]
+        [System.ComponentModel.DefaultValueAttribute("3")]
+        public string BSplineOrder {
+            get {
+                return this.bSplineOrderField;
+            }
+            set {
+                this.bSplineOrderField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [System.ComponentModel.DefaultValueAttribute(0.1D)]
+        public double MetricSamplingPercentage {
+            get {
+                return this.metricSamplingPercentageField;
+            }
+            set {
+                this.metricSamplingPercentageField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [System.ComponentModel.DefaultValueAttribute(1E-05D)]
+        public double GradientConvergenceTolerance {
+            get {
+                return this.gradientConvergenceToleranceField;
+            }
+            set {
+                this.gradientConvergenceToleranceField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute(DataType="positiveInteger")]
+        [System.ComponentModel.DefaultValueAttribute("100")]
+        public string MaxIterations {
+            get {
+                return this.maxIterationsField;
+            }
+            set {
+                this.maxIterationsField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute(DataType="positiveInteger")]
+        [System.ComponentModel.DefaultValueAttribute("5")]
+        public string MaxCorrections {
+            get {
+                return this.maxCorrectionsField;
+            }
+            set {
+                this.maxCorrectionsField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute(DataType="positiveInteger")]
+        [System.ComponentModel.DefaultValueAttribute("1000")]
+        public string MaxFunctionEvaluations {
+            get {
+                return this.maxFunctionEvaluationsField;
+            }
+            set {
+                this.maxFunctionEvaluationsField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [System.ComponentModel.DefaultValueAttribute(10000000D)]
+        public double CostFunctionConvergenceFactor {
+            get {
+                return this.costFunctionConvergenceFactorField;
+            }
+            set {
+                this.costFunctionConvergenceFactorField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [System.ComponentModel.DefaultValueAttribute("4 2 1")]
+        public string ShrinkFactorsPerLevel {
+            get {
+                return this.shrinkFactorsPerLevelField;
+            }
+            set {
+                this.shrinkFactorsPerLevelField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [System.ComponentModel.DefaultValueAttribute("2.0 1.0 0.0")]
+        public string SmoothingSigmasPerLevel {
+            get {
+                return this.smoothingSigmasPerLevelField;
+            }
+            set {
+                this.smoothingSigmasPerLevelField = value;
             }
         }
     }

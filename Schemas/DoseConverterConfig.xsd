@@ -66,6 +66,30 @@
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+        <xs:element name="RegistrationParameters" minOccurs="0">
+          <xs:complexType>
+            <!-- B-spline grid: number of control points along each image axis (e.g. "5 5 5") -->
+            <xs:attribute name="BSplineGridNodes" type="xs:string" use="optional" default="5 5 5"/>
+            <!-- B-spline polynomial order (3 = cubic) -->
+            <xs:attribute name="BSplineOrder" type="xs:positiveInteger" use="optional" default="3"/>
+            <!-- Fraction of voxels sampled per iteration (0–1) -->
+            <xs:attribute name="MetricSamplingPercentage" type="PositiveDouble" use="optional" default="0.1"/>
+            <!-- L-BFGS-B: gradient convergence tolerance -->
+            <xs:attribute name="GradientConvergenceTolerance" type="PositiveDouble" use="optional" default="1e-5"/>
+            <!-- L-BFGS-B: maximum iterations -->
+            <xs:attribute name="MaxIterations" type="xs:positiveInteger" use="optional" default="100"/>
+            <!-- L-BFGS-B: maximum corrections stored in memory -->
+            <xs:attribute name="MaxCorrections" type="xs:positiveInteger" use="optional" default="5"/>
+            <!-- L-BFGS-B: maximum function evaluations -->
+            <xs:attribute name="MaxFunctionEvaluations" type="xs:positiveInteger" use="optional" default="1000"/>
+            <!-- L-BFGS-B: cost-function convergence factor -->
+            <xs:attribute name="CostFunctionConvergenceFactor" type="PositiveDouble" use="optional" default="1e7"/>
+            <!-- Multi-resolution: downsample factors per level, space-separated (e.g. "4 2 1") -->
+            <xs:attribute name="ShrinkFactorsPerLevel" type="xs:string" use="optional" default="4 2 1"/>
+            <!-- Multi-resolution: Gaussian smoothing sigmas per level in mm, space-separated (e.g. "2.0 1.0 0.0") -->
+            <xs:attribute name="SmoothingSigmasPerLevel" type="xs:string" use="optional" default="2.0 1.0 0.0"/>
+          </xs:complexType>
+        </xs:element>
       </xs:sequence>
     </xs:complexType>
   </xs:element>

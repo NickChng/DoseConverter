@@ -108,7 +108,7 @@ namespace DoseConverter
         public static Tuple<int, int> GetMinMaxValues(int[,,] array, int Xsize, int Ysize, int Zsize)
         {
             int min = Int32.MaxValue;
-            int max = 0;
+            int max = Int32.MinValue;
 
             for (int i = 0; i < Xsize; i++)
             {
@@ -122,12 +122,17 @@ namespace DoseConverter
                         {
                             max = temp;
                         }
-                        else if (temp < min)
+                        if (temp < min)
                         {
                             min = temp;
                         }
                     }
                 }
+            }
+            if (max == Int32.MinValue)
+            {
+                // Empty array safety: return 0/0 rather than MinValue/MaxValue
+                return Tuple.Create(0, 0);
             }
             return Tuple.Create(min, max);
         }
