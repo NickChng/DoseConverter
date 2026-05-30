@@ -47,9 +47,9 @@ namespace DoseConverter.ViewModels
     /// </summary>
     public class DoseAccumulationViewModel : ObservableObject
     {
-        private readonly EsapiWorker _ew;
-        private readonly Dispatcher _ui;
-        private readonly DoseAccumulationService _accumulationService;
+        private EsapiWorker _ew;
+        private Dispatcher _ui;
+        private DoseAccumulationService _accumulationService;
 
         public ObservableCollection<PlanSelectionViewModel> AllPlanOptions { get; private set; }
             = new ObservableCollection<PlanSelectionViewModel>();
@@ -106,16 +106,24 @@ namespace DoseConverter.ViewModels
         public DoseAccumulationViewModel() { }
 
         public DoseAccumulationViewModel(EsapiWorker ew, Model model)
-            : this(ew, model, new DeformableRegistrationService(ew, model), Dispatcher.CurrentDispatcher) { }
+            : this(ew, model, new DeformableRegistrationService(ew, model)) { }
 
-        public DoseAccumulationViewModel(EsapiWorker ew, Model model, Dispatcher uiDispatcher)
-            : this(ew, model, new DeformableRegistrationService(ew, model), uiDispatcher) { }
+        public DoseAccumulationViewModel(EsapiWorker ew, Model model, DeformableRegistrationService dirService)
+        {
+            _ew = ew;
+            _ui = System.Windows.Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+            _accumulationService = new DoseAccumulationService(ew, model, dirService);
+        }
 
-        public DoseAccumulationViewModel(EsapiWorker ew, Model model, DeformableRegistrationService dirService, Dispatcher uiDispatcher)
+        /// <summary>
+        /// Initialises the view model in-place (without replacing the instance) so that
+        /// existing WPF bindings remain valid.
+        /// </summary>
+        public void Initialize(EsapiWorker ew, Model model, Dispatcher uiDispatcher)
         {
             _ew = ew;
             _ui = uiDispatcher;
-            _accumulationService = new DoseAccumulationService(ew, model, dirService);
+            _accumulationService = new DoseAccumulationService(ew, model, new DeformableRegistrationService(ew, model));
         }
 
         public void SetAvailablePlans(ObservableCollection<PlanSelectionViewModel> plans)

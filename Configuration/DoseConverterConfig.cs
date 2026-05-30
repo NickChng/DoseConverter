@@ -283,8 +283,12 @@ namespace DoseConverter {
         private double costFunctionConvergenceFactorField;
         
         private string shrinkFactorsPerLevelField;
-        
+
         private string smoothingSigmasPerLevelField;
+
+        private string maxIterationsPerLevelField;
+
+        private double maskMarginMmField;
         
         public DoseConverterConfigRegistrationParameters() {
             this.bSplineGridNodesField = "5 5 5";
@@ -297,6 +301,8 @@ namespace DoseConverter {
             this.costFunctionConvergenceFactorField = 10000000D;
             this.shrinkFactorsPerLevelField = "4 2 1";
             this.smoothingSigmasPerLevelField = "2.0 1.0 0.0";
+            this.maxIterationsPerLevelField = "100 50 20";
+            this.maskMarginMmField = 20.0D;
         }
         
         /// <remarks/>
@@ -416,6 +422,31 @@ namespace DoseConverter {
             }
             set {
                 this.smoothingSigmasPerLevelField = value;
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [System.ComponentModel.DefaultValueAttribute("100 50 20")]
+        public string MaxIterationsPerLevel {
+            get {
+                return this.maxIterationsPerLevelField;
+            }
+            set {
+                this.maxIterationsPerLevelField = value;
+            }
+        }
+
+        /// <remarks/>
+        /// <summary>Margin in mm added around the mask bounding box when cropping the fixed image for B-spline initialisation.</summary>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [System.ComponentModel.DefaultValueAttribute(20.0D)]
+        public double MaskMarginMm {
+            get {
+                return this.maskMarginMmField;
+            }
+            set {
+                this.maskMarginMmField = value;
             }
         }
     }

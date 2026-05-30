@@ -88,6 +88,10 @@
             <xs:attribute name="ShrinkFactorsPerLevel" type="xs:string" use="optional" default="4 2 1"/>
             <!-- Multi-resolution: Gaussian smoothing sigmas per level in mm, space-separated (e.g. "2.0 1.0 0.0") -->
             <xs:attribute name="SmoothingSigmasPerLevel" type="xs:string" use="optional" default="2.0 1.0 0.0"/>
+            <!-- Per-level L-BFGS-B iteration caps, space-separated (one per level, e.g. "100 50 20"). Overrides MaxIterations. -->
+            <xs:attribute name="MaxIterationsPerLevel" type="xs:string" use="optional" default="100 50 20"/>
+            <!-- Margin in mm around the mask bounding box used to crop the fixed image for B-spline initialisation -->
+            <xs:attribute name="MaskMarginMm" type="PositiveDouble" use="optional" default="20"/>
           </xs:complexType>
         </xs:element>
       </xs:sequence>

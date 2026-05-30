@@ -14,8 +14,8 @@ namespace DoseConverter.ViewModels
 {
     public class DeformableRegistrationViewModel : ObservableObject
     {
-        private readonly EsapiWorker _ew;
-        private readonly Dispatcher _ui;
+        private EsapiWorker _ew;
+        private Dispatcher _ui;
         private DeformableRegistrationService _dirService;
         private DoseConverterConfigRegistrationParameters _regParams;
 
@@ -98,14 +98,14 @@ namespace DoseConverter.ViewModels
             }
         }
 
-        /// <summary>Maximum L-BFGS-B iterations per resolution level.</summary>
-        public string RegMaxIterations
+        /// <summary>Maximum L-BFGS-B iterations per resolution level, e.g. "100 50 20".</summary>
+        public string RegMaxIterationsPerLevel
         {
-            get => _regParams?.MaxIterations ?? "100";
+            get => _regParams?.MaxIterationsPerLevel ?? "100 50 20";
             set
             {
-                if (_regParams != null) _regParams.MaxIterations = value;
-                RaisePropertyChangedEvent(nameof(RegMaxIterations));
+                if (_regParams != null) _regParams.MaxIterationsPerLevel = value;
+                RaisePropertyChangedEvent(nameof(RegMaxIterationsPerLevel));
             }
         }
 
@@ -167,16 +167,33 @@ namespace DoseConverter.ViewModels
         public DeformableRegistrationViewModel() { }
 
         public DeformableRegistrationViewModel(EsapiWorker ew, Model model)
-            : this(ew, model, Dispatcher.CurrentDispatcher) { }
-
-        public DeformableRegistrationViewModel(EsapiWorker ew, Model model, Dispatcher uiDispatcher)
         {
             _ew = ew;
-            _ui = uiDispatcher;
+            _ui = System.Windows.Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
             _dirService = new DeformableRegistrationService(ew, model);
             AllPlanOptions.Clear();
             _regParams = model?.Config?.RegistrationParameters
                          ?? new DoseConverterConfigRegistrationParameters();
+        }
+
+        /// <summary>
+        /// Initialises the view model in-place (without replacing the instance) so that
+        /// existing WPF bindings remain valid.
+        /// </summary>
+        public void Initialize(EsapiWorker ew, Model model, Dispatcher uiDispatcher)
+        {
+            _ew = ew;
+            _ui = uiDispatcher;
+            _dirService = new DeformableRegistrationService(ew, model);
+            _regParams = model?.Config?.RegistrationParameters
+                         ?? new DoseConverterConfigRegistrationParameters();
+            _ui.Invoke(() =>
+            {
+                AllPlanOptions.Clear();
+                RaisePropertyChangedEvent(nameof(RegGridNodes));
+                RaisePropertyChangedEvent(nameof(RegMaxIterationsPerLevel));
+                RaisePropertyChangedEvent(nameof(RegSamplingPercent));
+            });
         }
 
         /// <summary>

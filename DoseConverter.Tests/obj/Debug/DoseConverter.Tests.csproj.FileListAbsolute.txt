@@ -1,11 +1,10 @@
-\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\obj\Debug\DoseConverter.Tests.csproj.AssemblyReference.cache
-\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\obj\Debug\DoseConverter.Tests.csproj.CoreCompileInputs.cache
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.dll
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\Microsoft.VisualStudio.TestPlatform.MSTestAdapter.PlatformServices.Interface.dll
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\Microsoft.VisualStudio.TestPlatform.MSTestAdapter.PlatformServices.dll
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\Microsoft.TestPlatform.AdapterUtilities.dll
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\Configuration\DoseConverterConfig.xml
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\OnlineHelp\OnlineHelp.xml
+\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\SimpleITKCSharpNative.dll
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\DoseConverter.Tests.dll
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\DoseConverter.Tests.pdb
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\DoseConverter.esapi.dll
@@ -16,6 +15,8 @@
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\Microsoft.VisualStudio.TestPlatform.TestFramework.xml
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\Microsoft.VisualStudio.TestPlatform.TestFramework.Extensions.xml
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\VMS.TPS.Common.Model.Types.xml
+\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\obj\Debug\DoseConverter.Tests.csproj.AssemblyReference.cache
+\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\obj\Debug\DoseConverter.Tests.csproj.CoreCompileInputs.cache
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\obj\Debug\DoseConv.3C0719B7.Up2Date
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\obj\Debug\DoseConverter.Tests.dll
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\obj\Debug\DoseConverter.Tests.pdb

@@ -407,6 +407,41 @@ namespace DoseConverter
             var smoothingSigmas = ParseDoubleList(rp.SmoothingSigmasPerLevel, new double[] { 2.0, 1.0, 0.0 });
             int numLevels = shrinkFactors.Length;
 
+            // Per-level iteration caps: MaxIterationsPerLevel takes precedence; falls back to MaxIterations for
+            // any level that is not specified.
+            uint defaultMaxIter = ParseUInt(rp.MaxIterations, 100);
+            uint[] perLevelIter = ParseUIntList(rp.MaxIterationsPerLevel, new uint[0]);
+            // Build a full per-level array of length numLevels
+            uint[] maxIterPerLevel = new uint[numLevels];
+            for (int i = 0; i < numLevels; i++)
+                maxIterPerLevel[i] = (i < perLevelIter.Length) ? perLevelIter[i] : defaultMaxIter;
+
+            // When a fixed mask is available, crop both the fixed CT and the fixed mask to the
+            // mask's bounding box (+ margin) before initialising the B-spline transform and
+            // running Execute.  This limits control-point dimensionality to the ROI only.
+            // The returned transform is physically georeferenced, so it is valid over the whole
+            // image space and can be applied directly to the full-resolution dose grid.
+            double maskMarginMm = rp.MaskMarginMm;
+            SitkImage regFixed     = fixedCT;   // may be replaced by cropped version
+            SitkImage regFixedMask = fixedMask;  // may be replaced by cropped version
+            bool croppedFixed = false;
+            if (fixedMask != null)
+            {
+                Report(progress, "Cropping fixed CT to mask bounding box...");
+                var (croppedCT, croppedMask) = CropImageToMaskBounds(fixedCT, fixedMask, maskMarginMm);
+                if (croppedCT != null)
+                {
+                    regFixed     = croppedCT;
+                    regFixedMask = croppedMask;
+                    croppedFixed = true;
+                    Report(progress,
+                        $"  Cropped fixed CT: {regFixed.GetWidth()}×{regFixed.GetHeight()}×{regFixed.GetDepth()} " +
+                        $"(was {fixedCT.GetWidth()}×{fixedCT.GetHeight()}×{fixedCT.GetDepth()})");
+                }
+            }
+
+            try
+            {
             // Multi-resolution B-Spline registration (unimodal CT-CT)
             var registration = new ImageRegistrationMethod();
 
@@ -419,20 +454,21 @@ namespace DoseConverter
             registration.SetInterpolator(InterpolatorEnum.sitkLinear);
 
             // Optional structure masks — constrain metric to the contoured regions
-            if (fixedMask != null)  registration.SetMetricFixedMask(fixedMask);
-            if (movingMask != null) registration.SetMetricMovingMask(movingMask);
+            if (regFixedMask != null)  registration.SetMetricFixedMask(regFixedMask);
+            if (movingMask   != null)  registration.SetMetricMovingMask(movingMask);
 
-            // Initial transform
+            // Initial transform — seeded on the (possibly cropped) fixed image so control
+            // points are distributed over the ROI only.
             var bsplineTransform = SimpleITK.BSplineTransformInitializer(
-                fixedCT,
+                regFixed,
                 new VectorUInt32(gridNodes),
                 bsplineOrder);
             registration.SetInitialTransform(bsplineTransform, inPlace: true);
 
-            // Optimizer: L-BFGS-B
+            // Optimizer: L-BFGS-B — seeded with the first-level iteration count; updated per level below.
             registration.SetOptimizerAsLBFGSB(
                 gradientConvergenceTolerance: rp.GradientConvergenceTolerance,
-                numberOfIterations: (uint)ParseUInt(rp.MaxIterations, 100),
+                numberOfIterations: maxIterPerLevel[0],
                 maximumNumberOfCorrections: (uint)ParseUInt(rp.MaxCorrections, 5),
                 maximumNumberOfFunctionEvaluations: (uint)ParseUInt(rp.MaxFunctionEvaluations, 1000),
                 costFunctionConvergenceFactor: rp.CostFunctionConvergenceFactor);
@@ -446,7 +482,16 @@ namespace DoseConverter
             var levelCmd = new ActionCommand(() =>
             {
                 level++;
-                Report(progress, $"Registration: starting resolution level {level}/{numLevels}...");
+                // Re-configure the optimizer with the iteration cap for this specific level.
+                // sitkMultiResolutionIterationEvent fires before the level starts, so level is 1-based here.
+                int idx = Math.Min(level - 1, numLevels - 1);
+                registration.SetOptimizerAsLBFGSB(
+                    gradientConvergenceTolerance: rp.GradientConvergenceTolerance,
+                    numberOfIterations: maxIterPerLevel[idx],
+                    maximumNumberOfCorrections: (uint)ParseUInt(rp.MaxCorrections, 5),
+                    maximumNumberOfFunctionEvaluations: (uint)ParseUInt(rp.MaxFunctionEvaluations, 1000),
+                    costFunctionConvergenceFactor: rp.CostFunctionConvergenceFactor);
+                Report(progress, $"Registration: starting level {level}/{numLevels} (max {maxIterPerLevel[idx]} iterations)...");
             });
             var iterCmd = new ActionCommand(() =>
             {
@@ -458,9 +503,100 @@ namespace DoseConverter
             registration.AddCommand(EventEnum.sitkMultiResolutionIterationEvent, levelCmd);
             registration.AddCommand(EventEnum.sitkIterationEvent, iterCmd);
 
-            SitkTransform result = registration.Execute(fixedCT, movingCT);
+            // Execute against the (possibly cropped) fixed image; moving stays full-resolution.
+            SitkTransform result = registration.Execute(regFixed, movingCT);
             Helpers.SeriLog.LogInfo($"Registration complete. Stop condition: {registration.GetOptimizerStopConditionDescription()}");
             return result;
+            } // end try
+            finally
+            {
+                // Dispose cropped images when they differ from the originals passed in.
+                if (croppedFixed)
+                {
+                    regFixed?.Dispose();
+                    if (!ReferenceEquals(regFixedMask, fixedMask))
+                        regFixedMask?.Dispose();
+                }
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // Mask bounding-box crop
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// Crops <paramref name="image"/> (and <paramref name="mask"/>) to the axis-aligned
+        /// bounding box of the non-zero voxels in <paramref name="mask"/>, expanded by
+        /// <paramref name="marginMm"/> in each direction.  Both cropped images share the
+        /// same physical coordinate system as the originals, so any transform estimated on
+        /// them is directly applicable to the full-resolution images.
+        ///
+        /// Returns (null, null) if the mask is empty or the computed region is degenerate.
+        /// </summary>
+        internal static (SitkImage croppedImage, SitkImage croppedMask)
+            CropImageToMaskBounds(SitkImage image, SitkImage mask, double marginMm)
+        {
+            if (image == null || mask == null) return (null, null);
+
+            // Scan the mask buffer to find min/max non-zero voxel indices.
+            uint nx = mask.GetWidth();
+            uint ny = mask.GetHeight();
+            uint nz = mask.GetDepth();
+
+            int minX = int.MaxValue, maxX = int.MinValue;
+            int minY = int.MaxValue, maxY = int.MinValue;
+            int minZ = int.MaxValue, maxZ = int.MinValue;
+
+            IntPtr ptr = mask.GetBufferAsUInt8();
+            long total = (long)(nx * ny * nz);
+            byte[] buf = new byte[total];
+            System.Runtime.InteropServices.Marshal.Copy(ptr, buf, 0, (int)total);
+
+            for (int z = 0; z < (int)nz; z++)
+            {
+                for (int y = 0; y < (int)ny; y++)
+                {
+                    for (int x = 0; x < (int)nx; x++)
+                    {
+                        if (buf[(long)z * nx * ny + (long)y * nx + x] != 0)
+                        {
+                            if (x < minX) minX = x; if (x > maxX) maxX = x;
+                            if (y < minY) minY = y; if (y > maxY) maxY = y;
+                            if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+                        }
+                    }
+                }
+            }
+
+            if (minX == int.MaxValue) return (null, null); // empty mask
+
+            // Convert margin from mm to voxels (use per-axis spacing).
+            var sp = mask.GetSpacing();
+            int mX = (int)Math.Ceiling(marginMm / sp[0]);
+            int mY = (int)Math.Ceiling(marginMm / sp[1]);
+            int mZ = (int)Math.Ceiling(marginMm / sp[2]);
+
+            // Clamp to image bounds.
+            int startX = Math.Max(0, minX - mX);
+            int startY = Math.Max(0, minY - mY);
+            int startZ = Math.Max(0, minZ - mZ);
+            int endX   = Math.Min((int)nx - 1, maxX + mX);
+            int endY   = Math.Min((int)ny - 1, maxY + mY);
+            int endZ   = Math.Min((int)nz - 1, maxZ + mZ);
+
+            uint sizeX = (uint)(endX - startX + 1);
+            uint sizeY = (uint)(endY - startY + 1);
+            uint sizeZ = (uint)(endZ - startZ + 1);
+
+            if (sizeX < 2 || sizeY < 2 || sizeZ < 2) return (null, null);
+
+            var roiFilter = new RegionOfInterestImageFilter();
+            roiFilter.SetIndex(new VectorInt32(new int[] { startX, startY, startZ }));
+            roiFilter.SetSize(new VectorUInt32(new uint[] { sizeX, sizeY, sizeZ }));
+
+            SitkImage croppedImage = roiFilter.Execute(image);
+            SitkImage croppedMask  = roiFilter.Execute(mask);
+            return (croppedImage, croppedMask);
         }
 
         // -----------------------------------------------------------------------
@@ -759,7 +895,7 @@ namespace DoseConverter
 
         private static SitkImage BuildReferenceImage(uint[] size, double[] spacing, double[] origin, double[] direction)
         {
-            var img = new SitkImage(new VectorUInt32(size), PixelIDValueEnum.sitkFloat32, 3);
+            var img = new SitkImage(new VectorUInt32(size), PixelIDValueEnum.sitkFloat32);
             img.SetSpacing(new VectorDouble(spacing));
             img.SetOrigin(new VectorDouble(origin));
             img.SetDirection(new VectorDouble(direction));

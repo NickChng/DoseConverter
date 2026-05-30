@@ -53,9 +53,11 @@
     MetricSamplingPercentage="0.1"
     GradientConvergenceTolerance="1e-5"
     MaxIterations="100"
+    MaxIterationsPerLevel="100 50 20"
     MaxCorrections="5"
     MaxFunctionEvaluations="1000"
     CostFunctionConvergenceFactor="1e7"
     ShrinkFactorsPerLevel="4 2 1"
-    SmoothingSigmasPerLevel="2.0 1.0 0.0"/>
+    SmoothingSigmasPerLevel="2.0 1.0 0.0"
+    MaskMarginMm="20"/>
 </DoseConverterConfig>

@@ -189,6 +189,8 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="6"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="6"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- Row 0: column headers -->
@@ -205,11 +207,11 @@
                 <TextBlock Grid.Row="2" Grid.Column="3" Text="Metric:" VerticalAlignment="Center" Foreground="DimGray"/>
                 <TextBlock Grid.Row="2" Grid.Column="4" Text="Mean Squares (CT-CT)" VerticalAlignment="Center" Foreground="DimGray"/>
 
-                <!-- Row 4: max iterations (editable) -->
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="Max iterations / level:" VerticalAlignment="Center" ToolTip="L-BFGS-B iteration cap per resolution level. Higher = better quality but longer runtime."/>
+                <!-- Row 4: max iterations per level (editable) -->
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Max iters per level:" VerticalAlignment="Center" ToolTip="Space-separated L-BFGS-B iteration caps per resolution level (e.g. '100 50 20'). Fewer iterations at the full-resolution level (last value) reduces runtime most."/>
                 <TextBox   Grid.Row="4" Grid.Column="1" Height="24" Padding="4,0,4,0" VerticalContentAlignment="Center"
-                           Text="{Binding RegMaxIterations, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                           ToolTip="Positive integer (e.g. 100)"/>
+                           Text="{Binding RegMaxIterationsPerLevel, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                           ToolTip="Space-separated integers, one per pyramid level (e.g. '100 50 20')"/>
 
                 <!-- Row 4: optimizer (static) -->
                 <TextBlock Grid.Row="4" Grid.Column="3" Text="Optimizer:" VerticalAlignment="Center" Foreground="DimGray"/>
@@ -224,6 +226,14 @@
                 <!-- Row 6: multi-res (static) -->
                 <TextBlock Grid.Row="6" Grid.Column="3" Text="Multi-resolution:" VerticalAlignment="Center" Foreground="DimGray"/>
                 <TextBlock Grid.Row="6" Grid.Column="4" Text="3 levels (4×, 2×, 1×)" VerticalAlignment="Center" Foreground="DimGray"/>
+
+                <!-- Row 8: mask margin (editable, relevant only when a mask is selected) -->
+                <TextBlock Grid.Row="8" Grid.Column="0" Text="Mask crop margin (mm):" VerticalAlignment="Center"
+                           ToolTip="When a mask is selected, the fixed CT is cropped to the mask bounding box plus this margin before B-spline initialisation. Reduces control-point DOF to the ROI. Ignored when no mask is set."/>
+                <TextBox   Grid.Row="8" Grid.Column="1" Height="24" Padding="4,0,4,0" VerticalContentAlignment="Center"
+                           Text="{Binding RegMaskMarginMm, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                           ToolTip="Positive number in mm (e.g. 20)"/>
+                <TextBlock Grid.Row="8" Grid.Column="3" Text="Only used when a mask is set." VerticalAlignment="Center" Foreground="DimGray" FontStyle="Italic"/>
             </Grid>
         </GroupBox>
 

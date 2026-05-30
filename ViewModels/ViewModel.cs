@@ -548,10 +548,8 @@ namespace DoseConverter.ViewModels
         {
             _model = new Model(_scriptConfig, _ew);
             await _model.InitializeModel();
-            DirViewModel = new DeformableRegistrationViewModel(_ew, _model, _ui);
-            RaisePropertyChangedEvent(nameof(DirViewModel));
-            AccumulationViewModel = new DoseAccumulationViewModel(_ew, _model, _ui);
-            RaisePropertyChangedEvent(nameof(AccumulationViewModel));
+            DirViewModel.Initialize(_ew, _model, _ui);
+            AccumulationViewModel.Initialize(_ew, _model, _ui);
             Helpers.SeriLog.LogInfo("Initialized ESAPI model...");
         }
         catch (Exception ex)

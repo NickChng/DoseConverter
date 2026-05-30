@@ -18,6 +18,8 @@
     <TargetFrameworkProfile />
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <RestoreProjectStyle>PackagesConfig</RestoreProjectStyle>
+    <NuGetPackagesDirectory>$(MSBuildThisFileDirectory)packages\</NuGetPackagesDirectory>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -178,6 +180,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="NuGet.config" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -272,4 +275,10 @@
     <Error Condition="!Exists('packages\Costura.Fody.4.1.0\build\Costura.Fody.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Costura.Fody.4.1.0\build\Costura.Fody.props'))" />
     <Error Condition="!Exists('packages\PropertyChanged.Fody.4.1.0\build\PropertyChanged.Fody.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\PropertyChanged.Fody.4.1.0\build\PropertyChanged.Fody.props'))" />
   </Target>
+  <ItemGroup>
+    <Content Include="packages\SachaBr.SimpleITK.Runtime.2.5.5\runtimes\win-x64\native\SimpleITKCSharpNative.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>SimpleITKCSharpNative.dll</Link>
+    </Content>
+  </ItemGroup>
 </Project>
