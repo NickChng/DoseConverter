@@ -44,6 +44,16 @@ namespace DoseConverter.ViewModels
 
         public DoseAccumulationViewModel AccumulationViewModel { get; private set; }
             = new DoseAccumulationViewModel();
+
+        public DirReviewViewModel DirReviewViewModel { get; private set; }
+            = new DirReviewViewModel();
+
+        private Visibility _dirReviewTabVisibility = Visibility.Collapsed;
+        public Visibility DirReviewTabVisibility
+        {
+            get => _dirReviewTabVisibility;
+            private set { _dirReviewTabVisibility = value; RaisePropertyChangedEvent(nameof(DirReviewTabVisibility)); }
+        }
         public StructureViewModel SelectedMapping { get; set; } = new StructureViewModel() { StructureId = "Design", AlphaBetaRatio = 3, StructureLabel = "Design" };
         public ObservableCollection<StructureViewModel> StructureDefinitions { get; private set; } = new ObservableCollection<StructureViewModel>() { new StructureViewModel() { StructureId = "Design", AlphaBetaRatio = 3, StructureLabel = "Design" } };
 
@@ -550,6 +560,7 @@ namespace DoseConverter.ViewModels
             await _model.InitializeModel();
             DirViewModel.Initialize(_ew, _model, _ui);
             AccumulationViewModel.Initialize(_ew, _model, _ui);
+            DirViewModel.DirCompleted += OnDirCompleted;
             Helpers.SeriLog.LogInfo("Initialized ESAPI model...");
         }
         catch (Exception ex)
@@ -587,8 +598,7 @@ namespace DoseConverter.ViewModels
             Helpers.SeriLog.LogError("Error details", ex);
             return;
         }
-        // Populate DIR selectors independently: all plans with dose across all courses,
-        // excluding completed/retired plans.
+        // Populate DIR source plan selectors: all plans with dose in the current course.
         try
         {
             var dirPlans = await _model.GetAllDIRPlans();
@@ -605,6 +615,19 @@ namespace DoseConverter.ViewModels
             DirViewModel.SetAvailablePlans(PlanInputOptions);
             AccumulationViewModel.SetAvailablePlans(PlanInputOptions);
         }
+        // Populate DIR target (fixed) image selector: all structure sets with a CT image.
+        try
+        {
+            var allSS = await _model.GetAllStructureSets();
+            var ssVMs = new ObservableCollection<StructureSetSelectionViewModel>(
+                allSS.Select(s => new StructureSetSelectionViewModel(s.Item2, s.Item1, s.Item3)));
+            DirViewModel.SetAvailableTargets(ssVMs);
+            Helpers.SeriLog.LogInfo($"Loaded {allSS.Count} structure set(s) for DIR target selector.");
+        }
+        catch (Exception ex)
+        {
+            Helpers.SeriLog.LogError("Error loading structure set list for DIR target.", ex);
+        }
         if (!_fatalError)
         {
             DisplayScriptReady();
@@ -614,6 +637,20 @@ namespace DoseConverter.ViewModels
         }
         // Subscribe to events
         _ea.GetEvent<StructureInclusionChanged>().Subscribe(OnStructureChanged);
+    }
+
+    /// <summary>
+    /// Reveals the DIR quality review tab and loads the blended overlay once a deformable
+    /// registration completes successfully. Marshaled to the UI dispatcher.
+    /// </summary>
+    private void OnDirCompleted(object sender, DeformableRegistrationService.DirReviewData review)
+    {
+        if (review == null) return;
+        _ui.Invoke(() =>
+        {
+            DirReviewViewModel.Load(review);
+            DirReviewTabVisibility = Visibility.Visible;
+        });
     }
 
     private void DisplayScriptComplete(string message = "Conversion complete!")

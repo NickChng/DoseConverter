@@ -1,0 +1,920 @@
+Build started 31-May-2026 4:01:30 PM.
+Logging verbosity is set to: Detailed.Process = "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe"
+MSBuild executable path = "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe"
+Command line arguments = ""C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj /p:Configuration=Debug /p:Platform=x64 /v:detailed /fileloggerparameters:LogFile=\\spvaimapcn\data$\Apps\DoseConverter\dc_build.log"
+Current directory = "\\spvaimapcn\data$\Apps\DoseConverter"
+MSBuild version = "18.6.3+84d3e95b4"
+Based on the Windows registry key LongPathsEnabled, the LongPaths feature is disabled.
+Based on the Windows registry key VerifiedAndReputablePolicyState, SAC state = 0: turned off.
+Some command line switches were read from the auto-response file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.rsp". To disable this file, use the "-noAutoResponse" switch.
+
+Property reassignment: $(MSBuildExtensionsPath)="C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild" (previous value: "C:\Program Files (x86)\MSBuild") at 
+Property reassignment: $(MSBuildExtensionsPath32)="C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild" (previous value: "C:\Program Files (x86)\MSBuild") at 
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Trying to import C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\$(MSBuildToolsVersion)\Microsoft.Common.props using extensions path C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Microsoft.Common.props(60,5): message : Property reassignment: $(MSBuildProjectExtensionsPath)="\\spvaimapcn\data$\Apps\DoseConverter\obj\" (previous value: "obj\") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Microsoft.Common.props (60,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Microsoft.Common.props(84,119): message : Property 'MSBuildUserExtensionsPath' with value 'C:\Users\nchng\AppData\Local\Microsoft\MSBuild' expanded from the environment.
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Trying to import C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\$(MSBuildToolsVersion)\Imports\Microsoft.Common.props\ImportBefore\* using extensions path C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Imports\Microsoft.Common.props\ImportBefore\Microsoft.NuGet.ImportBefore.props(14,5): message : Property 'VisualStudioVersion' with value '18.0' expanded from the environment.
+The "Configuration" property is a global property, and cannot be modified.
+The "Platform" property is a global property, and cannot be modified.
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Trying to import C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\$(MSBuildToolsVersion)\Microsoft.VisualStudioVersion.v*.Common.props using extensions path C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild
+Trying to import C:\Program Files (x86)\MSBuild\$(MSBuildToolsVersion)\Microsoft.VisualStudioVersion.v*.Common.props using extensions path C:\Program Files (x86)\MSBuild
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+The "Configuration" property is a global property, and cannot be modified.
+The "Platform" property is a global property, and cannot be modified.
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Roslyn\Microsoft.CSharp.Core.targets(213,5): message : Property reassignment: $(CommandLineArgsForDesignTimeEvaluation)="-langversion:7.3 -define:DEBUG;TRACE" (previous value: "-langversion:7.3") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Roslyn\Microsoft.CSharp.Core.targets (213,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets(13,5): message : Property reassignment: $(DefineCommonItemSchemas)="false" (previous value: "true") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets (13,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets(14,5): message : Property reassignment: $(DefineCommonCapabilities)="false" (previous value: "true") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets (14,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets(15,5): message : Property reassignment: $(DefineCommonReferenceSchemas)="false" (previous value: "true") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets (15,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets(511,5): message : Property reassignment: $(CollectUpToDateCheckInputDesignTimeDependsOn)="CompileDesignTime;ResolveCodeAnalysisRuleSet" (previous value: "CompileDesignTime") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets (511,5)
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.props(117,5): message : Property reassignment: $(AvailablePlatforms)="Any CPU,x86,x64,ARM64" (previous value: "Any CPU,x86,x64") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.props (117,5)
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Assembly loaded during Evaluation: Microsoft.Build.Utilities.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a (location: C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Build.Utilities.Core.dll, MVID: bde076a0-150c-4021-a293-78e5e4c44e50, AppDomain: [Default])
+The "Platform" property is a global property, and cannot be modified.
+The "Configuration" property is a global property, and cannot be modified.
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(175,5): message : Property reassignment: $(_DebugSymbolsProduced)="true" (previous value: "false") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (175,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(185,5): message : Property reassignment: $(_DocumentationFileProduced)="false" (previous value: "true") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (185,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(348,16): message : Property 'DevEnvDir' with value 'C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\' expanded from the environment.
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(392,5): message : Property reassignment: $(MSBuildCopyMarkerName)="DoseConv.079F5C8B" (previous value: "DoseConverter.csproj") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (392,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(393,5): message : Property reassignment: $(MSBuildCopyMarkerName)="DoseConv.079F5C8B.Up2Date" (previous value: "DoseConv.079F5C8B") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (393,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(528,5): message : Property reassignment: $(ProcessorArchitecture)="amd64" (previous value: "x64") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (528,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(562,42): message : Property 'MSBuildExtensionsPath64' with value 'C:\Program Files\MSBuild' expanded from the environment.
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(580,5): message : Property reassignment: $(DelaySign)="" (previous value: "false") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (580,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(649,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};" (previous value: "{CandidateAssemblyFiles}") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (649,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(650,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem}" (previous value: "{CandidateAssemblyFiles};") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (650,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(651,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory}" (previous value: "{CandidateAssemblyFiles};;{HintPathFromItem}") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (651,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(652,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};" (previous value: "{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory}") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (652,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(653,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx}" (previous value: "{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (653,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(654,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx};{AssemblyFolders}" (previous value: "{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx}") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (654,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(655,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx};{AssemblyFolders};{GAC}" (previous value: "{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx};{AssemblyFolders}") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (655,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(656,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx};{AssemblyFolders};{GAC};{RawFileName}" (previous value: "{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx};{AssemblyFolders};{GAC}") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (656,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(657,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx};{AssemblyFolders};{GAC};{RawFileName};bin\x64\Debug\" (previous value: "{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx};{AssemblyFolders};{GAC};{RawFileName}") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (657,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(1228,19): message : Property 'FrameworkDir' with value 'C:\Windows\Microsoft.NET\Framework\' expanded from the environment.
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(2622,5): message : Property 'LOCALAPPDATA' with value 'C:\Users\nchng\AppData\Local' expanded from the environment.
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(3950,5): message : Property reassignment: $(_SGenGenerateSerializationAssembliesConfig)="Auto" (previous value: "") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (3950,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(3951,5): message : Property reassignment: $(_SGenGenerateSerializationAssembliesConfig)="Off" (previous value: "Auto") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (3951,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(5162,5): message : Property reassignment: $(_TargetsThatPrepareProjectReferences)="
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(5162,5): message :       AssignProjectConfiguration;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(5162,5): message :       _SplitProjectReferencesByFileExistence
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(5162,5): message :     " (previous value: "_SplitProjectReferencesByFileExistence") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (5162,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets(125,5): message : Property reassignment: $(_CodeAnalysisTreatWarningsAsErrors)="false" (previous value: "") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets (125,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets(167,9): message : Property reassignment: $(PrepareForRunDependsOn)="
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets(167,9): message :       CopyFilesToOutputDirectory
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets(167,9): message :     ;RunCodeAnalysis" (previous value: "
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets(167,9): message :       CopyFilesToOutputDirectory
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets(167,9): message :     ") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets (167,9)
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message : Property reassignment: $(ResolveReferencesDependsOn)="
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       BeforeResolveReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       AssignProjectConfiguration;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       FindInvalidProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveNativeReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveAssemblyReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       GenerateBindingRedirects;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       GenerateBindingRedirectsUpdateAppConfig;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveComReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       AfterResolveReferences
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :     ;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ImplicitlyExpandDesignTimeFacades
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :     " (previous value: "
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       BeforeResolveReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       AssignProjectConfiguration;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       FindInvalidProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveNativeReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveAssemblyReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       GenerateBindingRedirects;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       GenerateBindingRedirectsUpdateAppConfig;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveComReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       AfterResolveReferences
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :     ") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets (74,5)
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message : Property reassignment: $(PrepareResourceNamesDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :                     AssignWinFXEmbeddedResource;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :                     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       AssignTargetPaths;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       SplitResourcesByCulture;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       CreateManifestResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       CreateCustomManifestResourceNames
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       AssignTargetPaths;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       SplitResourcesByCulture;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       CreateManifestResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       CreateCustomManifestResourceNames
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :     ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets (97,7)
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message : Property reassignment: $(PrepareResourcesDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :                 MarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :                 AfterMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :                 MarkupCompilePass2ForMainAssembly;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :                 FileClassification;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :                 MainResourcesGeneration;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :                 
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       PrepareResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       ResGen;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       CompileLicxFiles
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       PrepareResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       ResGen;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       CompileLicxFiles
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :     ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets (108,7)
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message : Property reassignment: $(CompileDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :         
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       ResolveReferences;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       ResolveKeySource;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       SetWin32ManifestProperties;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _SetPreferNativeArm64Win32ManifestProperties;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       FindReferenceAssembliesForReferences;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _GenerateCompileInputs;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       BeforeCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _TimeStampBeforeCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _GenerateCompileDependencyCache;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       CoreCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _TimeStampAfterCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       AfterCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :     ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :         _AfterCompileWinFXInternal
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :     " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       ResolveReferences;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       ResolveKeySource;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       SetWin32ManifestProperties;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _SetPreferNativeArm64Win32ManifestProperties;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       FindReferenceAssembliesForReferences;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _GenerateCompileInputs;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       BeforeCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _TimeStampBeforeCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _GenerateCompileDependencyCache;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       CoreCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _TimeStampAfterCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       AfterCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :     ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets (184,5)
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message : Property reassignment: $(PublishBuildDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             BuildOnlySettings;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             PrepareForBuild;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             ResolveReferences;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             PrepareResources;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             ResolveKeySource;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             PrepareResourcesForSatelliteAssemblies;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             GenerateSerializationAssemblies;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             CreateSatelliteAssemblies;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :         " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :       BuildOnlySettings;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :       PrepareForBuild;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :       ResolveReferences;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :       PrepareResources;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :       ResolveKeySource;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :       GenerateSerializationAssemblies;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :       CreateSatelliteAssemblies;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :     ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets (813,9)
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message : Property reassignment: $(BuildDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       EntityDeploy;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       BeforeBuild;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       CoreBuild;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       AfterBuild
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :     " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       BeforeBuild;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       CoreBuild;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       AfterBuild
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :     ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets (35,5)
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message : Property reassignment: $(CleanDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       BeforeClean;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       UnmanagedUnregistration;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       CoreClean;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       CleanReferencedProjects;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       CleanPublishFolder;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       AfterClean
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :     ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       EntityClean;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :     " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       BeforeClean;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       UnmanagedUnregistration;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       CoreClean;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       CleanReferencedProjects;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       CleanPublishFolder;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       AfterClean
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :     ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets (42,5)
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message : Property reassignment: $(PrepareResourcesDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       XamlMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       XamlMarkupCompilePass2;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 MarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 AfterMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 MarkupCompilePass2ForMainAssembly;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 FileClassification;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 MainResourcesGeneration;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       PrepareResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       ResGen;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       CompileLicxFiles
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :        
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :     " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 MarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 AfterMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 MarkupCompilePass2ForMainAssembly;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 FileClassification;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 MainResourcesGeneration;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       PrepareResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       ResGen;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       CompileLicxFiles
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets (35,5)
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message : Property reassignment: $(PrepareResourcesDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       ValidationExtension;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       ExpressionBuildExtension;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       XamlMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       XamlMarkupCompilePass2;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 MarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 AfterMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 MarkupCompilePass2ForMainAssembly;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 FileClassification;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 MainResourcesGeneration;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       PrepareResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       ResGen;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       CompileLicxFiles
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :        
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :     " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       XamlMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       XamlMarkupCompilePass2;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 MarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 AfterMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 MarkupCompilePass2ForMainAssembly;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 FileClassification;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 MainResourcesGeneration;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       PrepareResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       ResGen;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       CompileLicxFiles
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :        
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :     ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets (16,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message : Property reassignment: $(ResolveReferencesDependsOn)="
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       BeforeResolveReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       AssignProjectConfiguration;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       FindInvalidProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveNativeReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveAssemblyReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       GenerateBindingRedirects;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       GenerateBindingRedirectsUpdateAppConfig;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveComReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       AfterResolveReferences
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :     ;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ImplicitlyExpandDesignTimeFacades
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :     ;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveTestReferences
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :     " (previous value: "
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       BeforeResolveReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       AssignProjectConfiguration;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       FindInvalidProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveNativeReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveAssemblyReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       GenerateBindingRedirects;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       GenerateBindingRedirectsUpdateAppConfig;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveComReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       AfterResolveReferences
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :     ;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ImplicitlyExpandDesignTimeFacades
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :     ") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets (4,5)
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Trying to import C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\$(MSBuildToolsVersion)\Microsoft.Common.targets\ImportAfter\* using extensions path C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Trying to import C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Sdks\Microsoft.Docker.Sdk\build\Microsoft.Docker.targets using extensions path C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(74,5): message : Property reassignment: $(ProjectLockFile)="obj\project.assets.json" (previous value: "\\spvaimapcn\data$\Apps\DoseConverter\obj\project.assets.json") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets (74,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message : Property reassignment: $(ResolveAssemblyReferencesDependsOn)="
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       ResolveProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       FindInvalidProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       GetFrameworkPaths;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       GetReferenceAssemblyPaths;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       PrepareForBuild;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       ResolveSDKReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       ExpandSDKReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :     ;ResolveNuGetPackageAssets" (previous value: "
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       ResolveProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       FindInvalidProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       GetFrameworkPaths;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       GetReferenceAssemblyPaths;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       PrepareForBuild;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       ResolveSDKReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       ExpandSDKReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :     ") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets (185,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message : Property reassignment: $(PrepareResourcesDependsOn)="ResolveNuGetPackageAssets;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ValidationExtension;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ExpressionBuildExtension;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       XamlMarkupCompilePass1;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       XamlMarkupCompilePass2;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 MarkupCompilePass1;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 AfterMarkupCompilePass1;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 MarkupCompilePass2ForMainAssembly;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 FileClassification;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 MainResourcesGeneration;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       PrepareResourceNames;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ResGen;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       CompileLicxFiles
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :     
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :        
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :     
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :     " (previous value: "
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ValidationExtension;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ExpressionBuildExtension;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       XamlMarkupCompilePass1;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       XamlMarkupCompilePass2;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 MarkupCompilePass1;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 AfterMarkupCompilePass1;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 MarkupCompilePass2ForMainAssembly;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 FileClassification;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 MainResourcesGeneration;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       PrepareResourceNames;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ResGen;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       CompileLicxFiles
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :     
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :        
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :     
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :     ") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets (186,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(267,5): message : Property reassignment: $(_HandlePackageFileConflictsAfter)="ResolveNuGetPackageAssets;ResolveNuGetPackageAssetsNonAOT" (previous value: "ResolveNuGetPackageAssets") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets (267,5)
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Trying to import C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\WebTools.Aspire\Microsoft.WebTools.Aspire.targets using extensions path C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\WebTools.Aspire\Microsoft.WebTools.Aspire.targets(25,5): message : Property reassignment: $(JsonSchemaCombinedFilePath)="\\spvaimapcn\data$\Apps\DoseConverter\obj\x64\Debug\CombinedComponentSchema.json" (previous value: "obj\x64\Debug\\CombinedComponentSchema.json") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\WebTools.Aspire\Microsoft.WebTools.Aspire.targets (25,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\WebTools.Aspire\Microsoft.WebTools.Aspire.targets(27,5): message : Property reassignment: $(AppSettingsJsonSchemaCombinedFilePath)="\\spvaimapcn\data$\Apps\DoseConverter\obj\x64\Debug\AppSettingsSchema.json" (previous value: "obj\x64\Debug\\AppSettingsSchema.json") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\WebTools.Aspire\Microsoft.WebTools.Aspire.targets (27,5)
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+\\spvaimapcn\data$\Apps\DoseConverter\packages\Fody.6.6.4\build\Fody.targets(11,5): message : Property reassignment: $(MsBuildMajorVersion)="18" (previous value: "15") at \\spvaimapcn\data$\Apps\DoseConverter\packages\Fody.6.6.4\build\Fody.targets (11,5)
+Overriding target "ResolveFrameworkReferences" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets" with target "ResolveFrameworkReferences" from project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets".
+Overriding target "GetFrameworkPaths" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" with target "GetFrameworkPaths" from project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets".
+Overriding target "SatelliteDllsProjectOutputGroup" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" with target "SatelliteDllsProjectOutputGroup" from project "C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets".
+Overriding target "GenerateCompiledExpressionsTempFile" in project "C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets" with target "GenerateCompiledExpressionsTempFile" from project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.WorkflowBuildExtensions.targets".
+Overriding target "CollectPackageReferences" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets" with target "CollectPackageReferences" from project "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.targets".
+Overriding target "CollectNuGetAuditSuppressions" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets" with target "CollectNuGetAuditSuppressions" from project "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.targets".
+Overriding target "CollectPrunePackageReferences" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets" with target "CollectPrunePackageReferences" from project "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.targets".
+Overriding target "CollectCopyToOutputDirectoryItemDesignTime" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets" with target "CollectCopyToOutputDirectoryItemDesignTime" from project "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\ProjectServices\Microsoft.DesignTime.targets".
+Overriding target "CompileDesignTime" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.CSharp.DesignTime.targets" with target "CompileDesignTime" from project "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\ProjectServices\Microsoft.DesignTime.targets".
+Overriding target "_CheckCompileDesignTimePrerequisite" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets" with target "_CheckCompileDesignTimePrerequisite" from project "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\ProjectServices\Microsoft.DesignTime.targets".
+The target "ClCompile" listed in an AfterTargets attribute at "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets (446,11)" does not exist in the project, and will be ignored.
+Project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" on node 1 (default targets).
+Project file contains ToolsVersion="15.0". This toolset may be unknown or missing, in which case you may be able to resolve this by installing the appropriate version of MSBuild, or the build may have been forced to a particular ToolsVersion for policy reasons. Treating the project as if it had ToolsVersion="Current". For more information, please see http://go.microsoft.com/fwlink/?LinkId=293424.
+Target "_CheckForInvalidConfigurationAndPlatform" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "EntityDeploy" depends on it):
+Using "Message" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "Message"
+  Configuration=Debug
+Done executing task "Message".
+Task "Message"
+  Platform=x64
+Done executing task "Message".
+Done building target "_CheckForInvalidConfigurationAndPlatform" in project "DoseConverter.csproj".
+Target "BeforeBuild" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "Build" depends on it):
+Done building target "BeforeBuild" in project "DoseConverter.csproj".
+Target "BuildOnlySettings" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "CoreBuild" depends on it):
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(1168,7): message : Property reassignment: $(BuildingProject)="true" (previous value: "false") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (1168,7) [\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj]
+Done building target "BuildOnlySettings" in project "DoseConverter.csproj".
+Target "GetFrameworkPaths" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "PrepareForBuild" depends on it):
+Done building target "GetFrameworkPaths" in project "DoseConverter.csproj".
+Target "GetFrameworkPaths" skipped. Previously built successfully.
+Target "GetReferenceAssemblyPaths" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "PrepareForBuild" depends on it):
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(1255,7): message : Property reassignment: $(TargetFrameworkDirectory)="" (previous value: "C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (1255,7) [\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj]
+Using "GetReferenceAssemblyPaths" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "GetReferenceAssemblyPaths"
+Done executing task "GetReferenceAssemblyPaths".
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(1272,7): message : Property reassignment: $(TargetFrameworkDirectory)="C:\Program Files %28x86%29\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\;;" (previous value: "C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (1272,7) [\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj]
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(1293,7): message : Property reassignment: $(TargetFrameworkDirectory)="C:\Program Files %28x86%29\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\;;;C:\Program Files %28x86%29\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\Facades\" (previous value: "C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (1293,7) [\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj]
+Done building target "GetReferenceAssemblyPaths" in project "DoseConverter.csproj".
+Target "EnsureNuGetPackageBuildImports" in project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "PrepareForBuild" depends on it):
+Done building target "EnsureNuGetPackageBuildImports" in project "DoseConverter.csproj".
+Target "PrepareForBuild" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "CoreBuild" depends on it):
+Using "FindAppConfigFile" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "FindAppConfigFile"
+Done executing task "FindAppConfigFile".
+Using "MakeDir" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "MakeDir"
+Done executing task "MakeDir".
+Done building target "PrepareForBuild" in project "DoseConverter.csproj".
+Target "BeforeResolveReferences" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "ResolveReferences" depends on it):
+Done building target "BeforeResolveReferences" in project "DoseConverter.csproj".
+Target "IgnoreJavaScriptOutputAssembly" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "AssignProjectConfiguration" depends on it):
+Done building target "IgnoreJavaScriptOutputAssembly" in project "DoseConverter.csproj".
+Target "AssignProjectConfiguration" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "ResolveReferences" depends on it):
+Using "AssignProjectConfiguration" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "AssignProjectConfiguration"
+  Project reference "ESAPIWorker\ESAPI.csproj" has not been resolved.
+Done executing task "AssignProjectConfiguration".
+Done building target "AssignProjectConfiguration" in project "DoseConverter.csproj".
+Target "AssignProjectConfiguration" skipped. Previously built successfully.
+Target "_SplitProjectReferencesByFileExistence" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "PrepareProjectReferences" depends on it):
+Done building target "_SplitProjectReferencesByFileExistence" in project "DoseConverter.csproj".
+Target "_AddOutputPathToGlobalPropertiesToRemove" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "_GetProjectReferenceTargetFrameworkProperties" depends on it):
+Done building target "_AddOutputPathToGlobalPropertiesToRemove" in project "DoseConverter.csproj".
+Target "_GetProjectReferenceTargetFrameworkProperties" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "PrepareProjectReferences" depends on it):
+Using "MSBuild" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "MSBuild"
+  Removing Properties:
+    TargetFramework
+    RuntimeIdentifier
+    SelfContained
+Property reassignment: $(MSBuildExtensionsPath)="C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild" (previous value: "C:\Program Files (x86)\MSBuild") at 
+Property reassignment: $(MSBuildExtensionsPath32)="C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild" (previous value: "C:\Program Files (x86)\MSBuild") at 
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Trying to import C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\$(MSBuildToolsVersion)\Microsoft.Common.props using extensions path C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Microsoft.Common.props(60,5): message : Property reassignment: $(MSBuildProjectExtensionsPath)="\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\" (previous value: "obj\") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Microsoft.Common.props (60,5)
+\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\ESAPI.csproj.nuget.g.props(7,5): message : Property 'USERPROFILE' with value 'C:\Users\nchng' expanded from the environment.
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Microsoft.Common.props(84,119): message : Property 'MSBuildUserExtensionsPath' with value 'C:\Users\nchng\AppData\Local\Microsoft\MSBuild' expanded from the environment.
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Trying to import C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\$(MSBuildToolsVersion)\Imports\Microsoft.Common.props\ImportBefore\* using extensions path C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Imports\Microsoft.Common.props\ImportBefore\Microsoft.NuGet.ImportBefore.props(14,5): message : Property 'VisualStudioVersion' with value '18.0' expanded from the environment.
+The "Configuration" property is a global property, and cannot be modified.
+The "Platform" property is a global property, and cannot be modified.
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Trying to import C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\$(MSBuildToolsVersion)\Microsoft.VisualStudioVersion.v*.Common.props using extensions path C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild
+Trying to import C:\Program Files (x86)\MSBuild\$(MSBuildToolsVersion)\Microsoft.VisualStudioVersion.v*.Common.props using extensions path C:\Program Files (x86)\MSBuild
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+The "Configuration" property is a global property, and cannot be modified.
+The "Platform" property is a global property, and cannot be modified.
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets(13,5): message : Property reassignment: $(DefineCommonItemSchemas)="false" (previous value: "true") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets (13,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets(14,5): message : Property reassignment: $(DefineCommonCapabilities)="false" (previous value: "true") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets (14,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets(15,5): message : Property reassignment: $(DefineCommonReferenceSchemas)="false" (previous value: "true") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets (15,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets(511,5): message : Property reassignment: $(CollectUpToDateCheckInputDesignTimeDependsOn)="CompileDesignTime;ResolveCodeAnalysisRuleSet" (previous value: "CompileDesignTime") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets (511,5)
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.props(117,5): message : Property reassignment: $(AvailablePlatforms)="Any CPU,x86,x64,ARM64" (previous value: "Any CPU,x86,x64") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.props (117,5)
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+The "Platform" property is a global property, and cannot be modified.
+The "Configuration" property is a global property, and cannot be modified.
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(175,5): message : Property reassignment: $(_DebugSymbolsProduced)="true" (previous value: "false") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (175,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(185,5): message : Property reassignment: $(_DocumentationFileProduced)="false" (previous value: "true") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (185,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(348,16): message : Property 'DevEnvDir' with value 'C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\' expanded from the environment.
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(393,5): message : Property reassignment: $(MSBuildCopyMarkerName)="ESAPI.csproj.Up2Date" (previous value: "ESAPI.csproj") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (393,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(542,5): message : Property reassignment: $(ProcessorArchitecture)="amd64" (previous value: "") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (542,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(580,5): message : Property reassignment: $(DelaySign)="" (previous value: "false") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (580,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(649,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};" (previous value: "{CandidateAssemblyFiles}") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (649,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(650,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem}" (previous value: "{CandidateAssemblyFiles};") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (650,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(651,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory}" (previous value: "{CandidateAssemblyFiles};;{HintPathFromItem}") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (651,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(652,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};" (previous value: "{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory}") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (652,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(653,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx}" (previous value: "{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (653,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(654,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx};{AssemblyFolders}" (previous value: "{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx}") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (654,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(655,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx};{AssemblyFolders};{GAC}" (previous value: "{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx};{AssemblyFolders}") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (655,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(656,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx};{AssemblyFolders};{GAC};{RawFileName}" (previous value: "{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx};{AssemblyFolders};{GAC}") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (656,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(657,5): message : Property reassignment: $(AssemblySearchPaths)="{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx};{AssemblyFolders};{GAC};{RawFileName};bin\x64\Debug\" (previous value: "{CandidateAssemblyFiles};;{HintPathFromItem};{TargetFrameworkDirectory};{AssemblyFoldersFromConfig:C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\AssemblyFolders.config,v4.8};;{Registry:Software\Microsoft\.NETFramework,v4.8,AssemblyFoldersEx};{AssemblyFolders};{GAC};{RawFileName}") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (657,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(1228,19): message : Property 'FrameworkDir' with value 'C:\Windows\Microsoft.NET\Framework\' expanded from the environment.
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(2622,5): message : Property 'LOCALAPPDATA' with value 'C:\Users\nchng\AppData\Local' expanded from the environment.
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(3950,5): message : Property reassignment: $(_SGenGenerateSerializationAssembliesConfig)="Auto" (previous value: "") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (3950,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(3951,5): message : Property reassignment: $(_SGenGenerateSerializationAssembliesConfig)="Off" (previous value: "Auto") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (3951,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(5162,5): message : Property reassignment: $(_TargetsThatPrepareProjectReferences)="
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(5162,5): message :       AssignProjectConfiguration;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(5162,5): message :       _SplitProjectReferencesByFileExistence
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(5162,5): message :     " (previous value: "_SplitProjectReferencesByFileExistence") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets (5162,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets(125,5): message : Property reassignment: $(_CodeAnalysisTreatWarningsAsErrors)="false" (previous value: "") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets (125,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets(167,9): message : Property reassignment: $(PrepareForRunDependsOn)="
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets(167,9): message :       CopyFilesToOutputDirectory
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets(167,9): message :     ;RunCodeAnalysis" (previous value: "
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets(167,9): message :       CopyFilesToOutputDirectory
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets(167,9): message :     ") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets (167,9)
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message : Property reassignment: $(ResolveReferencesDependsOn)="
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       BeforeResolveReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       AssignProjectConfiguration;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       FindInvalidProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveNativeReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveAssemblyReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       GenerateBindingRedirects;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       GenerateBindingRedirectsUpdateAppConfig;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveComReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       AfterResolveReferences
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :     ;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ImplicitlyExpandDesignTimeFacades
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :     " (previous value: "
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       BeforeResolveReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       AssignProjectConfiguration;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       FindInvalidProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveNativeReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveAssemblyReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       GenerateBindingRedirects;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       GenerateBindingRedirectsUpdateAppConfig;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       ResolveComReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :       AfterResolveReferences
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets(74,5): message :     ") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets (74,5)
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message : Property reassignment: $(PrepareResourceNamesDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :                     AssignWinFXEmbeddedResource;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :                     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       AssignTargetPaths;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       SplitResourcesByCulture;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       CreateManifestResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       CreateCustomManifestResourceNames
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       AssignTargetPaths;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       SplitResourcesByCulture;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       CreateManifestResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :       CreateCustomManifestResourceNames
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(97,7): message :     ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets (97,7)
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message : Property reassignment: $(PrepareResourcesDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :                 MarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :                 AfterMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :                 MarkupCompilePass2ForMainAssembly;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :                 FileClassification;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :                 MainResourcesGeneration;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :                 
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       PrepareResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       ResGen;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       CompileLicxFiles
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       PrepareResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       ResGen;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :       CompileLicxFiles
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(108,7): message :     ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets (108,7)
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message : Property reassignment: $(CompileDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :         
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       ResolveReferences;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       ResolveKeySource;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       SetWin32ManifestProperties;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _SetPreferNativeArm64Win32ManifestProperties;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       FindReferenceAssembliesForReferences;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _GenerateCompileInputs;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       BeforeCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _TimeStampBeforeCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _GenerateCompileDependencyCache;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       CoreCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _TimeStampAfterCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       AfterCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :     ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :         _AfterCompileWinFXInternal
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :     " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       ResolveReferences;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       ResolveKeySource;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       SetWin32ManifestProperties;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _SetPreferNativeArm64Win32ManifestProperties;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       FindReferenceAssembliesForReferences;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _GenerateCompileInputs;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       BeforeCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _TimeStampBeforeCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _GenerateCompileDependencyCache;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       CoreCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       _TimeStampAfterCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :       AfterCompile;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(184,5): message :     ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets (184,5)
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message : Property reassignment: $(PublishBuildDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             BuildOnlySettings;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             PrepareForBuild;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             ResolveReferences;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             PrepareResources;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             ResolveKeySource;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             PrepareResourcesForSatelliteAssemblies;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             GenerateSerializationAssemblies;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :             CreateSatelliteAssemblies;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :         " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :       BuildOnlySettings;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :       PrepareForBuild;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :       ResolveReferences;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :       PrepareResources;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :       ResolveKeySource;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :       GenerateSerializationAssemblies;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :       CreateSatelliteAssemblies;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets(813,9): message :     ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets (813,9)
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message : Property reassignment: $(BuildDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       EntityDeploy;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       BeforeBuild;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       CoreBuild;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       AfterBuild
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :     " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       BeforeBuild;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       CoreBuild;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :       AfterBuild
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(35,5): message :     ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets (35,5)
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message : Property reassignment: $(CleanDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       BeforeClean;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       UnmanagedUnregistration;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       CoreClean;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       CleanReferencedProjects;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       CleanPublishFolder;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       AfterClean
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :     ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       EntityClean;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :     " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       BeforeClean;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       UnmanagedUnregistration;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       CoreClean;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       CleanReferencedProjects;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       CleanPublishFolder;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :       AfterClean
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets(42,5): message :     ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Data.Entity.targets (42,5)
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message : Property reassignment: $(PrepareResourcesDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       XamlMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       XamlMarkupCompilePass2;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 MarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 AfterMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 MarkupCompilePass2ForMainAssembly;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 FileClassification;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 MainResourcesGeneration;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       PrepareResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       ResGen;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       CompileLicxFiles
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :        
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :     " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 MarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 AfterMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 MarkupCompilePass2ForMainAssembly;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 FileClassification;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 MainResourcesGeneration;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :                 
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       PrepareResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       ResGen;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       CompileLicxFiles
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets(35,5): message :       ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets (35,5)
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message : Property reassignment: $(PrepareResourcesDependsOn)="
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       ValidationExtension;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       ExpressionBuildExtension;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       XamlMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       XamlMarkupCompilePass2;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 MarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 AfterMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 MarkupCompilePass2ForMainAssembly;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 FileClassification;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 MainResourcesGeneration;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       PrepareResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       ResGen;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       CompileLicxFiles
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :        
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :     " (previous value: "
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       XamlMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       XamlMarkupCompilePass2;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 MarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 AfterMarkupCompilePass1;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 MarkupCompilePass2ForMainAssembly;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 FileClassification;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 MainResourcesGeneration;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :                 
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       ;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       PrepareResourceNames;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       ResGen;
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :       CompileLicxFiles
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :     
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :        
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets(16,5): message :     ") at C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets (16,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message : Property reassignment: $(ResolveReferencesDependsOn)="
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       BeforeResolveReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       AssignProjectConfiguration;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       FindInvalidProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveNativeReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveAssemblyReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       GenerateBindingRedirects;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       GenerateBindingRedirectsUpdateAppConfig;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveComReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       AfterResolveReferences
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :     ;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ImplicitlyExpandDesignTimeFacades
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :     ;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveTestReferences
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :     " (previous value: "
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       BeforeResolveReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       AssignProjectConfiguration;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       FindInvalidProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveNativeReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveAssemblyReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       GenerateBindingRedirects;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       GenerateBindingRedirectsUpdateAppConfig;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ResolveComReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       AfterResolveReferences
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :     ;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :       ImplicitlyExpandDesignTimeFacades
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets(4,5): message :     ") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\TeamTest\Microsoft.TeamTest.targets (4,5)
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Trying to import C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\$(MSBuildToolsVersion)\Microsoft.Common.targets\ImportAfter\* using extensions path C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Trying to import C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Sdks\Microsoft.Docker.Sdk\build\Microsoft.Docker.targets using extensions path C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(74,5): message : Property reassignment: $(ProjectLockFile)="obj\project.assets.json" (previous value: "\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\project.assets.json") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets (74,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message : Property reassignment: $(ResolveAssemblyReferencesDependsOn)="
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       ResolveProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       FindInvalidProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       GetFrameworkPaths;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       GetReferenceAssemblyPaths;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       PrepareForBuild;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       ResolveSDKReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       ExpandSDKReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :     ;ResolveNuGetPackageAssets" (previous value: "
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       ResolveProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       FindInvalidProjectReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       GetFrameworkPaths;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       GetReferenceAssemblyPaths;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       PrepareForBuild;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       ResolveSDKReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :       ExpandSDKReferences;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(185,5): message :     ") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets (185,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message : Property reassignment: $(PrepareResourcesDependsOn)="ResolveNuGetPackageAssets;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ValidationExtension;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ExpressionBuildExtension;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       XamlMarkupCompilePass1;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       XamlMarkupCompilePass2;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 MarkupCompilePass1;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 AfterMarkupCompilePass1;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 MarkupCompilePass2ForMainAssembly;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 FileClassification;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 MainResourcesGeneration;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       PrepareResourceNames;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ResGen;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       CompileLicxFiles
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :     
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :        
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :     
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :     " (previous value: "
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ValidationExtension;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ExpressionBuildExtension;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       XamlMarkupCompilePass1;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       XamlMarkupCompilePass2;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 MarkupCompilePass1;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 AfterMarkupCompilePass1;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 MarkupCompilePass2ForMainAssembly;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 FileClassification;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 MainResourcesGeneration;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :                 
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       PrepareResourceNames;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       ResGen;
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :       CompileLicxFiles
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :     
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :        
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :     
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(186,5): message :     ") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets (186,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets(267,5): message : Property reassignment: $(_HandlePackageFileConflictsAfter)="ResolveNuGetPackageAssets;ResolveNuGetPackageAssetsNonAOT" (previous value: "ResolveNuGetPackageAssets") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\NuGet\18.0\Microsoft.NuGet.targets (267,5)
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Trying to import C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\WebTools.Aspire\Microsoft.WebTools.Aspire.targets using extensions path C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\WebTools.Aspire\Microsoft.WebTools.Aspire.targets(25,5): message : Property reassignment: $(JsonSchemaCombinedFilePath)="\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\x64\Debug\CombinedComponentSchema.json" (previous value: "obj\x64\Debug\\CombinedComponentSchema.json") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\WebTools.Aspire\Microsoft.WebTools.Aspire.targets (25,5)
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\WebTools.Aspire\Microsoft.WebTools.Aspire.targets(27,5): message : Property reassignment: $(AppSettingsJsonSchemaCombinedFilePath)="\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\x64\Debug\AppSettingsSchema.json" (previous value: "obj\x64\Debug\\AppSettingsSchema.json") at C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\WebTools.Aspire\Microsoft.WebTools.Aspire.targets (27,5)
+Search paths being used for $(MSBuildExtensionsPath) are C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild;$(MSBuildProgramFiles32)\MSBuild
+Overriding target "ResolveFrameworkReferences" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets" with target "ResolveFrameworkReferences" from project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets".
+Overriding target "GetFrameworkPaths" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" with target "GetFrameworkPaths" from project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.NETFramework.CurrentVersion.targets".
+Overriding target "SatelliteDllsProjectOutputGroup" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" with target "SatelliteDllsProjectOutputGroup" from project "C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WinFx.targets".
+Overriding target "GenerateCompiledExpressionsTempFile" in project "C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Microsoft.WorkflowBuildExtensions.targets" with target "GenerateCompiledExpressionsTempFile" from project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.WorkflowBuildExtensions.targets".
+Overriding target "CollectPackageReferences" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets" with target "CollectPackageReferences" from project "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.targets".
+Overriding target "CollectNuGetAuditSuppressions" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets" with target "CollectNuGetAuditSuppressions" from project "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.targets".
+Overriding target "CollectPrunePackageReferences" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets" with target "CollectPrunePackageReferences" from project "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.targets".
+Overriding target "CollectCopyToOutputDirectoryItemDesignTime" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets" with target "CollectCopyToOutputDirectoryItemDesignTime" from project "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\ProjectServices\Microsoft.DesignTime.targets".
+Overriding target "CompileDesignTime" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.CSharp.DesignTime.targets" with target "CompileDesignTime" from project "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\ProjectServices\Microsoft.DesignTime.targets".
+Overriding target "_CheckCompileDesignTimePrerequisite" in project "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets" with target "_CheckCompileDesignTimePrerequisite" from project "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\ProjectServices\Microsoft.DesignTime.targets".
+The target "ClCompile" listed in an AfterTargets attribute at "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\CodeAnalysis\Microsoft.CodeAnalysis.targets (446,11)" does not exist in the project, and will be ignored.
+Project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (1) is building "\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\ESAPI.csproj" (2) on node 1 (GetTargetFrameworks target(s)).
+Project file contains ToolsVersion="15.0". This toolset may be unknown or missing, in which case you may be able to resolve this by installing the appropriate version of MSBuild, or the build may have been forced to a particular ToolsVersion for policy reasons. Treating the project as if it had ToolsVersion="Current". For more information, please see http://go.microsoft.com/fwlink/?LinkId=293424.
+Target "GetTargetFrameworksWithPlatformForSingleTargetFramework" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\ESAPI.csproj" (target "GetTargetFrameworks" depends on it):
+Using "CombineTargetFrameworkInfoProperties" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "CombineTargetFrameworkInfoProperties"
+Done executing task "CombineTargetFrameworkInfoProperties".
+Done building target "GetTargetFrameworksWithPlatformForSingleTargetFramework" in project "ESAPI.csproj".
+Target "GetTargetFrameworks" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\ESAPI.csproj" (entry point):
+Using "CombineXmlElements" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "CombineXmlElements"
+Done executing task "CombineXmlElements".
+Done building target "GetTargetFrameworks" in project "ESAPI.csproj".
+Done Building Project "\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\ESAPI.csproj" (GetTargetFrameworks target(s)).
+Done executing task "MSBuild".
+Assembly loaded during TaskRun: NuGet.Build.Tasks, Version=7.6.0.59, Culture=neutral, PublicKeyToken=31bf3856ad364e35 (location: C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.Build.Tasks.dll, MVID: c4a010a3-3d89-4480-934d-da059e0f0120, AppDomain: [Default])
+Assembly loaded during TaskRun: NuGet.Common, Version=7.6.0.59, Culture=neutral, PublicKeyToken=31bf3856ad364e35 (location: C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.Common.dll, MVID: ccc8576f-65a8-4b30-b757-230ca2dcce7b, AppDomain: [Default])
+Assembly loaded during TaskRun: NuGet.Commands, Version=7.6.0.59, Culture=neutral, PublicKeyToken=31bf3856ad364e35 (location: C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.Commands.dll, MVID: 9c71258c-f0b7-49ea-9662-837fa1897919, AppDomain: [Default])
+Assembly loaded during TaskRun: Microsoft.Build.Utilities.v4.0, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a (location: C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\Microsoft.Build.Utilities.v4.0\v4.0_4.0.0.0__b03f5f7f11d50a3a\Microsoft.Build.Utilities.v4.0.dll, MVID: 928ad568-c7eb-432c-88ff-4b3479828431, AppDomain: [Default])
+Assembly loaded during TaskRun: NuGet.ProjectModel, Version=7.6.0.59, Culture=neutral, PublicKeyToken=31bf3856ad364e35 (location: C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.ProjectModel.dll, MVID: 9e921b47-3112-4171-9833-1a1d9b30a1dc, AppDomain: [Default])
+Using "GetReferenceNearestTargetFrameworkTask" task from assembly "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.Build.Tasks.dll".
+Task "GetReferenceNearestTargetFrameworkTask"
+  Assembly loaded during TaskRun (NuGet.Build.Tasks.GetReferenceNearestTargetFrameworkTask): NuGet.Frameworks, Version=7.6.0.59, Culture=neutral, PublicKeyToken=31bf3856ad364e35 (location: C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.Frameworks.dll, MVID: e023be29-db57-4f03-9aa3-9075e816efa2, AppDomain: [Default])
+  Assembly loaded during TaskRun (NuGet.Build.Tasks.GetReferenceNearestTargetFrameworkTask): NuGet.LibraryModel, Version=7.6.0.59, Culture=neutral, PublicKeyToken=31bf3856ad364e35 (location: C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.LibraryModel.dll, MVID: e14646f5-c35b-4207-8c60-cdaec06a67f8, AppDomain: [Default])
+  Assembly loaded during TaskRun (NuGet.Build.Tasks.GetReferenceNearestTargetFrameworkTask): NuGet.Packaging, Version=7.6.0.59, Culture=neutral, PublicKeyToken=31bf3856ad364e35 (location: C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.Packaging.dll, MVID: 172e72e2-35db-42c8-a4ad-d8d34633d0c7, AppDomain: [Default])
+  Assembly loaded during TaskRun (NuGet.Build.Tasks.GetReferenceNearestTargetFrameworkTask): NuGet.Versioning, Version=7.6.0.59, Culture=neutral, PublicKeyToken=31bf3856ad364e35 (location: C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\NuGet\NuGet.Versioning.dll, MVID: 0b740cc3-9fb6-4af8-9d76-07fae7f49282, AppDomain: [Default])
+Done executing task "GetReferenceNearestTargetFrameworkTask".
+Using "SetRidAgnosticValueForProjects" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "SetRidAgnosticValueForProjects"
+Done executing task "SetRidAgnosticValueForProjects".
+Done building target "_GetProjectReferenceTargetFrameworkProperties" in project "DoseConverter.csproj".
+Target "PrepareProjectReferences" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "ResolveProjectReferences" depends on it):
+Done building target "PrepareProjectReferences" in project "DoseConverter.csproj".
+Target "ResolveProjectReferences" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "ResolveReferences" depends on it):
+Task "MSBuild"
+  Removing Properties for project "ESAPIWorker\ESAPI.csproj":
+    TargetFramework
+    RuntimeIdentifier
+    SelfContained
+Project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (1) is building "\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\ESAPI.csproj" (2:2) on node 1 (default targets).
+Project file contains ToolsVersion="15.0". This toolset may be unknown or missing, in which case you may be able to resolve this by installing the appropriate version of MSBuild, or the build may have been forced to a particular ToolsVersion for policy reasons. Treating the project as if it had ToolsVersion="Current". For more information, please see http://go.microsoft.com/fwlink/?LinkId=293424.
+Target "_CheckForInvalidConfigurationAndPlatform" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\ESAPI.csproj" (target "EntityDeploy" depends on it):
+Using "MSBuildInternalMessage" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "MSBuildInternalMessage"
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(843,5): error : The BaseOutputPath/OutputPath property is not set for project 'ESAPI.csproj'.  Please check to make sure that you have specified a valid combination of Configuration and Platform for this project.  Configuration='Debug'  Platform='x64'. You may be seeing this message because you are trying to build a project without a solution file, and have specified a non-default Configuration or Platform that doesn't exist for this project. [\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\ESAPI.csproj]
+Done executing task "MSBuildInternalMessage" -- FAILED.
+Done building target "_CheckForInvalidConfigurationAndPlatform" in project "ESAPI.csproj" -- FAILED.
+Done Building Project "\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\ESAPI.csproj" (default targets) -- FAILED.
+Done executing task "MSBuild" -- FAILED.
+Done building target "ResolveProjectReferences" in project "DoseConverter.csproj" -- FAILED.
+Target "_CheckForCompileOutputs" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "_CleanGetCurrentAndPriorFileWrites" depends on it):
+Done building target "_CheckForCompileOutputs" in project "DoseConverter.csproj".
+Target "_CleanGetCurrentAndPriorFileWrites" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "_CleanRecordFileWrites" depends on it):
+Using "ReadLinesFromFile" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "ReadLinesFromFile"
+Done executing task "ReadLinesFromFile".
+Using "ConvertToAbsolutePath" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "ConvertToAbsolutePath"
+Done executing task "ConvertToAbsolutePath".
+Using "FindUnderPath" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "FindUnderPath"
+  Comparison path is "\\spvaimapcn\data$\Apps\DoseConverter".
+Done executing task "FindUnderPath".
+Task "FindUnderPath"
+  Comparison path is "bin\x64\Debug\".
+Done executing task "FindUnderPath".
+Task "FindUnderPath"
+  Comparison path is "obj\x64\Debug\".
+Done executing task "FindUnderPath".
+Using "RemoveDuplicates" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "RemoveDuplicates"
+Done executing task "RemoveDuplicates".
+Done building target "_CleanGetCurrentAndPriorFileWrites" in project "DoseConverter.csproj".
+Target "_CleanRecordFileWrites" in file "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" from project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (target "CoreBuild" depends on it):
+Task "RemoveDuplicates"
+Done executing task "RemoveDuplicates".
+Task "MakeDir"
+Done executing task "MakeDir".
+Using "WriteLinesToFile" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
+Task "WriteLinesToFile"
+  Skipping write to file "obj\x64\Debug\DoseConverter.csproj.FileListAbsolute.txt" because content would not change.
+Done executing task "WriteLinesToFile".
+Done building target "_CleanRecordFileWrites" in project "DoseConverter.csproj".
+Done Building Project "\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (default targets) -- FAILED.
+
+Build FAILED.
+
+"\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.csproj" (default target) (1) ->
+"\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\ESAPI.csproj" (default target) (2:2) ->
+(_CheckForInvalidConfigurationAndPlatform target) -> 
+  C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(843,5): error : The BaseOutputPath/OutputPath property is not set for project 'ESAPI.csproj'.  Please check to make sure that you have specified a valid combination of Configuration and Platform for this project.  Configuration='Debug'  Platform='x64'. You may be seeing this message because you are trying to build a project without a solution file, and have specified a non-default Configuration or Platform that doesn't exist for this project. [\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\ESAPI.csproj]
+
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:01.12

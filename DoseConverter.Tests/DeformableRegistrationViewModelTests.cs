@@ -17,15 +17,26 @@ namespace DoseConverter.Tests
         // Helpers
         // -----------------------------------------------------------------------
 
-        private static PlanSelectionViewModel MakePlan(string planId, string courseId = "C1")
-            => new PlanSelectionViewModel(planId, courseId, "SS1", isSum: false);
+        /// <summary>Source plan uses SS id "SS1".</summary>
+        private static PlanSelectionViewModel MakePlan(string planId, string ssId = "SS1", string courseId = "C1")
+            => new PlanSelectionViewModel(planId, courseId, ssId, isSum: false);
 
-        private static DeformableRegistrationViewModel MakeVmWithPlans(
-            params PlanSelectionViewModel[] plans)
+        /// <summary>Target structure set with a distinct SS id by default.</summary>
+        private static StructureSetSelectionViewModel MakeSS(string ssId, string courseId = "C1", string imageId = "IMG1")
+            => new StructureSetSelectionViewModel(ssId, courseId, imageId);
+
+        /// <summary>
+        /// Creates a vm with source plans populated and a distinct target SS
+        /// (ssId "SS2") so validation does not trip the same-SS guard.
+        /// </summary>
+        private static DeformableRegistrationViewModel MakeReadyVm(
+            PlanSelectionViewModel sourcePlan,
+            StructureSetSelectionViewModel targetSS = null)
         {
             var vm = new DeformableRegistrationViewModel();
-            var list = new ObservableCollection<PlanSelectionViewModel>(plans);
-            vm.SetAvailablePlans(list);
+            vm.SetAvailablePlans(new ObservableCollection<PlanSelectionViewModel> { sourcePlan });
+            var ss = targetSS ?? MakeSS("SS2");
+            vm.SetAvailableTargets(new ObservableCollection<StructureSetSelectionViewModel> { ss });
             return vm;
         }
 
@@ -37,7 +48,7 @@ namespace DoseConverter.Tests
         public void DefaultConstructor_SetsInitialStatusMessage()
         {
             var vm = new DeformableRegistrationViewModel();
-            Assert.AreEqual("Select source and target plans to begin.", vm.StatusMessage);
+            StringAssert.Contains(vm.StatusMessage.ToLower(), "source");
         }
 
         [TestMethod]
@@ -61,36 +72,41 @@ namespace DoseConverter.Tests
         [TestMethod]
         public void SetAvailablePlans_PopulatesAllPlanOptions()
         {
-            var p1 = MakePlan("Plan1");
-            var p2 = MakePlan("Plan2");
-            var vm = MakeVmWithPlans(p1, p2);
-
+            var vm = new DeformableRegistrationViewModel();
+            vm.SetAvailablePlans(new ObservableCollection<PlanSelectionViewModel>
+            {
+                MakePlan("Plan1"), MakePlan("Plan2")
+            });
             Assert.AreEqual(2, vm.AllPlanOptions.Count);
         }
 
         [TestMethod]
-        public void SetAvailablePlans_SetsSourceAndTargetToFirst()
+        public void SetAvailablePlans_SetsSourceToFirst()
         {
-            var p1 = MakePlan("Plan1");
-            var p2 = MakePlan("Plan2");
-            var vm = MakeVmWithPlans(p1, p2);
-
+            var vm = new DeformableRegistrationViewModel();
+            vm.SetAvailablePlans(new ObservableCollection<PlanSelectionViewModel>
+            {
+                MakePlan("Plan1"), MakePlan("Plan2")
+            });
             Assert.AreEqual("Plan1", vm.SelectedSourcePlan?.Id);
-            Assert.AreEqual("Plan1", vm.SelectedTargetPlan?.Id);
         }
 
         [TestMethod]
-        public void SetAvailablePlans_EmptyList_LeavesNullSelections()
+        public void SetAvailablePlans_EmptyList_LeavesNullSourceSelection()
         {
-            var vm = MakeVmWithPlans(/* no plans */);
+            var vm = new DeformableRegistrationViewModel();
+            vm.SetAvailablePlans(new ObservableCollection<PlanSelectionViewModel>());
             Assert.IsNull(vm.SelectedSourcePlan);
-            Assert.IsNull(vm.SelectedTargetPlan);
         }
 
         [TestMethod]
         public void SetAvailablePlans_CalledTwice_ReplacesOptions()
         {
-            var vm = MakeVmWithPlans(MakePlan("Old1"), MakePlan("Old2"));
+            var vm = new DeformableRegistrationViewModel();
+            vm.SetAvailablePlans(new ObservableCollection<PlanSelectionViewModel>
+            {
+                MakePlan("Old1"), MakePlan("Old2")
+            });
             vm.SetAvailablePlans(new ObservableCollection<PlanSelectionViewModel>
             {
                 MakePlan("New1")
@@ -100,68 +116,83 @@ namespace DoseConverter.Tests
         }
 
         // -----------------------------------------------------------------------
+        // SetAvailableTargets
+        // -----------------------------------------------------------------------
+
+        [TestMethod]
+        public void SetAvailableTargets_PopulatesAllTargetOptions()
+        {
+            var vm = new DeformableRegistrationViewModel();
+            vm.SetAvailableTargets(new ObservableCollection<StructureSetSelectionViewModel>
+            {
+                MakeSS("SS1"), MakeSS("SS2")
+            });
+            Assert.AreEqual(2, vm.AllTargetOptions.Count);
+        }
+
+        [TestMethod]
+        public void SetAvailableTargets_SetsTargetToFirst()
+        {
+            var vm = new DeformableRegistrationViewModel();
+            vm.SetAvailableTargets(new ObservableCollection<StructureSetSelectionViewModel>
+            {
+                MakeSS("SS1"), MakeSS("SS2")
+            });
+            Assert.AreEqual("SS1", vm.SelectedTargetSS?.Id);
+        }
+
+        [TestMethod]
+        public void SetAvailableTargets_EmptyList_LeavesNullTargetSelection()
+        {
+            var vm = new DeformableRegistrationViewModel();
+            vm.SetAvailableTargets(new ObservableCollection<StructureSetSelectionViewModel>());
+            Assert.IsNull(vm.SelectedTargetSS);
+        }
+
+        // -----------------------------------------------------------------------
         // Validation: RunButtonVisibility
         // -----------------------------------------------------------------------
 
         [TestMethod]
-        public void Validation_SamePlanForSourceAndTarget_HidesRunButton()
+        public void Validation_NoTargetSS_HidesRunButton()
         {
-            var p1 = MakePlan("Plan1");
-            var vm = MakeVmWithPlans(p1);
-
-            // Both source and target default to the same first plan
-            vm.DeformedPlanName = "OutputPlan";
-
-            Assert.AreEqual(Visibility.Collapsed, vm.RunButtonVisibility);
-        }
-
-        [TestMethod]
-        public void Validation_DifferentPlans_EmptyOutputName_HidesRunButton()
-        {
-            var p1 = MakePlan("Plan1");
-            var p2 = MakePlan("Plan2");
-            var vm = MakeVmWithPlans(p1, p2);
-            vm.SelectedTargetPlan = p2;
-            vm.DeformedPlanName = "";
-
-            Assert.AreEqual(Visibility.Collapsed, vm.RunButtonVisibility);
-        }
-
-        [TestMethod]
-        public void Validation_DifferentPlans_WhitespaceOutputName_HidesRunButton()
-        {
-            var p1 = MakePlan("Plan1");
-            var p2 = MakePlan("Plan2");
-            var vm = MakeVmWithPlans(p1, p2);
-            vm.SelectedTargetPlan = p2;
-            vm.DeformedPlanName = "   ";
-
-            Assert.AreEqual(Visibility.Collapsed, vm.RunButtonVisibility);
-        }
-
-        [TestMethod]
-        public void Validation_DifferentPlans_ValidOutputName_ShowsRunButton()
-        {
-            var p1 = MakePlan("Plan1");
-            var p2 = MakePlan("Plan2");
-            var vm = MakeVmWithPlans(p1, p2);
-            vm.SelectedTargetPlan = p2;
-            vm.DeformedPlanName = "OutputPlan";
-
-            Assert.AreEqual(Visibility.Visible, vm.RunButtonVisibility);
-        }
-
-        [TestMethod]
-        public void Validation_SamePlanIdDifferentCourse_ShowsRunButton()
-        {
-            var p1 = new PlanSelectionViewModel("Plan1", "C1", "SS1", false);
-            var p2 = new PlanSelectionViewModel("Plan1", "C2", "SS1", false);
             var vm = new DeformableRegistrationViewModel();
-            vm.SetAvailablePlans(new ObservableCollection<PlanSelectionViewModel> { p1, p2 });
-            vm.SelectedSourcePlan = p1;
-            vm.SelectedTargetPlan = p2;
-            vm.DeformedPlanName = "Output";
+            vm.SetAvailablePlans(new ObservableCollection<PlanSelectionViewModel> { MakePlan("Plan1") });
+            // No target SS set
+            vm.DeformedPlanName = "OutputPlan";
+            Assert.AreEqual(Visibility.Collapsed, vm.RunButtonVisibility);
+        }
 
+        [TestMethod]
+        public void Validation_SameSSForSourceAndTarget_HidesRunButton()
+        {
+            // Source plan uses SS1, target SS is also SS1 → conflict
+            var vm = MakeReadyVm(MakePlan("Plan1", ssId: "SS1"), MakeSS("SS1"));
+            vm.DeformedPlanName = "OutputPlan";
+            Assert.AreEqual(Visibility.Collapsed, vm.RunButtonVisibility);
+        }
+
+        [TestMethod]
+        public void Validation_DifferentSS_EmptyOutputName_HidesRunButton()
+        {
+            var vm = MakeReadyVm(MakePlan("Plan1", ssId: "SS1"), MakeSS("SS2"));
+            vm.DeformedPlanName = "";
+            Assert.AreEqual(Visibility.Collapsed, vm.RunButtonVisibility);
+        }
+
+        [TestMethod]
+        public void Validation_DifferentSS_WhitespaceOutputName_HidesRunButton()
+        {
+            var vm = MakeReadyVm(MakePlan("Plan1", ssId: "SS1"), MakeSS("SS2"));
+            vm.DeformedPlanName = "   ";
+            Assert.AreEqual(Visibility.Collapsed, vm.RunButtonVisibility);
+        }
+
+        [TestMethod]
+        public void Validation_DifferentSS_ValidOutputName_ShowsRunButton()
+        {
+            var vm = MakeReadyVm(MakePlan("Plan1", ssId: "SS1"), MakeSS("SS2"));
+            vm.DeformedPlanName = "OutputPlan";
             Assert.AreEqual(Visibility.Visible, vm.RunButtonVisibility);
         }
 
@@ -207,24 +238,27 @@ namespace DoseConverter.Tests
         }
 
         [TestMethod]
+        public void Validation_NullTargetSS_StatusIndicatesSelectTarget()
+        {
+            var vm = new DeformableRegistrationViewModel();
+            vm.SetAvailablePlans(new ObservableCollection<PlanSelectionViewModel> { MakePlan("Plan1") });
+            // No target SS — SelectedTargetSS remains null
+            StringAssert.Contains(vm.StatusMessage.ToLower(), "target");
+        }
+
+        [TestMethod]
         public void Validation_ReadyState_StatusIndicatesReady()
         {
-            var p1 = MakePlan("Plan1");
-            var p2 = MakePlan("Plan2");
-            var vm = MakeVmWithPlans(p1, p2);
-            vm.SelectedTargetPlan = p2;
+            var vm = MakeReadyVm(MakePlan("Plan1", ssId: "SS1"), MakeSS("SS2"));
             vm.DeformedPlanName = "OutputPlan";
-
             StringAssert.Contains(vm.StatusMessage.ToLower(), "ready");
         }
 
         [TestMethod]
-        public void Validation_SamePlanSourceTarget_StatusIndicatesDifferent()
+        public void Validation_SameSSSourceTarget_StatusIndicatesDifferent()
         {
-            var p1 = MakePlan("Plan1");
-            var vm = MakeVmWithPlans(p1);
+            var vm = MakeReadyVm(MakePlan("Plan1", ssId: "SS1"), MakeSS("SS1"));
             vm.DeformedPlanName = "OutputPlan";
-
             StringAssert.Contains(vm.StatusMessage.ToLower(), "different");
         }
     }

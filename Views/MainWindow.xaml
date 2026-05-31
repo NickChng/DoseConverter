@@ -11,7 +11,7 @@
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=ViewModels:ViewModel, IsDesignTimeCreatable=True}"
-        Title="Dose Converter v1.3" Height="650" Width="970" Background="White" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize">
+        Title="NoPAUSE - Dose Converter v2.0" Height="845" Width="1261" Background="White" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize">
     <Window.Resources>
         <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" >
@@ -475,12 +475,17 @@
         </TabItem>
 
         <!-- ===================== Deformable Registration tab ===================== -->
-        <TabItem Header="Deformable Registration">
+        <TabItem Header="Deformable Dose Accumulation">
             <Views:DeformableRegistrationView DataContext="{Binding DirViewModel}"/>
         </TabItem>
 
-        <!-- ===================== Dose Accumulation tab ===================== -->
-        <TabItem Header="Dose Accumulation">
+        <!-- ===================== DIR Quality Review tab (appears after DIR completes) ===================== -->
+        <TabItem Header="Def. Quality Review" Visibility="{Binding DirReviewTabVisibility}">
+            <Views:DirReviewView DataContext="{Binding DirReviewViewModel}"/>
+        </TabItem>
+
+        <!-- ===================== Dose Accumulation tab (WIP - hidden) ===================== -->
+        <TabItem Header="Dose Accumulation" Visibility="Collapsed">
             <Views:DoseAccumulationView DataContext="{Binding AccumulationViewModel}"/>
         </TabItem>
 

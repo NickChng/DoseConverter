@@ -1,0 +1,217 @@
+﻿<UserControl x:Class="DoseConverter.Views.DirReviewView"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:local="clr-namespace:DoseConverter"
+			 xmlns:Views="clr-namespace:DoseConverter.Views"
+			 xmlns:ViewModels="clr-namespace:DoseConverter.ViewModels"
+			 mc:Ignorable="d"
+			 d:DataContext="{d:DesignInstance Type=ViewModels:DirReviewViewModel, IsDesignTimeCreatable=True}"
+			 Background="White">
+	<UserControl.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="XAMLDictionary.xaml"/>
+			</ResourceDictionary.MergedDictionaries>
+			<Style TargetType="{x:Type Label}"/>
+			<Style TargetType="{x:Type TextBlock}"/>
+			<Style TargetType="{x:Type Slider}"/>
+			<local:VisibilityConverter x:Key="VisibilityConverter"/>
+			<local:VisibilityInverseConverter x:Key="VisibilityInverseConverter"/>
+		</ResourceDictionary>
+	</UserControl.Resources>
+
+	<Grid Margin="10,10,10,10">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+
+		<!-- Header -->
+		<Grid Grid.Row="0">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
+			<TextBlock Grid.Row="0" TextWrapping="Wrap" Foreground="DimGray" FontStyle="Italic"
+					   Text="DIR quality review. Blends warped source CT (right) against target CT (left). Use checkboxes to overlay Jacobian determinant, deformation grid, or deformed dose (dose W/L slider appears on left side of image). Mouse wheel = navigate slices. LMB = mirror blend. RMB = zoom 20% around click point (up to 300%)."/>
+			<Border Grid.Row="1" HorizontalAlignment="Stretch" Height="1" CornerRadius="4"
+					Background="Black" Margin="0,8,0,8"/>
+		</Grid>
+
+		<!-- Image row: [Target W/L] [Image] [DIR W/L] -->
+		<Grid Grid.Row="1">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="70"/>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="70"/>
+			</Grid.ColumnDefinitions>
+
+			<!-- Left: Target W/L range slider -->
+			<DockPanel Grid.Column="0" Margin="0,0,6,0">
+				<TextBlock DockPanel.Dock="Top" Text="Target" FontWeight="Bold"
+						   HorizontalAlignment="Center" FontSize="11" Margin="0,0,0,4"/>
+				<Views:RangeSlider
+					LowerValue="{Binding TargetLowerHU, Mode=TwoWay}"
+					UpperValue="{Binding TargetUpperHU, Mode=TwoWay}"
+					Minimum="-1024" Maximum="3072"
+					IsEnabled="{Binding HasData}"
+					HorizontalAlignment="Center"/>
+			</DockPanel>
+
+			<!-- Centre: blended image with overlays and zoom support -->
+				<Border Grid.Column="1" Background="Black" CornerRadius="4"
+						x:Name="ImageBorder" ClipToBounds="True">
+					<!-- Outer grid is NOT transformed; only ImageStack is scaled/translated -->
+					<Grid>
+					<Grid x:Name="ImageStack">
+					<Grid.RenderTransform>
+						<TransformGroup>
+							<ScaleTransform x:Name="ZoomScale" ScaleX="1" ScaleY="1"/>
+							<TranslateTransform x:Name="ZoomTranslate" X="0" Y="0"/>
+						</TransformGroup>
+					</Grid.RenderTransform>
+
+					<!-- Base blended CT image - wheel and LMB wired in code-behind -->
+					<Image x:Name="ReviewImage"
+						   Source="{Binding DisplayImage}"
+						   Stretch="Uniform"
+						   RenderOptions.BitmapScalingMode="HighQuality"
+						   Margin="4"
+						   Cursor="Hand"/>
+
+					<!-- Jacobian determinant heatmap overlay -->
+					<Image Source="{Binding JacobianOverlay}"
+						   Stretch="Uniform"
+						   RenderOptions.BitmapScalingMode="HighQuality"
+						   Margin="4"
+						   IsHitTestVisible="False"
+						   Visibility="{Binding JacobianOverlayVisibility}"/>
+
+					<!-- Deformation grid overlay -->
+					<Image Source="{Binding GridOverlay}"
+						   Stretch="Uniform"
+						   RenderOptions.BitmapScalingMode="NearestNeighbor"
+						   Margin="4"
+						   IsHitTestVisible="False"
+						   Visibility="{Binding GridOverlayVisibility}"/>
+
+					<!-- Deformed dose colourmap overlay -->
+					<Image Source="{Binding DoseOverlay}"
+						   Stretch="Uniform"
+						   RenderOptions.BitmapScalingMode="HighQuality"
+						   Margin="4"
+						   IsHitTestVisible="False"
+						   Visibility="{Binding DoseOverlayVisibility}"/>
+
+					<!-- Dose W/L range slider overlaid on the left side of the image -->
+					<Border VerticalAlignment="Stretch" HorizontalAlignment="Left"
+							Background="Transparent" Margin="4,40,0,4" Width="56"
+							Visibility="{Binding DoseSliderVisibility}"
+							IsHitTestVisible="True">
+						<DockPanel>
+							<Border DockPanel.Dock="Top" Background="#99000000" CornerRadius="2" Margin="0,0,0,6">
+								<TextBlock Text="Dose" FontWeight="Bold" Foreground="White"
+											 HorizontalAlignment="Center" FontSize="10" Padding="2,3"/>
+							</Border>
+							<Border DockPanel.Dock="Bottom" Background="#99000000" CornerRadius="2" Margin="0,6,0,0">
+								<TextBlock Text="(Gy)" FontSize="9" Foreground="LightGray"
+											 HorizontalAlignment="Center" Padding="2,3"/>
+							</Border>
+							<Views:RangeSlider
+								LowerValue="{Binding DoseLowerGy, Mode=TwoWay}"
+								UpperValue="{Binding DoseUpperGy, Mode=TwoWay}"
+								Minimum="0" Maximum="{Binding DoseMaxGy}"
+								IsEnabled="{Binding HasData}"
+								HorizontalAlignment="Center"/>
+						</DockPanel>
+					</Border>
+
+					<!-- Placeholder when no DIR data -->
+					<TextBlock Text="Run a deformable registration to view DIR quality here."
+							   Foreground="Gainsboro" HorizontalAlignment="Center"
+							   VerticalAlignment="Center" TextWrapping="Wrap"
+							   TextAlignment="Center" Margin="20"
+							   Visibility="{Binding HasData,
+								   Converter={StaticResource VisibilityInverseConverter}}"/>
+
+					<!-- Slice counter (bottom-right) -->
+					<Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
+							Background="#AA000000" CornerRadius="3" Margin="0,0,8,8" Padding="6,2">
+						<TextBlock Text="{Binding SliceLabel}" Foreground="Yellow"
+									 FontSize="11" FontWeight="Bold"
+									 Visibility="{Binding HasData,
+										 Converter={StaticResource VisibilityConverter}}"/>
+					</Border>
+
+						</Grid>
+						<!-- Reset Zoom button (top-centre) – outside ImageStack so it stays fixed when zoomed -->
+						<Button x:Name="ResetZoomButton"
+								Content="Reset Zoom"
+								HorizontalAlignment="Center" VerticalAlignment="Top"
+								Margin="0,6,0,0" Padding="10,3"
+								FontSize="11" FontWeight="Bold"
+								Background="#CC333333" Foreground="White"
+								BorderBrush="#FF888888" BorderThickness="1"
+								Cursor="Hand"
+								Visibility="Collapsed"/>
+
+						<!-- Overlay checkboxes (top-right corner) – outside ImageStack so they stay fixed when zoomed -->
+						<Border VerticalAlignment="Top" HorizontalAlignment="Right"
+								Background="#CC000000" CornerRadius="4" Margin="0,8,8,0" Padding="8,6">
+							<Border.Visibility>
+								<Binding Path="HasData" Converter="{StaticResource VisibilityConverter}"/>
+							</Border.Visibility>
+							<StackPanel Orientation="Vertical">
+								<CheckBox IsChecked="{Binding ShowJacobian, Mode=TwoWay}"
+											Foreground="White" FontSize="11" Margin="0,0,0,4">
+									<TextBlock Text="Jacobian det." Foreground="White" FontSize="11"/>
+								</CheckBox>
+								<CheckBox IsChecked="{Binding ShowGrid, Mode=TwoWay}"
+											Foreground="White" FontSize="11" Margin="0,0,0,4">
+									<TextBlock Text="Deform. grid" Foreground="White" FontSize="11"/>
+								</CheckBox>
+								<CheckBox IsChecked="{Binding ShowDose, Mode=TwoWay}"
+											Foreground="White" FontSize="11">
+									<TextBlock Text="Def. dose" Foreground="White" FontSize="11"/>
+								</CheckBox>
+							</StackPanel>
+						</Border>
+						</Grid>
+					</Border>
+
+			<!-- Right: DIR result W/L range slider -->
+			<DockPanel Grid.Column="2" Margin="6,0,0,0">
+				<TextBlock DockPanel.Dock="Top" Text="DIR result" FontWeight="Bold"
+						   HorizontalAlignment="Center" FontSize="11" Margin="0,0,0,4"/>
+				<Views:RangeSlider
+					LowerValue="{Binding DirLowerHU, Mode=TwoWay}"
+					UpperValue="{Binding DirUpperHU, Mode=TwoWay}"
+					Minimum="-1024" Maximum="3072"
+					IsEnabled="{Binding HasData}"
+					HorizontalAlignment="Center"/>
+			</DockPanel>
+		</Grid>
+
+		<!-- Blend bar -->
+		<Grid Grid.Row="2" Margin="0,8,0,0">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="70"/>
+				<ColumnDefinition Width="Auto"/>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="Auto"/>
+				<ColumnDefinition Width="70"/>
+			</Grid.ColumnDefinitions>
+			<TextBlock Grid.Column="1" Text="&lt;-- Target" VerticalAlignment="Center"
+					   FontWeight="Bold" Margin="0,0,8,0"/>
+			<Slider Grid.Column="2" VerticalAlignment="Center"
+					Minimum="0" Maximum="1"
+					Value="{Binding Blend, Mode=TwoWay}"
+					IsEnabled="{Binding HasData}"/>
+			<TextBlock Grid.Column="3" Text="DIR result --&gt;" VerticalAlignment="Center"
+					   FontWeight="Bold" Margin="8,0,0,0"/>
+		</Grid>
+	</Grid>
+</UserControl>

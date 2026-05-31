@@ -1,0 +1,52 @@
+<UserControl x:Class="DoseConverter.Views.RangeSlider"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             MinWidth="44" MinHeight="120">
+    <DockPanel LastChildFill="True">
+
+        <!-- Top label: upper value -->
+        <TextBlock x:Name="LabelUpper" DockPanel.Dock="Top"
+                   HorizontalAlignment="Center" FontSize="10" Foreground="DimGray"
+                   Margin="0,0,0,2"/>
+
+        <!-- Bottom label: lower value -->
+        <TextBlock x:Name="LabelLower" DockPanel.Dock="Bottom"
+                   HorizontalAlignment="Center" FontSize="10" Foreground="DimGray"
+                   Margin="0,2,0,0"/>
+
+        <!-- Middle label: window / level summary -->
+        <TextBlock x:Name="LabelWL" DockPanel.Dock="Bottom"
+                   HorizontalAlignment="Center" FontSize="10" Foreground="CornflowerBlue"
+                   TextWrapping="Wrap" TextAlignment="Center"
+                   Margin="0,2,0,0"/>
+
+        <!-- Track canvas — thumbs are positioned here by code-behind -->
+        <Canvas x:Name="TrackCanvas" HorizontalAlignment="Center" Width="20">
+
+            <!-- Full track groove -->
+            <Rectangle x:Name="TrackRect"
+                       Width="6" RadiusX="3" RadiusY="3"
+                       Fill="#FFDDDDDD" Stroke="#FFAAAAAA" StrokeThickness="1"/>
+
+            <!-- Highlighted range between thumbs -->
+            <Rectangle x:Name="RangeRect"
+                       Width="6" RadiusX="2" RadiusY="2"
+                       Fill="CornflowerBlue" Opacity="0.7"/>
+
+            <!-- Upper thumb (higher HU = lower on screen since top = max) -->
+            <Ellipse x:Name="ThumbUpper"
+                     Width="16" Height="16"
+                     Fill="CornflowerBlue" Stroke="White" StrokeThickness="2"
+                     Cursor="SizeNS"/>
+
+            <!-- Lower thumb -->
+            <Ellipse x:Name="ThumbLower"
+                     Width="16" Height="16"
+                     Fill="CornflowerBlue" Stroke="White" StrokeThickness="2"
+                     Cursor="SizeNS"/>
+        </Canvas>
+    </DockPanel>
+</UserControl>

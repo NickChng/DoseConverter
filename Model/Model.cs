@@ -307,6 +307,34 @@ namespace DoseConverter
             return result;
         }
 
+        /// <summary>
+        /// Returns all structure sets in the patient that have an associated CT image.
+        /// Each tuple is (courseId, structureSetId, imageId).  CourseId is the first
+        /// course whose plans reference the structure set, or empty if none does.
+        /// </summary>
+        public async Task<List<Tuple<string, string, string>>> GetAllStructureSets()
+        {
+            var result = new List<Tuple<string, string, string>>();
+            await _ew.AsyncRunPatientContext(patient =>
+            {
+                foreach (var ss in patient.StructureSets.Where(s => s.Image != null))
+                {
+                    string courseId = string.Empty;
+                    foreach (var course in patient.Courses)
+                    {
+                        if (course.PlanSetups.Any(p => p.StructureSet != null &&
+                            string.Equals(p.StructureSet.Id, ss.Id, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            courseId = course.Id;
+                            break;
+                        }
+                    }
+                    result.Add(new Tuple<string, string, string>(courseId, ss.Id, ss.Image.Id));
+                }
+            });
+            return result;
+        }
+
         public async Task<bool> ValidatePlanName(string proposedName)
         {
             bool planWithNameExists = false;
@@ -511,7 +539,9 @@ namespace DoseConverter
             string newPlanName,
             ExternalPlanSetup targetContextPlan,
             float[,,] deformedDoseGy,
-            Dose targetDoseReference)
+            Dose targetDoseReference,
+            int sourceFractions = 0,
+            DoseValue? sourceDosePerFraction = null)
         {
             // Clamp plan name to 13 characters (Eclipse limit)
             if (string.IsNullOrEmpty(newPlanName))
@@ -522,8 +552,12 @@ namespace DoseConverter
                 targetContextPlan.StructureSet, targetContextPlan);
             newPlan.Id = newPlanName;
 
-            int fractions = (int)targetContextPlan.NumberOfFractions;
-            newPlan.SetPrescription(fractions, targetContextPlan.DosePerFraction, targetContextPlan.TreatmentPercentage);
+            // Use source plan fractionation if provided; fall back to target plan values.
+            int fractions = sourceFractions > 0 ? sourceFractions : (int)targetContextPlan.NumberOfFractions;
+            DoseValue dpf = (sourceDosePerFraction.HasValue && sourceDosePerFraction.Value.Dose > 0)
+                ? sourceDosePerFraction.Value
+                : targetContextPlan.DosePerFraction;
+            newPlan.SetPrescription(fractions, dpf, targetContextPlan.TreatmentPercentage);
             double normalization = targetContextPlan.PlanNormalizationValue;
             newPlan.PlanNormalizationValue = double.IsNaN(normalization) ? 100 : normalization;
 

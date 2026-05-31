@@ -1,4 +1,4 @@
-<UserControl x:Class="DoseConverter.Views.DeformableRegistrationView"
+﻿<UserControl x:Class="DoseConverter.Views.DeformableRegistrationView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -29,7 +29,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="50"/>
         </Grid.RowDefinitions>
 
@@ -40,7 +39,7 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <TextBlock Grid.Row="0" TextWrapping="Wrap" Foreground="DimGray" FontStyle="Italic"
-                       Text="Deformable image registration (DIR) warps the source plan's dose onto the target plan's CT geometry using a B-Spline transform (SimpleITK). The output is a new Eclipse verification plan containing the deformed physical dose, which can then be fed into the Dose Conversion tab for EQD2 cumulation. Registration is CT-to-CT (unimodal). Runtime is typically 5–20 minutes depending on image size."/>
+                       Text="Deformable image registration (DIR) warps the source plan's dose onto the target image's CT geometry using diffeomorphic demons (via SimpleITK). It is recommended to start with a rigid registration for improved alignment. The output is a new Eclipse verification plan containing the deformed dose. Only unimodal CT-to-CT registration is supported. Runtime is typically 5–10 minutes depending on image size and DIR parameters."/>
             <Border Grid.Row="1" HorizontalAlignment="Stretch" Height="1" CornerRadius="4" Background="Black" Margin="0,8,0,8"/>
         </Grid>
 
@@ -55,6 +54,8 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="8"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="8"/>
                 <RowDefinition Height="Auto"/>
@@ -85,19 +86,19 @@
             <!-- Arrow -->
             <TextBlock Grid.Row="0" Grid.Column="1" Text="→" FontSize="20" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,4" Foreground="CornflowerBlue"/>
 
-            <!-- Target plan -->
+            <!-- Target image -->
             <Grid Grid.Row="0" Grid.Column="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <Label Grid.Row="0" Content="Target (fixed) plan" VerticalAlignment="Bottom" FontWeight="Bold"/>
+                <Label Grid.Row="0" Content="Target (fixed) image" VerticalAlignment="Bottom" FontWeight="Bold"/>
                 <ComboBox Grid.Row="1"
                           Style="{StaticResource ComboBoxStyle}"
                           Template="{StaticResource ComboBoxControlTemplate}"
                           Height="30"
-                          ItemsSource="{Binding AllPlanOptions}"
-                          SelectedItem="{Binding SelectedTargetPlan, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          ItemsSource="{Binding AllTargetOptions}"
+                          SelectedItem="{Binding SelectedTargetSS, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                           VerticalContentAlignment="Center">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
@@ -116,6 +117,9 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Label Grid.Row="0" Content="Output plan name (max 13 chars)" VerticalAlignment="Bottom" FontWeight="Bold"/>
                 <TextBox Grid.Row="1"
@@ -123,9 +127,46 @@
                          Padding="5,0,5,0"
                          VerticalContentAlignment="Center"
                          Text="{Binding DeformedPlanName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         MaxLength="13"/>
+                         MaxLength="13"
+                         Background="{Binding DeformedPlanNameBackground}"
+                         ToolTip="{Binding DeformedPlanNameError}"/>
                 <TextBlock Grid.Row="2" Text="Physical dose — review in Eclipse before EQD2 conversion."
                            Foreground="DimGray" FontSize="10" FontStyle="Italic" TextWrapping="Wrap" Margin="0,2,0,0"/>
+
+                <!-- DICOM export directory + export button (visible after a successful DIR run) -->
+                <StackPanel Grid.Row="3" Orientation="Vertical"
+                            Visibility="{Binding ExportButtonVisibility}"
+                            Margin="0,10,0,0">
+                    <Label Content="DICOM export directory" FontWeight="Bold" Padding="0,0,0,2"/>
+                    <!-- Editable path row: text box + browse button side-by-side -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="5"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0"
+                                 Height="28"
+                                 Padding="4,0,4,0"
+                                 VerticalContentAlignment="Center"
+                                 Text="{Binding ExportDirectory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Type or paste the output directory path (UNC paths such as \\server\share are supported). Click … to browse."/>
+                        <Button Grid.Column="2"
+                                Content="…"
+                                Width="28"
+                                Height="28"
+                                Command="{Binding BrowseExportDirectoryCommand}"
+                                ToolTip="Browse for output folder"/>
+                    </Grid>
+                    <TextBlock Text="Tip: UNC paths (\\server\share\folder) can be pasted directly."
+                               Foreground="DimGray" FontSize="10" FontStyle="Italic"
+                               TextWrapping="Wrap" Margin="0,2,0,6"/>
+                    <Button Content="Export deformed DICOM…"
+                            Height="30"
+                            HorizontalAlignment="Stretch"
+                            Command="{Binding ExportDicomCommand}"
+                            ToolTip="Export the deformed CT series and warped structure set to the directory above as DICOM."/>
+                </StackPanel>
             </Grid>
 
             <!-- Structure mask row -->
@@ -168,83 +209,156 @@
             </Grid>
 
             <Border Grid.Row="2" Grid.Column="3" Width="1" Background="LightGray" VerticalAlignment="Stretch" Margin="5,5,5,5"/>
-        </Grid>
 
-        <!-- Registration parameters panel -->
-        <GroupBox Grid.Row="2" Header="Registration parameters" Margin="0,0,0,10" VerticalAlignment="Top">
-            <Grid Margin="8,8,8,8">
+            <!-- Rigid initial registration row -->
+            <Grid Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="6">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="180"/>
-                    <ColumnDefinition Width="120"/>
-                    <ColumnDefinition Width="8"/>
-                    <ColumnDefinition Width="180"/>
-                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="470"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="6"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="6"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="6"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="6"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <!-- Row 0: column headers -->
-                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="Editable" FontWeight="Bold" Foreground="CornflowerBlue"/>
-                <TextBlock Grid.Row="0" Grid.Column="3" Grid.ColumnSpan="3" Text="Fixed (edit in DoseConverterConfig.xml)" FontWeight="Bold" Foreground="DimGray"/>
-
-                <!-- Row 2: B-spline grid nodes (editable) -->
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="B-spline grid nodes:" VerticalAlignment="Center" ToolTip="Control-point count along X Y Z (e.g. 5 5 5). More nodes = finer deformation but slower."/>
-                <TextBox   Grid.Row="2" Grid.Column="1" Height="24" Padding="4,0,4,0" VerticalContentAlignment="Center"
-                           Text="{Binding RegGridNodes, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                           ToolTip="e.g. '5 5 5' — three space-separated positive integers"/>
-
-                <!-- Row 2: metric (static) -->
-                <TextBlock Grid.Row="2" Grid.Column="3" Text="Metric:" VerticalAlignment="Center" Foreground="DimGray"/>
-                <TextBlock Grid.Row="2" Grid.Column="4" Text="Mean Squares (CT-CT)" VerticalAlignment="Center" Foreground="DimGray"/>
-
-                <!-- Row 4: max iterations per level (editable) -->
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="Max iters per level:" VerticalAlignment="Center" ToolTip="Space-separated L-BFGS-B iteration caps per resolution level (e.g. '100 50 20'). Fewer iterations at the full-resolution level (last value) reduces runtime most."/>
-                <TextBox   Grid.Row="4" Grid.Column="1" Height="24" Padding="4,0,4,0" VerticalContentAlignment="Center"
-                           Text="{Binding RegMaxIterationsPerLevel, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                           ToolTip="Space-separated integers, one per pyramid level (e.g. '100 50 20')"/>
-
-                <!-- Row 4: optimizer (static) -->
-                <TextBlock Grid.Row="4" Grid.Column="3" Text="Optimizer:" VerticalAlignment="Center" Foreground="DimGray"/>
-                <TextBlock Grid.Row="4" Grid.Column="4" Text="L-BFGS-B" VerticalAlignment="Center" Foreground="DimGray"/>
-
-                <!-- Row 6: sampling % (editable) -->
-                <TextBlock Grid.Row="6" Grid.Column="0" Text="Metric sampling (%):" VerticalAlignment="Center" ToolTip="Percentage of voxels sampled per iteration (1–100). Lower = faster but noisier gradient."/>
-                <TextBox   Grid.Row="6" Grid.Column="1" Height="24" Padding="4,0,4,0" VerticalContentAlignment="Center"
-                           Text="{Binding RegSamplingPercent, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                           ToolTip="Integer 1–100 (e.g. 10 = 10 %)"/>
-
-                <!-- Row 6: multi-res (static) -->
-                <TextBlock Grid.Row="6" Grid.Column="3" Text="Multi-resolution:" VerticalAlignment="Center" Foreground="DimGray"/>
-                <TextBlock Grid.Row="6" Grid.Column="4" Text="3 levels (4×, 2×, 1×)" VerticalAlignment="Center" Foreground="DimGray"/>
-
-                <!-- Row 8: mask margin (editable, relevant only when a mask is selected) -->
-                <TextBlock Grid.Row="8" Grid.Column="0" Text="Mask crop margin (mm):" VerticalAlignment="Center"
-                           ToolTip="When a mask is selected, the fixed CT is cropped to the mask bounding box plus this margin before B-spline initialisation. Reduces control-point DOF to the ROI. Ignored when no mask is set."/>
-                <TextBox   Grid.Row="8" Grid.Column="1" Height="24" Padding="4,0,4,0" VerticalContentAlignment="Center"
-                           Text="{Binding RegMaskMarginMm, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                           ToolTip="Positive number in mm (e.g. 20)"/>
-                <TextBlock Grid.Row="8" Grid.Column="3" Text="Only used when a mask is set." VerticalAlignment="Center" Foreground="DimGray" FontStyle="Italic"/>
+                <Label Grid.Column="0" Content="Initial rigid registration:" VerticalAlignment="Center" FontWeight="Bold"
+                       ToolTip="Select an Eclipse rigid registration to use as the starting alignment before B-spline fitting. Populated automatically after source plan and target image are selected. Only registrations linking the two CT frames of reference are shown."/>
+                <ComboBox Grid.Column="2"
+                          Style="{StaticResource ComboBoxStyle}"
+                          Template="{StaticResource ComboBoxControlTemplate}"
+                          Height="30"
+                          ItemsSource="{Binding RigidRegistrationOptions}"
+                          SelectedItem="{Binding SelectedRigidRegistration, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          VerticalContentAlignment="Center">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding DisplayString}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Grid.Column="3" Text="Only registrations linking the source and target CT frames of reference are shown."
+                           Foreground="DimGray" FontSize="10" FontStyle="Italic"
+                           VerticalAlignment="Center" Margin="8,0,0,0" TextWrapping="Wrap"/>
             </Grid>
-        </GroupBox>
+        </Grid>
 
-        <!-- Progress log -->
-        <GroupBox Grid.Row="3" Header="Progress" Margin="0,0,0,5">
-            <TextBlock Text="{Binding StatusMessage, UpdateSourceTrigger=PropertyChanged, FallbackValue='Status'}"
-                       TextWrapping="Wrap" Margin="5,3,5,3" FontSize="11" Foreground="DimGray"/>
-        </GroupBox>
+		<!-- Registration parameters panel -->
+		<GroupBox Grid.Row="2" Header="Registration parameters (Diffeomorphic Demons)" Margin="0,0,0,10" VerticalAlignment="Stretch">
+			<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+				<StackPanel Margin="8,8,8,8">
+
+					<!-- Site preset row -->
+					<Grid Margin="0,0,0,8">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="180"/>
+							<ColumnDefinition Width="220"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+						<Label Grid.Column="0" Content="Anatomical site:" VerticalAlignment="Center" FontWeight="Bold"
+							   ToolTip="Select the treatment site to load clinically tuned defaults. Adjusting any parameter afterwards switches to (custom)."/>
+						<ComboBox Grid.Column="1"
+								  Style="{StaticResource ComboBoxStyle}"
+								  Template="{StaticResource ComboBoxControlTemplate}"
+								  Height="28"
+								  ItemsSource="{Binding SitePresets}"
+								  SelectedItem="{Binding SelectedSite, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+								  DisplayMemberPath="Name"
+								  VerticalContentAlignment="Center"/>
+						<TextBlock Grid.Column="2" VerticalAlignment="Center" TextWrapping="Wrap"
+								   Foreground="DimGray" FontSize="10" FontStyle="Italic" Margin="8,0,0,0"
+								   Text="Presets apply site-optimised smoothing, iterations, and step length. Select (custom) to edit freely."/>
+					</Grid>
+
+					<Border Height="1" Background="LightGray" Margin="0,0,0,8"/>
+
+					<!-- Smoothing slider row -->
+					<Grid Margin="0,0,0,8">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="180"/>
+							<ColumnDefinition Width="60"/>
+							<ColumnDefinition Width="160"/>
+							<ColumnDefinition Width="60"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+						<TextBlock Grid.Column="0" Text="Field regularisation:" VerticalAlignment="Center" FontWeight="Bold"
+								   ToolTip="Controls how smoothly the deformation varies across the image. Higher (smoother) forces neighbouring tissue to move together, producing a gradual, physically realistic warp -- safer, but it may under-correct genuine local motion. Lower (more flexible) lets the deformation bend sharply to match fine local detail -- better for large or localised motion (e.g. bladder filling), but more prone to unrealistic folding and to chasing image noise. If unsure, start higher and reduce only if the registration is clearly under-fitting."/>
+						<TextBlock Grid.Column="1" Text="Flexible" VerticalAlignment="Center" HorizontalAlignment="Right"
+								   Foreground="DimGray" FontSize="10" Margin="0,0,4,0"/>
+						<Slider Grid.Column="2"
+								Minimum="1.0" Maximum="3.0" TickFrequency="0.1"
+								IsSnapToTickEnabled="False"
+								Value="{Binding SmoothingSigma, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+								VerticalAlignment="Center"
+								ToolTip="{Binding SmoothingLabel}"/>
+						<TextBlock Grid.Column="3" Text="Smooth" VerticalAlignment="Center"
+								   Foreground="DimGray" FontSize="10" Margin="4,0,0,0"/>
+						<TextBlock Grid.Column="4" VerticalAlignment="Center" Margin="8,0,0,0"
+								   Text="{Binding SmoothingLabel}" FontSize="11" Foreground="CornflowerBlue" FontWeight="Bold"/>
+					</Grid>
+
+					<!-- Parameter grid: editable + fixed columns -->
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="180"/>
+							<ColumnDefinition Width="120"/>
+							<ColumnDefinition Width="8"/>
+							<ColumnDefinition Width="180"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="6"/>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="6"/>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="6"/>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="6"/>
+							<RowDefinition Height="Auto"/>
+						</Grid.RowDefinitions>
+
+						<!-- Column headers -->
+						<TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="Editable" FontWeight="Bold" Foreground="CornflowerBlue"/>
+						<TextBlock Grid.Row="0" Grid.Column="3" Grid.ColumnSpan="2" Text="Fixed (edit in DoseConverterConfig.xml)" FontWeight="Bold" Foreground="DimGray"/>
+
+						<!-- Max iters per level -->
+						<TextBlock Grid.Row="2" Grid.Column="0" Text="Max iters per level:" VerticalAlignment="Center"
+								   ToolTip="Space-separated iteration caps per resolution level (coarsest to finest), e.g. '75 50 25'. More iterations improve accuracy at the cost of runtime."/>
+						<TextBox   Grid.Row="2" Grid.Column="1" Height="24" Padding="4,0,4,0" VerticalContentAlignment="Center"
+								   Text="{Binding RegMaxIterationsPerLevel, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+								   ToolTip="Space-separated integers, one per pyramid level (e.g. '75 50 25')"/>
+
+						<!-- Algorithm (static) -->
+						<TextBlock Grid.Row="2" Grid.Column="3" Text="Algorithm:" VerticalAlignment="Center" Foreground="DimGray"/>
+						<TextBlock Grid.Row="2" Grid.Column="4" Text="Diffeomorphic Demons (CT-CT)" VerticalAlignment="Center" Foreground="DimGray"/>
+
+						<!-- Max step length -->
+						<TextBlock Grid.Row="4" Grid.Column="0" Text="Max update step (mm):" VerticalAlignment="Center"
+								   ToolTip="Maximum displacement per iteration update step in mm. Larger values allow faster convergence for big deformations but increase folding risk. Typically 1.0 (brain) to 3.0 (lung/pelvis)."/>
+						<TextBox   Grid.Row="4" Grid.Column="1" Height="24" Padding="4,0,4,0" VerticalContentAlignment="Center"
+								   Text="{Binding RegMaxStepLength, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+								   ToolTip="e.g. 1.0 (brain), 2.5 (abdomen), 3.0 (lung/pelvis)"/>
+
+						<!-- Pyramid levels (static) -->
+						<TextBlock Grid.Row="4" Grid.Column="3" Text="Pyramid (shrink factors):" VerticalAlignment="Center" Foreground="DimGray"
+								   ToolTip="Set ShrinkFactorsPerLevel in DoseConverterConfig.xml to change (default: 4 2 1)."/>
+						<TextBlock Grid.Row="4" Grid.Column="4" Text="4x to 2x to 1x (config)" VerticalAlignment="Center" Foreground="DimGray"/>
+
+						<!-- Intensity pre-processing (static) -->
+						<TextBlock Grid.Row="6" Grid.Column="3" Text="Intensity pre-processing:" VerticalAlignment="Center" Foreground="DimGray"/>
+						<TextBlock Grid.Row="6" Grid.Column="4" Text="Histogram match + rescale 0-255" VerticalAlignment="Center" Foreground="DimGray"/>
+
+						<!-- Mask crop margin -->
+						<TextBlock Grid.Row="8" Grid.Column="0" Text="Mask crop margin (mm):" VerticalAlignment="Center"
+								   ToolTip="When a mask is selected, the fixed CT is cropped to the mask bounding box plus this margin. Ignored when no mask is set."/>
+						<TextBox   Grid.Row="8" Grid.Column="1" Height="24" Padding="4,0,4,0" VerticalContentAlignment="Center"
+								   Text="{Binding RegMaskMarginMm, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+								   ToolTip="Positive number in mm (e.g. 20)"/>
+						<TextBlock Grid.Row="8" Grid.Column="3" Text="Only used when a mask is set." VerticalAlignment="Center" Foreground="DimGray" FontStyle="Italic"/>
+					</Grid>
+				</StackPanel>
+			</ScrollViewer>
+		</GroupBox>
 
         <!-- Bottom bar: status + run button -->
-        <Grid Grid.Row="4" VerticalAlignment="Center">
+        <Grid Grid.Row="3" VerticalAlignment="Center">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>

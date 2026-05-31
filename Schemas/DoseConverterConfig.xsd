@@ -88,10 +88,34 @@
             <xs:attribute name="ShrinkFactorsPerLevel" type="xs:string" use="optional" default="4 2 1"/>
             <!-- Multi-resolution: Gaussian smoothing sigmas per level in mm, space-separated (e.g. "2.0 1.0 0.0") -->
             <xs:attribute name="SmoothingSigmasPerLevel" type="xs:string" use="optional" default="2.0 1.0 0.0"/>
-            <!-- Per-level L-BFGS-B iteration caps, space-separated (one per level, e.g. "100 50 20"). Overrides MaxIterations. -->
+            <!-- Per-level iteration caps, space-separated (one per level, e.g. "100 50 20"). Overrides MaxIterations. -->
             <xs:attribute name="MaxIterationsPerLevel" type="xs:string" use="optional" default="100 50 20"/>
             <!-- Margin in mm around the mask bounding box used to crop the fixed image for B-spline initialisation -->
             <xs:attribute name="MaskMarginMm" type="PositiveDouble" use="optional" default="20"/>
+            <!-- Diffeomorphic demons: space-separated Gaussian std-devs (mm) for displacement-field smoothing; one value is broadcast to all levels -->
+            <xs:attribute name="DemonsStandardDeviations" type="xs:string" use="optional" default="1.0"/>
+            <!-- Diffeomorphic demons: maximum update step length (mm) -->
+            <xs:attribute name="DemonsMaxStepLength" type="PositiveDouble" use="optional" default="2.0"/>
+            <!-- Default output directory for deformed DICOM export.  If omitted the script assembly directory is used. -->
+            <xs:attribute name="DicomExportDirectory" type="xs:string" use="optional"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="SitePresets" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="SitePreset" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <!-- Display name shown in the combo box (e.g. "Brain", "Thorax / Lung") -->
+                  <xs:attribute name="Name" type="xs:string" use="required"/>
+                  <!-- Gaussian std-dev for displacement-field smoothing (mm) -->
+                  <xs:attribute name="StdDev" type="PositiveDouble" use="required"/>
+                  <!-- Space-separated per-level iteration caps (e.g. "50 50 20") -->
+                  <xs:attribute name="Iterations" type="xs:string" use="required"/>
+                  <!-- Maximum demons update step length (mm) -->
+                  <xs:attribute name="MaxStepLength" type="PositiveDouble" use="required"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
           </xs:complexType>
         </xs:element>
       </xs:sequence>

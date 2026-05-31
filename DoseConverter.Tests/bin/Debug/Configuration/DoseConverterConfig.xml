@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<DoseConverterConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  xsi:noNamespaceSchemaLocation="\\spvaimapcn\data$\Apps\EQD2Converter\Schemas\DoseConverterConfig.xsd">
+<DoseConverterConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  xsi:noNamespaceSchemaLocation="\\spvaimapcn\data$\Apps\DoseConverter\Schemas\DoseConverterConfig.xsd">
   <version number="0.1"/>
   <Defaults AlphaBetaRatio="3" TempEdgeStructureName ="Temp_AutoEdge" TempStructureSetName="TEMP_DoseConv"/>
   <Structures>
@@ -59,5 +59,21 @@
     CostFunctionConvergenceFactor="1e7"
     ShrinkFactorsPerLevel="4 2 1"
     SmoothingSigmasPerLevel="2.0 1.0 0.0"
-    MaskMarginMm="20"/>
+    MaskMarginMm="20"
+    DemonsStandardDeviations="1.0"
+    DemonsMaxStepLength="2.0"/>
+  <SitePresets>
+    <!-- Each SitePreset appears in the anatomical site combo box.
+         Add, remove, or edit entries here to customise available presets.
+         Attributes:
+           Name           – label shown in the UI
+           StdDev         – Gaussian std-dev for displacement-field smoothing (mm)
+           Iterations     – space-separated per-level iteration caps (coarse → fine)
+           MaxStepLength  – maximum demons update step length (mm) -->
+    <SitePreset Name="Brain"            StdDev="2.5" Iterations="50 50 20" MaxStepLength="1.0"/>
+    <SitePreset Name="Head &amp; Neck"  StdDev="2.0" Iterations="50 50 20" MaxStepLength="1.5"/>
+    <SitePreset Name="Thorax / Lung"    StdDev="1.0" Iterations="75 75 20" MaxStepLength="3.0"/>
+    <SitePreset Name="Abdomen"          StdDev="1.5" Iterations="75 50 20" MaxStepLength="2.5"/>
+    <SitePreset Name="Pelvis / Bladder" StdDev="1.5" Iterations="75 50 20" MaxStepLength="3.0"/>
+  </SitePresets>
 </DoseConverterConfig>

@@ -32,6 +32,8 @@ namespace DoseConverter {
         
         private DoseConverterConfigRegistrationParameters registrationParametersField;
         
+        private DoseConverterConfigSitePreset[] sitePresetsField;
+        
         /// <remarks/>
         public DoseConverterConfigVersion version {
             get {
@@ -70,6 +72,17 @@ namespace DoseConverter {
             }
             set {
                 this.registrationParametersField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlArrayItemAttribute("SitePreset", IsNullable=false)]
+        public DoseConverterConfigSitePreset[] SitePresets {
+            get {
+                return this.sitePresetsField;
+            }
+            set {
+                this.sitePresetsField = value;
             }
         }
     }
@@ -283,12 +296,18 @@ namespace DoseConverter {
         private double costFunctionConvergenceFactorField;
         
         private string shrinkFactorsPerLevelField;
-
+        
         private string smoothingSigmasPerLevelField;
-
+        
         private string maxIterationsPerLevelField;
-
+        
         private double maskMarginMmField;
+        
+        private string demonsStandardDeviationsField;
+
+        private double demonsMaxStepLengthField;
+
+        private string dicomExportDirectoryField;
         
         public DoseConverterConfigRegistrationParameters() {
             this.bSplineGridNodesField = "5 5 5";
@@ -302,7 +321,10 @@ namespace DoseConverter {
             this.shrinkFactorsPerLevelField = "4 2 1";
             this.smoothingSigmasPerLevelField = "2.0 1.0 0.0";
             this.maxIterationsPerLevelField = "100 50 20";
-            this.maskMarginMmField = 20.0D;
+            this.maskMarginMmField = 20D;
+            this.demonsStandardDeviationsField = "1.0";
+            this.demonsMaxStepLengthField = 2D;
+            this.dicomExportDirectoryField = null;
         }
         
         /// <remarks/>
@@ -424,7 +446,7 @@ namespace DoseConverter {
                 this.smoothingSigmasPerLevelField = value;
             }
         }
-
+        
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
         [System.ComponentModel.DefaultValueAttribute("100 50 20")]
@@ -436,17 +458,112 @@ namespace DoseConverter {
                 this.maxIterationsPerLevelField = value;
             }
         }
-
+        
         /// <remarks/>
-        /// <summary>Margin in mm added around the mask bounding box when cropping the fixed image for B-spline initialisation.</summary>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        [System.ComponentModel.DefaultValueAttribute(20.0D)]
+        [System.ComponentModel.DefaultValueAttribute(20D)]
         public double MaskMarginMm {
             get {
                 return this.maskMarginMmField;
             }
             set {
                 this.maskMarginMmField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [System.ComponentModel.DefaultValueAttribute("1.0")]
+        public string DemonsStandardDeviations {
+            get {
+                return this.demonsStandardDeviationsField;
+            }
+            set {
+                this.demonsStandardDeviationsField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [System.ComponentModel.DefaultValueAttribute(2D)]
+        public double DemonsMaxStepLength {
+            get {
+                return this.demonsMaxStepLengthField;
+            }
+            set {
+                this.demonsMaxStepLengthField = value;
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public string DicomExportDirectory {
+            get {
+                return this.dicomExportDirectoryField;
+            }
+            set {
+                this.dicomExportDirectoryField = value;
+            }
+        }
+    }
+    
+    /// <remarks/>
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("xsd", "4.8.3928.0")]
+    [System.SerializableAttribute()]
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.ComponentModel.DesignerCategoryAttribute("code")]
+    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
+    public partial class DoseConverterConfigSitePreset {
+        
+        private string nameField;
+        
+        private double stdDevField;
+        
+        private string iterationsField;
+        
+        private double maxStepLengthField;
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public string Name {
+            get {
+                return this.nameField;
+            }
+            set {
+                this.nameField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public double StdDev {
+            get {
+                return this.stdDevField;
+            }
+            set {
+                this.stdDevField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public string Iterations {
+            get {
+                return this.iterationsField;
+            }
+            set {
+                this.iterationsField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public double MaxStepLength {
+            get {
+                return this.maxStepLengthField;
+            }
+            set {
+                this.maxStepLengthField = value;
             }
         }
     }

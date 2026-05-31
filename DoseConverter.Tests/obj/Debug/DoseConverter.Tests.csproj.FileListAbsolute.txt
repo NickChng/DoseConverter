@@ -20,3 +20,5 @@
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\obj\Debug\DoseConv.3C0719B7.Up2Date
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\obj\Debug\DoseConverter.Tests.dll
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\obj\Debug\DoseConverter.Tests.pdb
+\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\DoseConverter.Tests.dll.config
+\\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\DoseConverter.esapi.dll.config

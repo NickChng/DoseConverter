@@ -48,26 +48,103 @@ namespace DoseConverter
         }
 
         /// <summary>
+        /// Lightweight payload used by the post-DIR quality review UI. Holds the warped
+        /// (deformed) moving CT and the fixed (target) CT, both sampled on the fixed CT
+        /// voxel grid, as flat float buffers in [x + y*nx + z*nx*ny] layout.
+        /// </summary>
+        public sealed class DirReviewData
+        {
+            public float[] WarpedMovingCt;  // DIR result resampled onto the fixed grid
+            public float[] FixedCt;         // target CT on the same grid
+            public uint[]  Size;            // [W, H, D] of the fixed grid
+            public double[] Spacing;        // [sx, sy, sz] mm
+
+            // --- Overlay data (may be null if computation failed) ---
+
+            /// <summary>
+            /// Jacobian determinant of the deformation field, one float per voxel on the
+            /// fixed CT grid.  Values &lt; 1 indicate compression, &gt; 1 expansion.
+            /// </summary>
+            public float[] JacobianDet;
+
+            /// <summary>
+            /// Displacement field on the fixed CT grid, interleaved [dx, dy, dz] per voxel
+            /// in [x + y*nx + z*nx*ny] order — i.e. length = 3 * nx * ny * nz.  Units: mm.
+            /// </summary>
+            public float[] DisplacementField;
+
+            /// <summary>
+            /// Deformed dose (Gy) resampled onto the fixed CT grid.  Same Size/Spacing as
+            /// the CT fields above.  Null if dose data was not available.
+            /// </summary>
+            public float[] DeformedDoseGy;
+
+            /// <summary>Maximum dose value in <see cref="DeformedDoseGy"/> (Gy), used to initialise the W/L slider.</summary>
+            public float DeformedDoseMaxGy;
+        }
+
+        /// <summary>
+        /// Payload retained after a successful DIR run so that the deformed CT image and the
+        /// deformed structures can be exported to DICOM on demand.  The deformed CT is the
+        /// warped moving image sampled on the fixed (target) CT grid; structures are warped
+        /// later by reconstructing the displacement field stored here.
+        /// All relational DICOM tags are captured from the target image so the exported series
+        /// re-imports cleanly into the TPS (same patient / study / frame of reference).
+        /// </summary>
+        public sealed class DirExportData
+        {
+            // --- Deformed CT (warped moving image on the fixed grid), HU values ---
+            public float[] DeformedCtHu;       // [x + y*nx + z*nx*ny] layout, HU
+            public uint[]  Size;               // [W, H, D] of the fixed grid
+            public double[] Spacing;           // [sx, sy, sz] mm
+            public double[] Origin;            // [ox, oy, oz] mm (patient coords)
+            public double[] Direction;         // row-major 3x3 direction cosines
+
+            /// <summary>
+            /// Displacement field on the fixed CT grid, interleaved [dx, dy, dz] per voxel in
+            /// [x + y*nx + z*nx*ny] order (length = 3 * nx * ny * nz).  Units: mm.  Maps a fixed
+            /// (output) voxel back to its location in the moving image (SimpleITK transform sense).
+            /// </summary>
+            public float[] DisplacementField;
+
+            // --- Source plan identifiers (the structures to warp come from here) ---
+            public string SourceCourseId;
+            public string SourcePlanId;
+
+            // --- Relational DICOM tags captured from the TARGET image (preserved on export) ---
+            public string PatientId;
+            public string PatientName;
+            public string PatientBirthDate;     // DICOM DA (yyyyMMdd) or empty
+            public string PatientSex;           // M / F / O or empty
+            public string StudyInstanceUid;     // preserved so the series stays in the same study
+            public string FrameOfReferenceUid;  // preserved so spatial relation is retained
+            public string StudyDate;            // DICOM DA (yyyyMMdd) from target study
+            public string StudyTime;            // DICOM TM (HHmmss) from target study
+            public string StudyId;              // Study ID string from target study
+        }
+
+        /// <summary>
         /// Full DIR pipeline: extract CTs → register → resample dose → write Eclipse plan.
         /// Must be called from a non-dispatcher thread (Task.Run is fine).
         /// </summary>
         /// <param name="sourceCourseId">Course containing the source (moving) plan.</param>
         /// <param name="sourcePlanId">Plan whose dose will be deformed.</param>
-        /// <param name="targetCourseId">Course containing the target (fixed) plan.</param>
-        /// <param name="targetPlanId">Plan whose CT geometry defines the output space.</param>
+        /// <param name="targetSsId">Structure set ID whose CT image defines the fixed (target) space.</param>
         /// <param name="newPlanName">Eclipse Id for the output verification plan (max 13 chars).</param>
         /// <param name="sourceMaskStructureId">Structure Id in the source plan's structure set to use as moving mask (null = full image).</param>
-        /// <param name="targetMaskStructureId">Structure Id in the target plan's structure set to use as fixed mask (null = full image).</param>
+        /// <param name="targetMaskStructureId">Structure Id in the target structure set to use as fixed mask (null = full image).</param>
         /// <param name="progress">Optional progress reporter for status strings.</param>
-        public async Task<(ScriptStatus status, string message)> PerformDIRAndWritePlan(
+        /// <param name="rigidMatrixRowMajor">Optional row-major 4×4 ESAPI rigid registration matrix (source→target, mm) to use as the
+        /// initial composite transform before B-spline fitting. Null = B-spline default initialisation.</param>
+        public async Task<(ScriptStatus status, string message, DirReviewData review, DirExportData export)> PerformDIRAndWritePlan(
             string sourceCourseId,
             string sourcePlanId,
-            string targetCourseId,
-            string targetPlanId,
+            string targetSsId,
             string newPlanName,
             string sourceMaskStructureId = null,
             string targetMaskStructureId = null,
-            IProgress<string> progress = null)
+            IProgress<string> progress = null,
+            double[] rigidMatrixRowMajor = null)
         {
             // ---- 1. Extract image and dose data inside the Eclipse dispatcher --------
             float[] movingCTBuffer = null, fixedCTBuffer = null, sourceDoseBuffer = null;
@@ -77,8 +154,17 @@ namespace DoseConverter
             double[] movingCTDirection = null, fixedCTDirection = null, sourceDoseDirection = null;
             double sourceDoseScaling = 1.0;
 
+            // Source plan fractionation (used for the output verification plan prescription).
+            int sourceFractions = 0;
+            VMS.TPS.Common.Model.Types.DoseValue sourceDosePerFraction = default;
+
             // Mask buffers (null = full-image registration)
             byte[] movingMaskBuffer = null, fixedMaskBuffer = null;
+
+            // Relational DICOM tags captured from the target image (preserved on DICOM export).
+            string patientId = null, patientName = null, patientBirthDate = null, patientSex = null;
+            string studyInstanceUid = null, frameOfReferenceUid = null;
+            string studyDate = null, studyTime = null, studyId = null;
 
             // Target dose geometry (defines the output grid)
             uint[] targetDoseSize = null;
@@ -87,6 +173,11 @@ namespace DoseConverter
             string extractionError = null;
 
             Report(progress, "Extracting image data from Eclipse...");
+
+            // Context plan for the plan-write step: first active plan in the patient that
+            // references the target SS and has dose.  Resolved during data extraction.
+            ExternalPlanSetup resolvedContextPlan = null;
+
             await _ew.AsyncRunPatientContext(p =>
             {
                 try
@@ -96,20 +187,17 @@ namespace DoseConverter
                     var sourcePlan = sourceCourse?.PlanSetups.FirstOrDefault(pl =>
                         string.Equals(pl.Id, sourcePlanId, StringComparison.OrdinalIgnoreCase)) as ExternalPlanSetup;
 
-                    var targetCourse = p.Courses.FirstOrDefault(c =>
-                        string.Equals(c.Id, targetCourseId, StringComparison.OrdinalIgnoreCase));
-                    var targetPlan = targetCourse?.PlanSetups.FirstOrDefault(pl =>
-                        string.Equals(pl.Id, targetPlanId, StringComparison.OrdinalIgnoreCase)) as ExternalPlanSetup;
+                    var targetSS = p.StructureSets.FirstOrDefault(s =>
+                        string.Equals(s.Id, targetSsId, StringComparison.OrdinalIgnoreCase));
 
                     if (sourcePlan == null) { extractionError = $"Source plan '{sourceCourseId}/{sourcePlanId}' not found."; return; }
-                    if (targetPlan == null) { extractionError = $"Target plan '{targetCourseId}/{targetPlanId}' not found."; return; }
                     if (sourcePlan.Dose == null) { extractionError = "Source plan has no dose."; return; }
-                    if (targetPlan.Dose == null) { extractionError = "Target plan has no dose."; return; }
+                    if (targetSS == null) { extractionError = $"Target structure set '{targetSsId}' not found."; return; }
 
                     var movingImage = sourcePlan.StructureSet?.Image;
-                    var fixedImage = targetPlan.StructureSet?.Image;
+                    var fixedImage  = targetSS.Image;
                     if (movingImage == null) { extractionError = "Source plan has no CT image."; return; }
-                    if (fixedImage == null) { extractionError = "Target plan has no CT image."; return; }
+                    if (fixedImage  == null) { extractionError = $"Target structure set '{targetSsId}' has no CT image."; return; }
 
                     // Extract CTs
                     (movingCTBuffer, movingCTSize, movingCTSpacing, movingCTOrigin, movingCTDirection) =
@@ -123,7 +211,7 @@ namespace DoseConverter
                             sourcePlan.StructureSet, sourceMaskStructureId, movingImage);
                     if (!string.IsNullOrEmpty(targetMaskStructureId))
                         fixedMaskBuffer = RasterizeStructureMask(
-                            targetPlan.StructureSet, targetMaskStructureId, fixedImage);
+                            targetSS, targetMaskStructureId, fixedImage);
 
                     // Extract source dose
                     var srcDose = sourcePlan.Dose;
@@ -136,10 +224,72 @@ namespace DoseConverter
                     (sourceDoseBuffer, sourceDoseSize, sourceDoseSpacing, sourceDoseOrigin, sourceDoseDirection) =
                         ExtractDoseBuffers(srcDose, sourceDoseGy);
 
-                    // Target dose geometry (output reference grid)
-                    var tgtDose = targetPlan.Dose;
-                    (targetDoseSize, targetDoseSpacing, targetDoseOrigin, targetDoseDirection) =
-                        GetDoseGeometry(tgtDose);
+                    // Capture source fractionation for the output verification plan.
+                    sourceFractions = (int)(sourcePlan.NumberOfFractions ?? 1);
+                    sourceDosePerFraction = sourcePlan.DosePerFraction;
+
+                    // Find a context plan for writing the output deformed-dose plan:
+                    // first active ExternalPlanSetup that references the target SS and has dose.
+                    var excludedStatuses = new[]
+                    {
+                        VMS.TPS.Common.Model.Types.PlanSetupApprovalStatus.Completed,
+                        VMS.TPS.Common.Model.Types.PlanSetupApprovalStatus.CompletedEarly,
+                        VMS.TPS.Common.Model.Types.PlanSetupApprovalStatus.TreatmentApproved,
+                        VMS.TPS.Common.Model.Types.PlanSetupApprovalStatus.Retired,
+                    };
+                    foreach (var course in p.Courses)
+                    {
+                        foreach (var plan in course.PlanSetups.OfType<ExternalPlanSetup>()
+                            .Where(pl => pl.StructureSet != null
+                                && string.Equals(pl.StructureSet.Id, targetSsId, StringComparison.OrdinalIgnoreCase)
+                                && pl.Dose != null
+                                && !excludedStatuses.Contains(pl.ApprovalStatus)))
+                        {
+                            resolvedContextPlan = plan;
+                            break;
+                        }
+                        if (resolvedContextPlan != null) break;
+                    }
+
+                    // Target dose geometry: use context plan's dose grid if found,
+                    // otherwise fall back to the fixed CT grid.
+                    if (resolvedContextPlan != null)
+                    {
+                        (targetDoseSize, targetDoseSpacing, targetDoseOrigin, targetDoseDirection) =
+                            GetDoseGeometry(resolvedContextPlan.Dose);
+                    }
+                    else
+                    {
+                        targetDoseSize      = new uint[]   { fixedCTSize[0], fixedCTSize[1], fixedCTSize[2] };
+                        targetDoseSpacing   = (double[])fixedCTSpacing.Clone();
+                        targetDoseOrigin    = (double[])fixedCTOrigin.Clone();
+                        targetDoseDirection = (double[])fixedCTDirection.Clone();
+                    }
+
+                    // Capture relational DICOM tags from the target image so a later DICOM
+                    // export keeps the deformed series in the same patient / study / FoR.
+                    try
+                    {
+                        patientId        = p.Id;
+                        patientName      = BuildDicomPatientName(p);
+                        patientBirthDate = p.DateOfBirth.HasValue
+                            ? p.DateOfBirth.Value.ToString("yyyyMMdd")
+                            : string.Empty;
+                        patientSex          = MapPatientSex(p.Sex);
+                        studyInstanceUid    = fixedImage.Series?.Study?.UID ?? string.Empty;
+                        frameOfReferenceUid = fixedImage.FOR ?? string.Empty;
+                        studyDate           = fixedImage.Series?.Study?.CreationDateTime.HasValue == true
+                            ? fixedImage.Series.Study.CreationDateTime.Value.ToString("yyyyMMdd")
+                            : string.Empty;
+                        studyTime           = fixedImage.Series?.Study?.CreationDateTime.HasValue == true
+                            ? fixedImage.Series.Study.CreationDateTime.Value.ToString("HHmmss")
+                            : string.Empty;
+                        studyId             = fixedImage.Series?.Study?.Id ?? string.Empty;
+                    }
+                    catch (Exception exTags)
+                    {
+                        Helpers.SeriLog.LogError("Failed to capture relational DICOM tags", exTags);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -149,12 +299,14 @@ namespace DoseConverter
             });
 
             if (extractionError != null)
-                return (ScriptStatus.Error, extractionError);
+                return (ScriptStatus.Error, extractionError, null, null);
 
             // ---- 2. Run SimpleITK registration and resampling on background thread ---
             Report(progress, "Running deformable image registration (this may take several minutes)...");
             float[] deformedDoseBuffer = null;
             string sitkError = null;
+            DirReviewData reviewData = null;
+            DirExportData exportData = null;
             try
             {
                 await Task.Run(() =>
@@ -171,9 +323,123 @@ namespace DoseConverter
                             ? BuildMaskImage(movingMaskBuffer, movingCTSize, movingCTSpacing, movingCTOrigin, movingCTDirection)
                             : null;
 
-                        Report(progress, "Initialising B-Spline transform...");
-                        SitkTransform finalTransform = RunBSplineRegistration(
-                            fixedCT, movingCT, progress, fixedMaskImg, movingMaskImg);
+                        Report(progress, "Starting diffeomorphic demons registration...");
+                        SitkTransform finalTransform = RunDiffeomorphicDemonsRegistration(
+                            fixedCT, movingCT, progress, fixedMaskImg, movingMaskImg, rigidMatrixRowMajor);
+
+                        // Capture warped moving CT + fixed CT for the post-DIR quality review.
+                        Report(progress, "Building DIR review images...");
+                        try
+                        {
+                            using (var warpedMovingCt = SimpleITK.Resample(
+                                movingCT,
+                                fixedCT,
+                                finalTransform,
+                                InterpolatorEnum.sitkLinear,
+                                -1000.0,
+                                movingCT.GetPixelID()))
+                            {
+                                reviewData = new DirReviewData
+                                {
+                                    WarpedMovingCt = ImageToBuffer(warpedMovingCt),
+                                    FixedCt        = ImageToBuffer(fixedCT),
+                                    Size           = new uint[]
+                                    {
+                                        fixedCT.GetWidth(),
+                                        fixedCT.GetHeight(),
+                                        fixedCT.GetDepth()
+                                    },
+                                    Spacing = new double[]
+                                    {
+                                        fixedCTSpacing[0], fixedCTSpacing[1], fixedCTSpacing[2]
+                                    }
+                                };
+
+                                // Retain the deformed CT + fixed-grid geometry for an optional
+                                // DICOM export. The warped moving CT (HU) is the deformed image.
+                                exportData = new DirExportData
+                                {
+                                    DeformedCtHu = reviewData.WarpedMovingCt,
+                                    Size      = new uint[]   { fixedCT.GetWidth(), fixedCT.GetHeight(), fixedCT.GetDepth() },
+                                    Spacing   = new double[] { fixedCTSpacing[0], fixedCTSpacing[1], fixedCTSpacing[2] },
+                                    Origin    = new double[] { fixedCTOrigin[0], fixedCTOrigin[1], fixedCTOrigin[2] },
+                                    Direction = (double[])fixedCTDirection.Clone(),
+                                    SourceCourseId      = sourceCourseId,
+                                    SourcePlanId        = sourcePlanId,
+                                    PatientId           = patientId,
+                                    PatientName         = patientName,
+                                    PatientBirthDate    = patientBirthDate,
+                                    PatientSex          = patientSex,
+                                    StudyInstanceUid    = studyInstanceUid,
+                                    FrameOfReferenceUid = frameOfReferenceUid,
+                                    StudyDate           = studyDate,
+                                    StudyTime           = studyTime,
+                                    StudyId             = studyId
+                                };
+                            }
+
+                            // ---- Jacobian determinant ----
+                            Report(progress, "Computing Jacobian determinant...");
+                            try
+                            {
+                                // Convert the composite/displacement transform to a full-resolution
+                                // displacement field so SimpleITK can compute its Jacobian.
+                                var t2df = new TransformToDisplacementFieldFilter();
+                                t2df.SetReferenceImage(fixedCT);
+                                using (var fullField = t2df.Execute(finalTransform))
+                                {
+                                    // Jacobian determinant map (one scalar per voxel)
+                                    using (var jacImg = SimpleITK.DisplacementFieldJacobianDeterminant(fullField))
+                                    {
+                                        reviewData.JacobianDet = ImageToBuffer(jacImg);
+                                    }
+
+                                    // Raw displacement field (vector image, 3 components per voxel)
+                                    // Store as interleaved float[]: [dx0,dy0,dz0, dx1,dy1,dz1, ...]
+                                    reviewData.DisplacementField = ExtractVectorImageBuffer(fullField);
+
+                                    // Retain the same field for structure warping during DICOM export.
+                                    if (exportData != null)
+                                        exportData.DisplacementField = reviewData.DisplacementField;
+                                }
+                            }
+                            catch (Exception exJac)
+                            {
+                                Helpers.SeriLog.LogError("Failed to compute Jacobian/displacement field for review", exJac);
+                                // Non-fatal; reviewData.JacobianDet / DisplacementField stay null.
+                            }
+
+                            // ---- Deformed dose on the fixed-CT grid ----
+                            Report(progress, "Resampling deformed dose onto CT grid for review...");
+                            try
+                            {
+                                using (var resampledDoseOnCt = SimpleITK.Resample(
+                                    sourceDoseImg,
+                                    fixedCT,
+                                    finalTransform,
+                                    InterpolatorEnum.sitkLinear,
+                                    0.0,
+                                    sourceDoseImg.GetPixelID()))
+                                {
+                                    reviewData.DeformedDoseGy = ImageToBuffer(resampledDoseOnCt);
+                                    // Find max for slider initialisation
+                                    float doseMax = 0f;
+                                    foreach (float v in reviewData.DeformedDoseGy)
+                                        if (v > doseMax) doseMax = v;
+                                    reviewData.DeformedDoseMaxGy = doseMax > 0 ? doseMax : 1f;
+                                }
+                            }
+                            catch (Exception exDose)
+                            {
+                                Helpers.SeriLog.LogError("Failed to resample dose onto CT grid for review", exDose);
+                            }
+                        }
+                        catch (Exception exReview)
+                        {
+                            // Review data is non-essential; log and continue with dose deformation.
+                            Helpers.SeriLog.LogError("Failed to build DIR review images", exReview);
+                            reviewData = null;
+                        }
 
                         Report(progress, "Resampling source dose onto target grid...");
                         // Build a reference image with target dose geometry
@@ -205,7 +471,7 @@ namespace DoseConverter
             {
                 sitkError = $"SimpleITK registration/resampling failed: {ex.Message}";
                 Helpers.SeriLog.LogError("SimpleITK error", ex);
-                return (ScriptStatus.Error, sitkError);
+                return (ScriptStatus.Error, sitkError, null, null);
             }
 
             // ---- 3. Reconstruct float[Z,X,Y] from buffer and write Eclipse plan -----
@@ -214,34 +480,235 @@ namespace DoseConverter
 
             string planWriteError = null;
             string createdPlanId = null;
+
+            if (resolvedContextPlan != null)
+            {
+                // We have a plan with dose on the target SS — write the deformed result into
+                // the same course/SS as a verification plan.
+                string ctxCourseId = resolvedContextPlan.Course.Id;
+                string ctxPlanId   = resolvedContextPlan.Id;
+                await _ew.AsyncRunPatientContext(p =>
+                {
+                    try
+                    {
+                        var ctxCourse = p.Courses.FirstOrDefault(c =>
+                            string.Equals(c.Id, ctxCourseId, StringComparison.OrdinalIgnoreCase));
+                        var ctxPlan = ctxCourse?.PlanSetups.FirstOrDefault(pl =>
+                            string.Equals(pl.Id, ctxPlanId, StringComparison.OrdinalIgnoreCase)) as ExternalPlanSetup;
+
+                        if (ctxPlan == null) { planWriteError = "Context plan not found when writing result."; return; }
+
+                        createdPlanId = _model.CreateDeformedDosePlan(
+                            newPlanName, ctxPlan, deformedDoseGy, ctxPlan.Dose,
+                            sourceFractions, sourceDosePerFraction);
+                    }
+                    catch (Exception ex)
+                    {
+                        planWriteError = $"Failed to write deformed dose plan: {ex.Message}";
+                        Helpers.SeriLog.LogError("DIR plan write error", ex);
+                    }
+                });
+
+                if (planWriteError != null)
+                    return (ScriptStatus.Error, planWriteError, reviewData, exportData);
+            }
+            else
+            {
+                Helpers.SeriLog.LogInfo("No active plan with dose found for target SS — skipping Eclipse plan write. " +
+                    "Use DICOM export to retrieve the deformed image and structures.");
+            }
+
+            string successMsg = $"Deformable registration complete - please go to DIR Quality Review.";
+            Helpers.SeriLog.LogInfo(successMsg);
+            Report(progress, successMsg);
+            return (ScriptStatus.Complete, successMsg, reviewData, exportData);
+        }
+
+        // -----------------------------------------------------------------------
+        // DICOM export of the deformed image + structures
+        // -----------------------------------------------------------------------
+
+        /// <summary>A single deformed structure ready for RTSTRUCT export.</summary>
+        public sealed class DeformedStructure
+        {
+            public string Id;
+            public string DicomType;          // e.g. "ORGAN", "PTV", "EXTERNAL", "CONTROL"
+            public byte[] Color = { 255, 0, 0 };  // RGB
+            /// <summary>
+            /// One entry per CT slice that has contours.  Each entry: (z-slice-index, list of
+            /// polygons, each polygon a flat list of patient-space points [x0,y0,z0, x1,y1,z1, …]).
+            /// </summary>
+            public List<(int z, List<double[]> polygons)> ContoursBySlice = new List<(int, List<double[]>)>();
+        }
+
+        /// <summary>
+        /// Exports the deformed CT image and the deformed source structures to DICOM in
+        /// <paramref name="outputDirectory"/>.  Rasterizes each source structure on the moving CT
+        /// grid (ESAPI context), warps it onto the fixed grid via the stored displacement field
+        /// (background thread), traces contours, and writes a CT series + RTSTRUCT that preserve
+        /// the patient / study / frame-of-reference relational tags while assigning new
+        /// Series / SOP / RTSTRUCT UIDs.
+        /// </summary>
+        public async Task<(ScriptStatus status, string message)> ExportDeformedDicom(
+            DirExportData export,
+            string outputDirectory,
+            IProgress<string> progress = null)
+        {
+            if (export == null)
+                return (ScriptStatus.Error, "No deformed data available to export. Run a DIR first.");
+            if (export.DeformedCtHu == null || export.Size == null)
+                return (ScriptStatus.Error, "Deformed CT image is unavailable for export.");
+            if (string.IsNullOrWhiteSpace(outputDirectory))
+                return (ScriptStatus.Error, "No output directory was selected.");
+
+            // ---- 1. Rasterize source structures on the moving CT grid (ESAPI context) ----
+            Report(progress, "Extracting source structures for warping...");
+
+            var movingMasks = new List<(string id, string dicomType, byte[] color, byte[] mask)>();
+            uint[] mSize = null;
+            double[] mSpacing = null, mOrigin = null, mDir = null;
+            string extractError = null;
+
+            string srcCourseId = export.SourceCourseId;
+            string srcPlanId   = export.SourcePlanId;
+
             await _ew.AsyncRunPatientContext(p =>
             {
                 try
                 {
-                    var targetCourse = p.Courses.FirstOrDefault(c =>
-                        string.Equals(c.Id, targetCourseId, StringComparison.OrdinalIgnoreCase));
-                    var targetPlan = targetCourse?.PlanSetups.FirstOrDefault(pl =>
-                        string.Equals(pl.Id, targetPlanId, StringComparison.OrdinalIgnoreCase)) as ExternalPlanSetup;
+                    var course = p.Courses.FirstOrDefault(c =>
+                        string.Equals(c.Id, srcCourseId, StringComparison.OrdinalIgnoreCase));
+                    var plan = course?.PlanSetups.FirstOrDefault(pl =>
+                        string.Equals(pl.Id, srcPlanId, StringComparison.OrdinalIgnoreCase));
+                    var ss  = plan?.StructureSet;
+                    var img = ss?.Image;
+                    if (ss == null || img == null) { extractError = "Source structure set or image not found."; return; }
 
-                    if (targetPlan == null) { planWriteError = "Target plan not found when writing result."; return; }
+                    mSize    = new uint[]   { (uint)img.XSize, (uint)img.YSize, (uint)img.ZSize };
+                    mSpacing = new double[] { img.XRes, img.YRes, img.ZRes };
+                    mOrigin  = new double[] { img.Origin.x, img.Origin.y, img.Origin.z };
+                    mDir     = BuildDirectionCosines(img.XDirection, img.YDirection, img.ZDirection);
 
-                    createdPlanId = _model.CreateDeformedDosePlan(
-                        newPlanName, targetPlan, deformedDoseGy, targetPlan.Dose);
+                    foreach (var s in ss.Structures)
+                    {
+                        if (s.IsEmpty) continue;
+                        // Skip non-contourable structure types (e.g. markers handled separately).
+                        byte[] mask = RasterizeStructureMask(ss, s.Id, img);
+                        if (mask == null) continue;
+
+                        byte[] color = { 255, 0, 0 };
+                        try { color = new[] { s.Color.R, s.Color.G, s.Color.B }; } catch { }
+
+                        string dtype = "ORGAN";
+                        try { if (!string.IsNullOrEmpty(s.DicomType)) dtype = s.DicomType; } catch { }
+
+                        movingMasks.Add((s.Id, dtype, color, mask));
+                    }
                 }
                 catch (Exception ex)
                 {
-                    planWriteError = $"Failed to write deformed dose plan: {ex.Message}";
-                    Helpers.SeriLog.LogError("DIR plan write error", ex);
+                    extractError = $"Failed to extract source structures: {ex.Message}";
+                    Helpers.SeriLog.LogError("DICOM export structure extraction error", ex);
                 }
             });
 
-            if (planWriteError != null)
-                return (ScriptStatus.Error, planWriteError);
+            if (extractError != null)
+                return (ScriptStatus.Error, extractError);
 
-            string successMsg = $"Deformed dose plan '{createdPlanId}' created successfully. Review in Eclipse before EQD2 conversion.";
-            Helpers.SeriLog.LogInfo(successMsg);
-            Report(progress, successMsg);
-            return (ScriptStatus.Complete, successMsg);
+            // ---- 2. Warp masks + trace contours on a background thread ----
+            var deformedStructures = new List<DeformedStructure>();
+            string warpError = null;
+            try
+            {
+                await Task.Run(() =>
+                {
+                    int fnx = (int)export.Size[0], fny = (int)export.Size[1], fnz = (int)export.Size[2];
+
+                    foreach (var ms in movingMasks)
+                    {
+                        Report(progress, $"Warping structure '{ms.id}'...");
+
+                        byte[] warped;
+                        if (export.DisplacementField != null)
+                        {
+                            warped = WarpMaskToFixedGrid(
+                                ms.mask, mSize, mSpacing, mOrigin, mDir,
+                                export.DisplacementField,
+                                export.Size, export.Spacing, export.Origin, export.Direction);
+                        }
+                        else
+                        {
+                            // No field available (rare): skip warping, structure cannot be exported.
+                            continue;
+                        }
+
+                        var ds = new DeformedStructure
+                        {
+                            Id = ms.id,
+                            DicomType = ms.dicomType,
+                            Color = ms.color
+                        };
+
+                        for (int z = 0; z < fnz; z++)
+                        {
+                            var slicePolys = TraceSliceContours(warped, fnx, fny, z);
+                            if (slicePolys.Count == 0) continue;
+
+                            var worldPolys = new List<double[]>();
+                            foreach (var poly in slicePolys)
+                            {
+                                // Smooth the jagged pixel-boundary polygon and reduce its
+                                // point count before converting to patient coordinates.
+                                // SmoothAndSubsamplePolygon already applies the +0.5
+                                // pixel-centre offset so PixelToWorld receives fractional coords.
+                                var smoothed = SmoothAndSubsamplePolygon(poly);
+                                if (smoothed.Count < 3) continue;
+
+                                var pts = new List<double>(smoothed.Count * 3);
+                                foreach (var sp in smoothed)
+                                {
+                                    double[] w = PixelToWorld(
+                                        sp[0], sp[1], z,
+                                        export.Origin, export.Spacing, export.Direction);
+                                    pts.Add(w[0]); pts.Add(w[1]); pts.Add(w[2]);
+                                }
+                                worldPolys.Add(pts.ToArray());
+                            }
+                            if (worldPolys.Count > 0)
+                                ds.ContoursBySlice.Add((z, worldPolys));
+                        }
+
+                        if (ds.ContoursBySlice.Count > 0)
+                            deformedStructures.Add(ds);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                warpError = $"Failed to warp structures: {ex.Message}";
+                Helpers.SeriLog.LogError("DICOM export warp error", ex);
+            }
+
+            if (warpError != null)
+                return (ScriptStatus.Error, warpError);
+
+            // ---- 3. Write DICOM CT series + RTSTRUCT ----
+            Report(progress, "Writing DICOM files...");
+            try
+            {
+                await Task.Run(() =>
+                    DicomExportService.WriteDeformedSeries(export, deformedStructures, outputDirectory, progress));
+            }
+            catch (Exception ex)
+            {
+                Helpers.SeriLog.LogError("DICOM export write error", ex);
+                return (ScriptStatus.Error, $"Failed to write DICOM files: {ex.Message}");
+            }
+
+            string msg = $"Exported deformed CT ({export.Size[2]} slices) and {deformedStructures.Count} structure(s) to: {outputDirectory}";
+            Helpers.SeriLog.LogInfo(msg);
+            Report(progress, msg);
+            return (ScriptStatus.Complete, msg);
         }
 
         /// <summary>
@@ -258,7 +725,8 @@ namespace DoseConverter
                 string targetPlanId,
                 string sourceMaskStructureId = null,
                 string targetMaskStructureId = null,
-                IProgress<string> progress = null)
+                IProgress<string> progress = null,
+                double[] rigidMatrixRowMajor = null)
         {
             // ---- 1. Extract image and dose data inside the Eclipse dispatcher --------
             float[] movingCTBuffer = null, fixedCTBuffer = null, sourceDoseBuffer = null;
@@ -279,6 +747,7 @@ namespace DoseConverter
             string extractionError = null;
 
             Report(progress, $"[{sourceCourseId}/{sourcePlanId}] Extracting image data...");
+
             await _ew.AsyncRunPatientContext(p =>
             {
                 try
@@ -353,8 +822,8 @@ namespace DoseConverter
                         SitkImage fixedMaskImg  = fixedMaskBuffer  != null ? BuildMaskImage(fixedMaskBuffer,  fixedCTSize,  fixedCTSpacing,  fixedCTOrigin,  fixedCTDirection)  : null;
                         SitkImage movingMaskImg = movingMaskBuffer != null ? BuildMaskImage(movingMaskBuffer, movingCTSize, movingCTSpacing, movingCTOrigin, movingCTDirection) : null;
 
-                        Report(progress, $"[{sourceCourseId}/{sourcePlanId}] Running B-spline registration...");
-                        SitkTransform finalTransform = RunBSplineRegistration(fixedCT, movingCT, progress, fixedMaskImg, movingMaskImg);
+                        Report(progress, $"[{sourceCourseId}/{sourcePlanId}] Starting diffeomorphic demons registration...");
+                        SitkTransform finalTransform = RunDiffeomorphicDemonsRegistration(fixedCT, movingCT, progress, fixedMaskImg, movingMaskImg, rigidMatrixRowMajor);
 
                         Report(progress, $"[{sourceCourseId}/{sourcePlanId}] Resampling source dose...");
                         using (var targetDoseRef = BuildReferenceImage(targetDoseSize, targetDoseSpacing, targetDoseOrigin, targetDoseDirection))
@@ -390,133 +859,327 @@ namespace DoseConverter
         // SimpleITK registration
         // -----------------------------------------------------------------------
 
-        private SitkTransform RunBSplineRegistration(
+        /// <summary>
+        /// Runs a multi-resolution diffeomorphic demons registration (CT-to-CT, unimodal).
+        /// When <paramref name="rigidMatrixRowMajor"/> is supplied, the moving image is
+        /// pre-warped onto the fixed grid via the rigid transform before demons iterations
+        /// begin; the returned transform composes the rigid alignment with the demons
+        /// displacement field so that the caller can use it directly to resample the dose.
+        /// </summary>
+        private SitkTransform RunDiffeomorphicDemonsRegistration(
             SitkImage fixedCT, SitkImage movingCT,
             IProgress<string> progress,
-            SitkImage fixedMask = null, SitkImage movingMask = null)
+            SitkImage fixedMask = null, SitkImage movingMask = null,
+            double[] rigidMatrixRowMajor = null)
         {
-            // Read registration parameters from config (fall back to defaults if element absent)
             var rp = _model.Config?.RegistrationParameters ?? new DoseConverterConfigRegistrationParameters();
 
-            // Parse space-separated grid nodes (e.g. "5 5 5")
-            var gridNodes = ParseUIntList(rp.BSplineGridNodes, new uint[] { 5, 5, 5 });
-            uint bsplineOrder = ParseUInt(rp.BSplineOrder, 3);
+            var shrinkFactors  = ParseUIntList(rp.ShrinkFactorsPerLevel, new uint[]   { 4, 2, 1 });
+            var smoothSigmas   = ParseDoubleList(rp.SmoothingSigmasPerLevel, new double[] { 2.0, 1.0, 0.0 });
+            int numLevels      = shrinkFactors.Length;
 
-            // Parse space-separated multi-resolution parameters
-            var shrinkFactors = ParseUIntList(rp.ShrinkFactorsPerLevel, new uint[] { 4, 2, 1 });
-            var smoothingSigmas = ParseDoubleList(rp.SmoothingSigmasPerLevel, new double[] { 2.0, 1.0, 0.0 });
-            int numLevels = shrinkFactors.Length;
-
-            // Per-level iteration caps: MaxIterationsPerLevel takes precedence; falls back to MaxIterations for
-            // any level that is not specified.
-            uint defaultMaxIter = ParseUInt(rp.MaxIterations, 100);
+            uint defaultMaxIter = ParseUInt(rp.MaxIterations, 50);
             uint[] perLevelIter = ParseUIntList(rp.MaxIterationsPerLevel, new uint[0]);
-            // Build a full per-level array of length numLevels
             uint[] maxIterPerLevel = new uint[numLevels];
             for (int i = 0; i < numLevels; i++)
                 maxIterPerLevel[i] = (i < perLevelIter.Length) ? perLevelIter[i] : defaultMaxIter;
 
-            // When a fixed mask is available, crop both the fixed CT and the fixed mask to the
-            // mask's bounding box (+ margin) before initialising the B-spline transform and
-            // running Execute.  This limits control-point dimensionality to the ROI only.
-            // The returned transform is physically georeferenced, so it is valid over the whole
-            // image space and can be applied directly to the full-resolution dose grid.
-            double maskMarginMm = rp.MaskMarginMm;
-            SitkImage regFixed     = fixedCT;   // may be replaced by cropped version
-            SitkImage regFixedMask = fixedMask;  // may be replaced by cropped version
-            bool croppedFixed = false;
-            if (fixedMask != null)
+            // Demons displacement-field smoothing standard deviation(s).
+            double[] stdDevs = ParseDoubleList(rp.DemonsStandardDeviations, new double[] { 1.0 });
+
+            // Maximum demons update step length (mm).
+            double maxStepLength = rp.DemonsMaxStepLength > 0 ? rp.DemonsMaxStepLength : 2.0;
+
+            // ---- Optional rigid pre-alignment ----------------------------------
+            // Build an AffineTransform from the supplied 4×4 ESAPI matrix so we can
+            // pre-warp the moving CT onto the fixed coordinate system before running demons.
+            // SimpleITK transforms map fixed→moving, so we invert the src→tgt ESAPI matrix.
+            AffineTransform rigidAffine = null;
+            SitkImage preAlignedMoving = movingCT;
+            bool disposedPreAligned = false;
+
+            if (rigidMatrixRowMajor != null && rigidMatrixRowMajor.Length == 16)
             {
-                Report(progress, "Cropping fixed CT to mask bounding box...");
-                var (croppedCT, croppedMask) = CropImageToMaskBounds(fixedCT, fixedMask, maskMarginMm);
-                if (croppedCT != null)
+                Report(progress, "Pre-aligning moving CT with rigid registration...");
+                double[] inv = InvertRigidMatrix4x4(rigidMatrixRowMajor);
+                rigidAffine = new AffineTransform(3);
+                rigidAffine.SetMatrix(new VectorDouble(new double[]
                 {
-                    regFixed     = croppedCT;
-                    regFixedMask = croppedMask;
-                    croppedFixed = true;
-                    Report(progress,
-                        $"  Cropped fixed CT: {regFixed.GetWidth()}×{regFixed.GetHeight()}×{regFixed.GetDepth()} " +
-                        $"(was {fixedCT.GetWidth()}×{fixedCT.GetHeight()}×{fixedCT.GetDepth()})");
-                }
+                    inv[0], inv[1], inv[2],
+                    inv[4], inv[5], inv[6],
+                    inv[8], inv[9], inv[10]
+                }));
+                rigidAffine.SetTranslation(new VectorDouble(new double[] { inv[3], inv[7], inv[11] }));
+
+                preAlignedMoving = SimpleITK.Resample(
+                    movingCT, fixedCT, rigidAffine,
+                    InterpolatorEnum.sitkLinear, 0.0, movingCT.GetPixelID());
+                disposedPreAligned = true;
             }
 
+            // ---- Intensity normalisation (demons works best on matched ranges) --
+            // 1. Histogram-match moving → fixed so intensity distributions align.
+            // 2. Rescale both to [0, 255] for comparable gradient magnitudes.
+            SitkImage normFixed  = null;
+            SitkImage normMoving = null;
+            SitkImage histMatchedMoving = null;
             try
             {
-            // Multi-resolution B-Spline registration (unimodal CT-CT)
-            var registration = new ImageRegistrationMethod();
+                Report(progress, "Histogram matching moving CT to fixed CT...");
+                var histMatcher = new HistogramMatchingImageFilter();
+                histMatcher.SetNumberOfHistogramLevels(1024);
+                histMatcher.SetNumberOfMatchPoints(7);
+                histMatcher.ThresholdAtMeanIntensityOn();
+                // Execute(sourceImage, referenceImage)
+                histMatchedMoving = histMatcher.Execute(preAlignedMoving, fixedCT);
 
-            // Metric: mean squares (optimal for unimodal)
-            registration.SetMetricAsMeanSquares();
-            registration.SetMetricSamplingStrategy(ImageRegistrationMethod.MetricSamplingStrategyType.RANDOM);
-            registration.SetMetricSamplingPercentage(rp.MetricSamplingPercentage);
+                var rescale = new RescaleIntensityImageFilter();
+                rescale.SetOutputMinimum(0);
+                rescale.SetOutputMaximum(255);
+                normFixed  = rescale.Execute(fixedCT);
 
-            // Interpolator
-            registration.SetInterpolator(InterpolatorEnum.sitkLinear);
-
-            // Optional structure masks — constrain metric to the contoured regions
-            if (regFixedMask != null)  registration.SetMetricFixedMask(regFixedMask);
-            if (movingMask   != null)  registration.SetMetricMovingMask(movingMask);
-
-            // Initial transform — seeded on the (possibly cropped) fixed image so control
-            // points are distributed over the ROI only.
-            var bsplineTransform = SimpleITK.BSplineTransformInitializer(
-                regFixed,
-                new VectorUInt32(gridNodes),
-                bsplineOrder);
-            registration.SetInitialTransform(bsplineTransform, inPlace: true);
-
-            // Optimizer: L-BFGS-B — seeded with the first-level iteration count; updated per level below.
-            registration.SetOptimizerAsLBFGSB(
-                gradientConvergenceTolerance: rp.GradientConvergenceTolerance,
-                numberOfIterations: maxIterPerLevel[0],
-                maximumNumberOfCorrections: (uint)ParseUInt(rp.MaxCorrections, 5),
-                maximumNumberOfFunctionEvaluations: (uint)ParseUInt(rp.MaxFunctionEvaluations, 1000),
-                costFunctionConvergenceFactor: rp.CostFunctionConvergenceFactor);
-
-            // Multi-resolution pyramid
-            registration.SetShrinkFactorsPerLevel(new VectorUInt32(shrinkFactors));
-            registration.SetSmoothingSigmasPerLevel(new VectorDouble(smoothingSigmas));
-            registration.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn();
-
-            int level = 0;
-            var levelCmd = new ActionCommand(() =>
-            {
-                level++;
-                // Re-configure the optimizer with the iteration cap for this specific level.
-                // sitkMultiResolutionIterationEvent fires before the level starts, so level is 1-based here.
-                int idx = Math.Min(level - 1, numLevels - 1);
-                registration.SetOptimizerAsLBFGSB(
-                    gradientConvergenceTolerance: rp.GradientConvergenceTolerance,
-                    numberOfIterations: maxIterPerLevel[idx],
-                    maximumNumberOfCorrections: (uint)ParseUInt(rp.MaxCorrections, 5),
-                    maximumNumberOfFunctionEvaluations: (uint)ParseUInt(rp.MaxFunctionEvaluations, 1000),
-                    costFunctionConvergenceFactor: rp.CostFunctionConvergenceFactor);
-                Report(progress, $"Registration: starting level {level}/{numLevels} (max {maxIterPerLevel[idx]} iterations)...");
-            });
-            var iterCmd = new ActionCommand(() =>
-            {
-                if ((int)registration.GetOptimizerIteration() % 10 == 0)
+                // Resample the (histogram-matched) moving image onto the fixed image grid
+                // ONCE before the pyramid.  This ensures both images share exactly the same
+                // origin, spacing, direction, and voxel count, so independent ShrinkImageFilter
+                // calls will always produce identical sizes at every level — avoiding the
+                // size-mismatch error that occurs when two CTs have different Z extents.
+                SitkImage movingOnFixedGrid;
+                if (histMatchedMoving.GetSize().SequenceEqual(fixedCT.GetSize()))
                 {
-                    Report(progress, $"  Level {level} | Iteration {registration.GetOptimizerIteration()} | Metric {registration.GetMetricValue():F4}");
+                    movingOnFixedGrid = histMatchedMoving;
+                    histMatchedMoving = null; // ownership transferred; don't double-dispose
                 }
-            });
-            registration.AddCommand(EventEnum.sitkMultiResolutionIterationEvent, levelCmd);
-            registration.AddCommand(EventEnum.sitkIterationEvent, iterCmd);
+                else
+                {
+                    var preRsmp = new ResampleImageFilter();
+                    preRsmp.SetReferenceImage(fixedCT);
+                    preRsmp.SetInterpolator(InterpolatorEnum.sitkLinear);
+                    preRsmp.SetDefaultPixelValue(0);
+                    movingOnFixedGrid = preRsmp.Execute(histMatchedMoving);
+                    histMatchedMoving.Dispose();
+                    histMatchedMoving = null;
+                }
+                SitkImage rawNormMoving = rescale.Execute(movingOnFixedGrid);
+                movingOnFixedGrid.Dispose();
+                normMoving = rawNormMoving;
 
-            // Execute against the (possibly cropped) fixed image; moving stays full-resolution.
-            SitkTransform result = registration.Execute(regFixed, movingCT);
-            Helpers.SeriLog.LogInfo($"Registration complete. Stop condition: {registration.GetOptimizerStopConditionDescription()}");
-            return result;
-            } // end try
+                // NOTE: masks are NOT applied to the input images here.
+                // Zeroing images outside the body would:
+                //   (a) create sharp artificial edges at the body boundary that corrupt the
+                //       gradient signal driving the demons optimisation, and
+                //   (b) dilute the per-voxel RMS with a large zero-background, causing the
+                //       convergence threshold to fire after only a handful of iterations.
+                // Instead, the displacement field is masked AFTER the pyramid (see below).
+
+                // ---- Multi-resolution pyramid -----------------------------------
+                // Run demons at each pyramid level; upsample the resulting displacement
+                // field to initialise the next (finer) level.
+                // Both normFixed and normMoving are now on the same grid, so independent
+                // shrinking is safe and produces identical voxel counts at every level.
+                SitkImage currentDispField = null;
+
+                for (int lvl = 0; lvl < numLevels; lvl++)
+                {
+                    uint sf     = shrinkFactors[lvl];
+                    double sigma = smoothSigmas.Length > lvl ? smoothSigmas[lvl] : 0.0;
+                    uint iters  = maxIterPerLevel[lvl];
+                    double stdDev = stdDevs.Length > lvl ? stdDevs[lvl] : stdDevs[stdDevs.Length - 1];
+
+                    Report(progress, $"Demons level {lvl + 1}/{numLevels} (shrink×{sf}, σ={sigma:F1} mm, {iters} iters, field σ={stdDev:F1})...");
+
+                    // Smooth + downsample both CTs independently (safe because they share
+                    // the same grid after the pre-loop resample above).
+                    SitkImage shrunkFixed, shrunkMoving;
+                    if (sf > 1)
+                    {
+                        var smoother = new SmoothingRecursiveGaussianImageFilter();
+                        smoother.SetSigma(sigma);
+                        using (var smoothedFixed  = smoother.Execute(normFixed))
+                        using (var smoothedMoving = smoother.Execute(normMoving))
+                        {
+                            var shrinker  = new ShrinkImageFilter();
+                            var shrinkVec = new VectorUInt32(new uint[] { sf, sf, sf });
+                            shrinker.SetShrinkFactors(shrinkVec);
+                            shrunkFixed  = shrinker.Execute(smoothedFixed);
+                            shrunkMoving = shrinker.Execute(smoothedMoving);
+                        }
+                    }
+                    else
+                    {
+                        shrunkFixed  = normFixed;
+                        shrunkMoving = normMoving;
+                    }
+
+                    // Upsample previous displacement field to current resolution.
+                    SitkImage initField = null;
+                    if (currentDispField != null)
+                    {
+                        var upsampleFilter = new ResampleImageFilter();
+                        upsampleFilter.SetReferenceImage(shrunkFixed);
+                        upsampleFilter.SetInterpolator(InterpolatorEnum.sitkLinear);
+                        upsampleFilter.SetOutputPixelType(currentDispField.GetPixelID());
+                        initField = upsampleFilter.Execute(currentDispField);
+                        currentDispField.Dispose();
+                    }
+
+                    var demons = new DiffeomorphicDemonsRegistrationFilter();
+                    demons.SetNumberOfIterations(iters);
+                    demons.SetStandardDeviations(stdDev);
+                    demons.SetMaximumUpdateStepLength(maxStepLength);
+                    demons.SetMaximumRMSError(1e-4);   // stop early when RMS drops below this
+                    demons.SmoothDisplacementFieldOn();
+                    demons.SmoothUpdateFieldOn();
+
+                    // Attach a per-iteration callback so the user sees forward motion.
+                    // Note: GetRMSChange() always returns 0.0 from within the command
+                    // callback in SimpleITK's .NET binding (the filter's internal metric
+                    // state is not exposed during execution). Report iteration count only
+                    // and let the post-Execute summary carry the final RMS.
+                    uint iterCount = 0;
+                    var iterCmd = new ActionCommand(() =>
+                    {
+                        iterCount++;
+                        if (iterCount % 5 == 0)
+                            Report(progress, $"  Level {lvl + 1}/{numLevels} — iteration {iterCount}/{iters}...");
+                    });
+                    demons.AddCommand(EventEnum.sitkIterationEvent, iterCmd);
+
+                    SitkImage newField = initField != null
+                        ? demons.Execute(shrunkFixed, shrunkMoving, initField)
+                        : demons.Execute(shrunkFixed, shrunkMoving);
+
+                    // GetRMSChange() IS valid after Execute() returns.
+                    double finalRms = demons.GetRMSChange();
+                    initField?.Dispose();
+                    if (sf > 1) { shrunkFixed.Dispose(); shrunkMoving.Dispose(); }
+                    string rmsText = finalRms > 0.0 ? $", final RMS: {finalRms:F6}" : string.Empty;
+                    string convergenceNote = iterCount < (uint)iters ? " (converged early)" : string.Empty;
+                    Report(progress, $"  Level {lvl + 1} complete — {iterCount}/{iters} iterations{rmsText}{convergenceNote}.");
+                    currentDispField = newField;
+                }
+
+                // ---- Upsample final field to full fixed-CT resolution -----------
+                SitkImage fullResField;
+                if (currentDispField != null)
+                {
+                    var upsampleFinal = new ResampleImageFilter();
+                    upsampleFinal.SetReferenceImage(fixedCT);
+                    upsampleFinal.SetInterpolator(InterpolatorEnum.sitkLinear);
+                    upsampleFinal.SetOutputPixelType(currentDispField.GetPixelID());
+                    fullResField = upsampleFinal.Execute(currentDispField);
+                    currentDispField.Dispose();
+                }
+                else
+                {
+                    // Degenerate path — return identity displacement field.
+                    var t2d = new TransformToDisplacementFieldFilter();
+                    t2d.SetReferenceImage(fixedCT);
+                    var identity = new AffineTransform(3);
+                    fullResField = t2d.Execute(identity);
+                }
+
+                // ---- Flatten rigid + demons into one displacement field -----------
+                // This MUST happen before masking.  If we mask the demons-only field
+                // and then compose with rigidAffine, the rigid rotation still applies
+                // globally — outside the mask d=0 so the composite reduces to just
+                // rigidAffine, making the background/couch appear rotated.
+                // By flattening first we get the total displacement per voxel, and
+                // zeroing that outside the body gives true identity (no rotation) there.
+                if (rigidAffine != null)
+                {
+                    Report(progress, "Composing rigid + deformable fields...");
+                    var tempDisp = new DisplacementFieldTransform(fullResField);
+                    var tempComposite = new CompositeTransform(3);
+                    tempComposite.AddTransform(rigidAffine);
+                    tempComposite.AddTransform(tempDisp);
+
+                    var flattenFilter = new TransformToDisplacementFieldFilter();
+                    flattenFilter.SetReferenceImage(fixedCT);
+                    SitkImage flatField = flattenFilter.Execute(tempComposite);
+                    fullResField.Dispose();
+                    fullResField = flatField;
+                    // rigidAffine is now baked in; don't use CompositeTransform below.
+                    rigidAffine = null;
+                }
+
+                // ---- Mask the displacement field -----------------------------------
+                // Zero displacement vectors outside the body region.  This is the
+                // correct place to apply the mask: the optimisation has run on real
+                // image gradients and real RMS values; we now simply suppress the
+                // (unreliable) field outside the anatomy before wrapping it in a
+                // transform.  We take the union of fixed + moving masks so that the
+                // full extent of both bodies is covered.
+                // Crucially, masking must happen AFTER flattening rigid + demons (above)
+                // so that the rigid component is also zeroed outside the mask.
+                if (fixedMask != null || movingMask != null)
+                {
+                    // Build a combined uint8 mask on the fixed-CT grid.
+                    SitkImage combinedMask = null;
+                    if (fixedMask != null && movingMask != null)
+                    {
+                        // Resample moving mask to fixed grid, then OR with fixed mask.
+                        var rsmpMov = new ResampleImageFilter();
+                        rsmpMov.SetReferenceImage(fixedCT);
+                        rsmpMov.SetInterpolator(InterpolatorEnum.sitkNearestNeighbor);
+                        rsmpMov.SetDefaultPixelValue(0);
+                        using (var movOnFixed = rsmpMov.Execute(movingMask))
+                        {
+                            combinedMask = SimpleITK.Or(
+                                SimpleITK.Cast(fixedMask,  PixelIDValueEnum.sitkUInt8),
+                                SimpleITK.Cast(movOnFixed, PixelIDValueEnum.sitkUInt8));
+                        }
+                    }
+                    else if (fixedMask != null)
+                    {
+                        combinedMask = SimpleITK.Cast(fixedMask, PixelIDValueEnum.sitkUInt8);
+                    }
+                    else
+                    {
+                        var rsmpMov = new ResampleImageFilter();
+                        rsmpMov.SetReferenceImage(fixedCT);
+                        rsmpMov.SetInterpolator(InterpolatorEnum.sitkNearestNeighbor);
+                        rsmpMov.SetDefaultPixelValue(0);
+                        using (var movOnFixed = rsmpMov.Execute(movingMask))
+                            combinedMask = SimpleITK.Cast(movOnFixed, PixelIDValueEnum.sitkUInt8);
+                    }
+
+                    // Resample the combined mask to the displacement-field grid (same as
+                    // fixedCT after the final upsample), then zero vectors outside it.
+                    // The displacement field is a vector image; Mask() zeroes all components.
+                    using (combinedMask)
+                    {
+                        SitkImage maskedField = SimpleITK.Mask(fullResField, combinedMask);
+                        fullResField.Dispose();
+                        fullResField = maskedField;
+                    }
+                }
+
+                var dispTransform = new DisplacementFieldTransform(fullResField);
+                fullResField.Dispose();
+
+                if (rigidAffine != null)
+                {
+                    // No mask was set, so the flatten-and-mask block above was skipped.
+                    // Compose rigid + demons field in the normal way.
+                    var composite = new CompositeTransform(3);
+                    composite.AddTransform(rigidAffine);
+                    composite.AddTransform(dispTransform);
+                    Helpers.SeriLog.LogInfo("Diffeomorphic demons registration complete (rigid + deformable).");
+                    return composite;
+                }
+
+                // Either no rigid pre-alignment, or it was already baked into the
+                // displacement field by the flatten step above.
+                Helpers.SeriLog.LogInfo("Diffeomorphic demons registration complete.");
+                return dispTransform;
+            }
             finally
             {
-                // Dispose cropped images when they differ from the originals passed in.
-                if (croppedFixed)
-                {
-                    regFixed?.Dispose();
-                    if (!ReferenceEquals(regFixedMask, fixedMask))
-                        regFixedMask?.Dispose();
-                }
+                normFixed?.Dispose();
+                normMoving?.Dispose();
+                histMatchedMoving?.Dispose();
+                if (disposedPreAligned && !ReferenceEquals(preAlignedMoving, movingCT))
+                    preAlignedMoving?.Dispose();
             }
         }
 
@@ -603,6 +1266,27 @@ namespace DoseConverter
         // Config parsing helpers
         // -----------------------------------------------------------------------
 
+        /// <summary>
+        /// Inverts a row-major 4×4 rigid homogeneous matrix using R^-1 = R^T.
+        /// (For a pure rigid body transform the 3×3 rotation block is orthonormal.)
+        /// </summary>
+        private static double[] InvertRigidMatrix4x4(double[] m)
+        {
+            double[] inv = new double[16];
+            for (int r = 0; r < 3; r++)
+                for (int c = 0; c < 3; c++)
+                    inv[r * 4 + c] = m[c * 4 + r];
+            for (int r = 0; r < 3; r++)
+            {
+                double sum = 0;
+                for (int c = 0; c < 3; c++)
+                    sum += inv[r * 4 + c] * m[c * 4 + 3];
+                inv[r * 4 + 3] = -sum;
+            }
+            inv[12] = 0; inv[13] = 0; inv[14] = 0; inv[15] = 1;
+            return inv;
+        }
+
         private static uint[] ParseUIntList(string value, uint[] fallback)
         {
             try
@@ -648,13 +1332,20 @@ namespace DoseConverter
             float[] buffer = new float[nx * ny * nz];
             int[,] sliceBuf = new int[nx, ny];
 
+            // Determine the linear HU calibration (HU = raw * slope + intercept) with two calls
+            // rather than calling VoxelToDisplayValue on every voxel (50M+ calls would hang the
+            // ESAPI dispatcher thread for minutes on a typical CT volume).
+            double huIntercept = img.VoxelToDisplayValue(0);
+            double huSlope     = img.VoxelToDisplayValue(1) - huIntercept;
+            if (huSlope == 0) huSlope = 1.0; // guard against degenerate calibration
+
             for (int z = 0; z < nz; z++)
             {
                 img.GetVoxels(z, sliceBuf);
                 int baseIdx = z * nx * ny;
                 for (int x = 0; x < nx; x++)
                     for (int y = 0; y < ny; y++)
-                        buffer[baseIdx + y * nx + x] = (float)sliceBuf[x, y];
+                        buffer[baseIdx + y * nx + x] = (float)(sliceBuf[x, y] * huSlope + huIntercept);
             }
 
             uint[] size = { (uint)nx, (uint)ny, (uint)nz };
@@ -858,9 +1549,306 @@ namespace DoseConverter
             }
         }
 
+        // -----------------------------------------------------------------------
+        // Structure warping + contour tracing (DICOM export support)
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// Warps a binary mask defined on the moving CT grid onto the fixed (target) CT grid
+        /// using the displacement field produced by the DIR.  For each fixed voxel the field
+        /// gives the corresponding moving-space physical point (moving = fixed + displacement);
+        /// the moving mask is then sampled with nearest-neighbour interpolation.  Returns a
+        /// flat byte[] in [x + y*nx + z*nx*ny] layout on the fixed grid (1 inside, 0 outside).
+        /// </summary>
+        internal static byte[] WarpMaskToFixedGrid(
+            byte[] movingMask, uint[] mSize, double[] mSpacing, double[] mOrigin, double[] mDir,
+            float[] disp,       uint[] fSize, double[] fSpacing, double[] fOrigin, double[] fDir)
+        {
+            int fnx = (int)fSize[0], fny = (int)fSize[1], fnz = (int)fSize[2];
+            int mnx = (int)mSize[0], mny = (int)mSize[1], mnz = (int)mSize[2];
+
+            byte[] outMask = new byte[(long)fnx * fny * fnz];
+
+            for (int z = 0; z < fnz; z++)
+            {
+                for (int y = 0; y < fny; y++)
+                {
+                    for (int x = 0; x < fnx; x++)
+                    {
+                        long vi = (long)z * fnx * fny + (long)y * fnx + x;
+
+                        // Fixed-grid voxel → physical point (patient mm).
+                        double wx = fOrigin[0] + fDir[0] * fSpacing[0] * x + fDir[1] * fSpacing[1] * y + fDir[2] * fSpacing[2] * z;
+                        double wy = fOrigin[1] + fDir[3] * fSpacing[0] * x + fDir[4] * fSpacing[1] * y + fDir[5] * fSpacing[2] * z;
+                        double wz = fOrigin[2] + fDir[6] * fSpacing[0] * x + fDir[7] * fSpacing[1] * y + fDir[8] * fSpacing[2] * z;
+
+                        // Apply displacement (interleaved dx,dy,dz mm) → moving physical point.
+                        long di = vi * 3;
+                        double mxw = wx + disp[di];
+                        double myw = wy + disp[di + 1];
+                        double mzw = wz + disp[di + 2];
+
+                        // Moving physical point → fractional moving voxel index.
+                        double rx = mxw - mOrigin[0], ry = myw - mOrigin[1], rz = mzw - mOrigin[2];
+                        double mix = (mDir[0] * rx + mDir[3] * ry + mDir[6] * rz) / mSpacing[0];
+                        double miy = (mDir[1] * rx + mDir[4] * ry + mDir[7] * rz) / mSpacing[1];
+                        double miz = (mDir[2] * rx + mDir[5] * ry + mDir[8] * rz) / mSpacing[2];
+
+                        // Trilinear interpolation on the binary moving mask.
+                        // Threshold at 0.5: a fixed voxel is inside if the majority of the
+                        // 8 surrounding source voxels are inside.  This prevents slice dropout
+                        // caused by sub-voxel displacement offsets along Z.
+                        int x0 = (int)Math.Floor(mix), y0 = (int)Math.Floor(miy), z0 = (int)Math.Floor(miz);
+                        int x1 = x0 + 1, y1 = y0 + 1, z1 = z0 + 1;
+                        double tx = mix - x0, ty = miy - y0, tz = miz - z0;
+
+                        double c000 = (x0>=0&&x0<mnx&&y0>=0&&y0<mny&&z0>=0&&z0<mnz) ? movingMask[(long)z0*mnx*mny+y0*mnx+x0] : 0.0;
+                        double c100 = (x1>=0&&x1<mnx&&y0>=0&&y0<mny&&z0>=0&&z0<mnz) ? movingMask[(long)z0*mnx*mny+y0*mnx+x1] : 0.0;
+                        double c010 = (x0>=0&&x0<mnx&&y1>=0&&y1<mny&&z0>=0&&z0<mnz) ? movingMask[(long)z0*mnx*mny+y1*mnx+x0] : 0.0;
+                        double c110 = (x1>=0&&x1<mnx&&y1>=0&&y1<mny&&z0>=0&&z0<mnz) ? movingMask[(long)z0*mnx*mny+y1*mnx+x1] : 0.0;
+                        double c001 = (x0>=0&&x0<mnx&&y0>=0&&y0<mny&&z1>=0&&z1<mnz) ? movingMask[(long)z1*mnx*mny+y0*mnx+x0] : 0.0;
+                        double c101 = (x1>=0&&x1<mnx&&y0>=0&&y0<mny&&z1>=0&&z1<mnz) ? movingMask[(long)z1*mnx*mny+y0*mnx+x1] : 0.0;
+                        double c011 = (x0>=0&&x0<mnx&&y1>=0&&y1<mny&&z1>=0&&z1<mnz) ? movingMask[(long)z1*mnx*mny+y1*mnx+x0] : 0.0;
+                        double c111 = (x1>=0&&x1<mnx&&y1>=0&&y1<mny&&z1>=0&&z1<mnz) ? movingMask[(long)z1*mnx*mny+y1*mnx+x1] : 0.0;
+
+                        double val = c000*(1-tx)*(1-ty)*(1-tz) + c100*tx*(1-ty)*(1-tz)
+                                   + c010*(1-tx)*ty*(1-tz)     + c110*tx*ty*(1-tz)
+                                   + c001*(1-tx)*(1-ty)*tz     + c101*tx*(1-ty)*tz
+                                   + c011*(1-tx)*ty*tz         + c111*tx*ty*tz;
+
+                        if (val >= 0.5)
+                            outMask[vi] = 1;
+                    }
+                }
+            }
+
+            // Per-slice 2D morphological close (3×3 dilation then erosion).
+            // Fills single-voxel gaps that persist after trilinear warping and
+            // removes isolated specks, further reducing dropout and speckle noise.
+            byte[] dilated = new byte[fnx * fny];
+            for (int z = 0; z < fnz; z++)
+            {
+                long sliceBase = (long)z * fnx * fny;
+
+                // Dilation: any background pixel adjacent (8-connected) to foreground becomes foreground.
+                for (int y = 0; y < fny; y++)
+                {
+                    for (int x = 0; x < fnx; x++)
+                    {
+                        bool found = false;
+                        for (int dy = -1; dy <= 1 && !found; dy++)
+                            for (int dx = -1; dx <= 1 && !found; dx++)
+                            {
+                                int nx2 = x + dx, ny2 = y + dy;
+                                if (nx2 >= 0 && nx2 < fnx && ny2 >= 0 && ny2 < fny
+                                    && outMask[sliceBase + ny2 * fnx + nx2] != 0)
+                                    found = true;
+                            }
+                        dilated[y * fnx + x] = found ? (byte)1 : (byte)0;
+                    }
+                }
+
+                // Erosion of the dilated slice written back to outMask.
+                for (int y = 0; y < fny; y++)
+                {
+                    for (int x = 0; x < fnx; x++)
+                    {
+                        bool allFg = true;
+                        for (int dy = -1; dy <= 1 && allFg; dy++)
+                            for (int dx = -1; dx <= 1 && allFg; dx++)
+                            {
+                                int nx2 = x + dx, ny2 = y + dy;
+                                if (nx2 < 0 || nx2 >= fnx || ny2 < 0 || ny2 >= fny
+                                    || dilated[ny2 * fnx + nx2] == 0)
+                                    allFg = false;
+                            }
+                        outMask[sliceBase + y * fnx + x] = allFg ? (byte)1 : (byte)0;
+                    }
+                }
+            }
+
+            return outMask;
+        }
+
+        // 8-neighbourhood offsets, clockwise starting at North (used by Moore tracing).
+        private static readonly int[] _mooreDx = { 0, 1, 1, 1, 0, -1, -1, -1 };
+        private static readonly int[] _mooreDy = { -1, -1, 0, 1, 1, 1, 0, -1 };
+
+        /// <summary>
+        /// Extracts ordered boundary polygons (in fractional pixel coordinates) for every
+        /// connected foreground component in a single slice of a binary mask.  Uses 4-connected
+        /// flood fill to isolate components and Moore-neighbour tracing for each outer boundary.
+        /// Returns a list of polygons, each a list of [ix, iy] integer pixel coordinates.
+        /// </summary>
+        internal static List<List<int[]>> TraceSliceContours(byte[] mask, int nx, int ny, int z)
+        {
+            var results = new List<List<int[]>>();
+            long baseIdx = (long)z * nx * ny;
+
+            bool[,] fg = new bool[nx, ny];
+            for (int y = 0; y < ny; y++)
+                for (int x = 0; x < nx; x++)
+                    fg[x, y] = mask[baseIdx + y * nx + x] != 0;
+
+            bool[,] visited = new bool[nx, ny];
+            for (int y = 0; y < ny; y++)
+            {
+                for (int x = 0; x < nx; x++)
+                {
+                    if (!fg[x, y] || visited[x, y]) continue;
+
+                    // Mark the whole component so it is only traced once. The first pixel
+                    // encountered (this one) is the topmost-leftmost of the component, so its
+                    // west neighbour is background — an ideal Moore-tracing start.
+                    FloodFillComponent(fg, visited, nx, ny, x, y);
+
+                    var poly = MooreNeighbourTrace(fg, nx, ny, x, y);
+                    if (poly.Count >= 3)
+                        results.Add(poly);
+                }
+            }
+            return results;
+        }
+
+        /// <summary>4-connected flood fill that marks every pixel of a component as visited.</summary>
+        private static void FloodFillComponent(bool[,] fg, bool[,] visited, int nx, int ny, int sx, int sy)
+        {
+            var stack = new Stack<int[]>();
+            stack.Push(new[] { sx, sy });
+            visited[sx, sy] = true;
+            while (stack.Count > 0)
+            {
+                var p = stack.Pop();
+                int px = p[0], py = p[1];
+                // 4-neighbours
+                if (px + 1 < nx && fg[px + 1, py] && !visited[px + 1, py]) { visited[px + 1, py] = true; stack.Push(new[] { px + 1, py }); }
+                if (px - 1 >= 0 && fg[px - 1, py] && !visited[px - 1, py]) { visited[px - 1, py] = true; stack.Push(new[] { px - 1, py }); }
+                if (py + 1 < ny && fg[px, py + 1] && !visited[px, py + 1]) { visited[px, py + 1] = true; stack.Push(new[] { px, py + 1 }); }
+                if (py - 1 >= 0 && fg[px, py - 1] && !visited[px, py - 1]) { visited[px, py - 1] = true; stack.Push(new[] { px, py - 1 }); }
+            }
+        }
+
+        /// <summary>
+        /// Moore-neighbour boundary tracing (clockwise) of the component containing the start
+        /// pixel, which must have a background/out-of-bounds west neighbour.  Returns ordered
+        /// boundary pixel coordinates as [ix, iy].
+        /// </summary>
+        private static List<int[]> MooreNeighbourTrace(bool[,] fg, int nx, int ny, int sx, int sy)
+        {
+            var trace = new List<int[]> { new[] { sx, sy } };
+
+            int bx = sx, by = sy;       // current boundary pixel
+            int px = sx - 1, py = sy;   // backtrack pixel (west, background)
+
+            int guard = 0, maxGuard = 8 * nx * ny + 100;
+            while (guard++ < maxGuard)
+            {
+                int startIdx = NeighbourIndex(bx, by, px, py);
+                int foundIdx = -1, prevBgX = px, prevBgY = py;
+
+                for (int k = 1; k <= 8; k++)
+                {
+                    int idx = (startIdx + k) % 8;
+                    int cx = bx + _mooreDx[idx];
+                    int cy = by + _mooreDy[idx];
+                    if (cx >= 0 && cx < nx && cy >= 0 && cy < ny && fg[cx, cy])
+                    {
+                        foundIdx = idx;
+                        int pidx = (startIdx + k - 1) % 8;
+                        prevBgX = bx + _mooreDx[pidx];
+                        prevBgY = by + _mooreDy[pidx];
+                        break;
+                    }
+                }
+
+                if (foundIdx < 0) break; // isolated single pixel
+
+                int ncx = bx + _mooreDx[foundIdx];
+                int ncy = by + _mooreDy[foundIdx];
+
+                if (ncx == sx && ncy == sy) break; // returned to start → closed
+
+                trace.Add(new[] { ncx, ncy });
+                bx = ncx; by = ncy; px = prevBgX; py = prevBgY;
+            }
+            return trace;
+        }
+
+        /// <summary>Returns the Moore-neighbourhood index (0–7) of pixel (px,py) relative to (bx,by), or 6 (west) if not adjacent.</summary>
+        private static int NeighbourIndex(int bx, int by, int px, int py)
+        {
+            for (int i = 0; i < 8; i++)
+                if (bx + _mooreDx[i] == px && by + _mooreDy[i] == py)
+                    return i;
+            return 6; // default to west
+        }
+
+        /// <summary>
+        /// Applies a cyclic Gaussian smooth to a boundary polygon then subsamples it to
+        /// reduce the point count to a clinically appropriate level.  Returns fractional
+        /// pixel-centre coordinates (including the +0.5 centre offset) ready for
+        /// <see cref="PixelToWorld"/>.
+        /// </summary>
+        /// <param name="pixelPoly">Pixel-integer boundary points from Moore tracing.</param>
+        /// <param name="stride">Keep every <paramref name="stride"/>-th smoothed point (default 2).</param>
+        /// <param name="sigma">Gaussian sigma in pixels (default 1.0).</param>
+        private static List<double[]> SmoothAndSubsamplePolygon(
+            List<int[]> pixelPoly, int stride = 2, double sigma = 1.0)
+        {
+            int n = pixelPoly.Count;
+            if (n < 3)
+                return pixelPoly.Select(p => new double[] { p[0] + 0.5, p[1] + 0.5 }).ToList();
+
+            // Build normalised Gaussian kernel (half-width = ceil(3σ)).
+            int halfW = (int)Math.Ceiling(3.0 * sigma);
+            int kLen  = 2 * halfW + 1;
+            double[] kernel = new double[kLen];
+            double ksum = 0;
+            for (int i = 0; i < kLen; i++)
+            {
+                double d = i - halfW;
+                kernel[i] = Math.Exp(-d * d / (2.0 * sigma * sigma));
+                ksum += kernel[i];
+            }
+            for (int i = 0; i < kLen; i++) kernel[i] /= ksum;
+
+            // Cyclic Gaussian smooth over the closed polygon.
+            var smoothed = new double[n][];
+            for (int i = 0; i < n; i++)
+            {
+                double sx = 0, sy = 0;
+                for (int k = 0; k < kLen; k++)
+                {
+                    int j = ((i - halfW + k) % n + n) % n;
+                    sx += (pixelPoly[j][0] + 0.5) * kernel[k];
+                    sy += (pixelPoly[j][1] + 0.5) * kernel[k];
+                }
+                smoothed[i] = new double[] { sx, sy };
+            }
+
+            // Subsample: keep every stride-th point.
+            var result = new List<double[]>(n / stride + 1);
+            for (int i = 0; i < n; i += stride)
+                result.Add(smoothed[i]);
+            return result;
+        }
+
+        /// <summary>
+        /// Converts a fixed-grid pixel coordinate (ix, iy, slice z) into a patient-space point
+        /// (mm), using the fixed CT geometry.  Returns [x, y, z].
+        /// </summary>
+        internal static double[] PixelToWorld(
+            double ix, double iy, int z,
+            double[] origin, double[] spacing, double[] direction)
+        {
+            double wx = origin[0] + direction[0] * spacing[0] * ix + direction[1] * spacing[1] * iy + direction[2] * spacing[2] * z;
+            double wy = origin[1] + direction[3] * spacing[0] * ix + direction[4] * spacing[1] * iy + direction[5] * spacing[2] * z;
+            double wz = origin[2] + direction[6] * spacing[0] * ix + direction[7] * spacing[1] * iy + direction[8] * spacing[2] * z;
+            return new[] { wx, wy, wz };
+        }
+
         internal static double[] BuildDirectionCosines(VVector xDir, VVector yDir, VVector zDir)
         {
-            // SimpleITK direction matrix is a flattened 3x3 in row-major order:
             // [Xx Xy Xz  Yx Yy Yz  Zx Zy Zz]
             return new double[]
             {
@@ -868,6 +1856,38 @@ namespace DoseConverter
                 yDir.x, yDir.y, yDir.z,
                 zDir.x, zDir.y, zDir.z
             };
+        }
+
+        /// <summary>
+        /// Builds a DICOM PN-formatted patient name ("Family^Given^Middle") from an ESAPI
+        /// patient.  Falls back to the patient Id when no name components are available.
+        /// </summary>
+        private static string BuildDicomPatientName(Patient p)
+        {
+            try
+            {
+                string family = p.LastName ?? string.Empty;
+                string given  = p.FirstName ?? string.Empty;
+                string middle = p.MiddleName ?? string.Empty;
+                string pn = $"{family}^{given}^{middle}".TrimEnd('^');
+                return string.IsNullOrWhiteSpace(pn) ? (p.Id ?? string.Empty) : pn;
+            }
+            catch
+            {
+                return p?.Id ?? string.Empty;
+            }
+        }
+
+        /// <summary>Maps an ESAPI patient sex string to a DICOM sex code (M / F / O).</summary>
+        private static string MapPatientSex(string sex)
+        {
+            if (string.IsNullOrWhiteSpace(sex)) return string.Empty;
+            switch (sex.Trim().ToUpperInvariant())
+            {
+                case "MALE":   case "M": return "M";
+                case "FEMALE": case "F": return "F";
+                default:                 return "O";
+            }
         }
 
         private static SitkImage BufferToImage(
@@ -932,8 +1952,42 @@ namespace DoseConverter
         }
 
         /// <summary>
-        /// Converts a flat buffer [x + y*nx + z*nx*ny] back to float[Z, X, Y].
+        /// Extracts a SimpleITK vector image (e.g. a displacement field) into an interleaved
+        /// float array: [v0_x, v0_y, v0_z, v1_x, v1_y, v1_z, …] in voxel-order.
+        /// Assumes the vector image has 3 components per voxel (3-D displacement field).
         /// </summary>
+        private static float[] ExtractVectorImageBuffer(SitkImage vectorImg)
+        {
+            uint nx = vectorImg.GetWidth();
+            uint ny = vectorImg.GetHeight();
+            uint nz = vectorImg.GetDepth();
+            uint nComp = vectorImg.GetNumberOfComponentsPerPixel();
+            long totalFloats = (long)(nx * ny * nz * nComp);
+
+            // SimpleITK stores vector images as a flat, component-interleaved buffer.
+            // GetBufferAsFloat() works directly for sitkVectorFloat32.
+            SitkImage floatImg = vectorImg;
+            bool disposeCast = false;
+            if (vectorImg.GetPixelID() != PixelIDValueEnum.sitkVectorFloat32)
+            {
+                floatImg = SimpleITK.Cast(vectorImg, PixelIDValueEnum.sitkVectorFloat32);
+                disposeCast = true;
+            }
+
+            float[] buffer = new float[totalFloats];
+            try
+            {
+                IntPtr ptr = floatImg.GetBufferAsFloat();
+                Marshal.Copy(ptr, buffer, 0, (int)totalFloats);
+            }
+            finally
+            {
+                if (disposeCast) floatImg.Dispose();
+            }
+            return buffer;
+        }
+
+
         internal static float[,,] BufferToArray3D(float[] buffer, uint[] size)
         {
             uint nx = size[0];

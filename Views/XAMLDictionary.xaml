@@ -1,4 +1,4 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero" 
                     xmlns:local="clr-namespace:DoseConverter"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -457,13 +457,13 @@
                 <Grid x:Name="Foreground">
                     <Rectangle x:Name="Indicator" Fill="{TemplateBinding Foreground}"/>
                     <Grid x:Name="Animation" ClipToBounds="True">
-                        <Rectangle x:Name="GR" HorizontalAlignment="Left" Margin="-100,0,0,0" Width="100">
+                        <Rectangle x:Name="GR" HorizontalAlignment="Stretch">
                             <Rectangle.Fill>
                                 <LinearGradientBrush EndPoint="1,0" StartPoint="0,0">
-                                    <GradientStop Color="Transparent" Offset="0"/>
-                                    <GradientStop Color="LightSteelBlue" Offset="0.4"/>
-                                    <GradientStop Color="LightSteelBlue" Offset="0.6"/>
-                                    <GradientStop Color="Transparent" Offset="1"/>
+                                    <GradientStop x:Name="GS1" Color="Transparent"    Offset="-0.15"/>
+                                    <GradientStop x:Name="GS2" Color="LightSteelBlue" Offset="0.0"/>
+                                    <GradientStop x:Name="GS3" Color="LightSteelBlue" Offset="0.08"/>
+                                    <GradientStop x:Name="GS4" Color="Transparent"    Offset="0.15"/>
                                 </LinearGradientBrush>
                             </Rectangle.Fill>
                         </Rectangle>
@@ -562,18 +562,17 @@
                 <Setter Property="Visibility" TargetName="CenterLight" Value="Collapsed"/>
                 <Setter Property="Visibility" TargetName="RightLight" Value="Collapsed"/>
                 <Setter Property="Visibility" TargetName="Indicator" Value="Collapsed"/>
+                <!-- Stretch PART_Indicator to fill the full track so the animation uses the real width -->
+                <Setter TargetName="PART_Indicator" Property="HorizontalAlignment" Value="Stretch"/>
             </Trigger>
             <Trigger Property="IsIndeterminate" Value="True">
                 <Trigger.EnterActions>
                     <BeginStoryboard>
                         <Storyboard RepeatBehavior="Forever">
-                            <ThicknessAnimationUsingKeyFrames BeginTime="0:0:0" Duration="0:0:4" Storyboard.TargetName="GR" Storyboard.TargetProperty="Margin">
-                                <ThicknessAnimationUsingKeyFrames.KeyFrames>
-                                    <LinearThicknessKeyFrame KeyTime="0:0:0" Value="-100,0,0,0"/>
-                                    <LinearThicknessKeyFrame KeyTime="0:0:2" Value="850,0,0,0"/>
-                                    <LinearThicknessKeyFrame KeyTime="0:0:4" Value="-100,0,0,0"/>
-                                </ThicknessAnimationUsingKeyFrames.KeyFrames>
-                            </ThicknessAnimationUsingKeyFrames>
+                            <DoubleAnimation Storyboard.TargetName="GS1" Storyboard.TargetProperty="Offset" From="-0.15" To="1.0"  Duration="0:0:1.6" RepeatBehavior="Forever"/>
+                            <DoubleAnimation Storyboard.TargetName="GS2" Storyboard.TargetProperty="Offset" From="0.0"   To="1.15" Duration="0:0:1.6" RepeatBehavior="Forever"/>
+                            <DoubleAnimation Storyboard.TargetName="GS3" Storyboard.TargetProperty="Offset" From="0.08"  To="1.23" Duration="0:0:1.6" RepeatBehavior="Forever"/>
+                            <DoubleAnimation Storyboard.TargetName="GS4" Storyboard.TargetProperty="Offset" From="0.15"  To="1.30" Duration="0:0:1.6" RepeatBehavior="Forever"/>
                         </Storyboard>
                     </BeginStoryboard>
                 </Trigger.EnterActions>
