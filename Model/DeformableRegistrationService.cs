@@ -1429,20 +1429,21 @@ namespace DoseConverter
 
                 int numLevels = shrinkFactors.Length;
 
-                // Per-level B-spline grid refinement: the mesh above is the COARSEST (level-0)
-                // grid; it is doubled at each finer level.  Refining the grid with the pyramid
-                // keeps control points local at fine resolution, which improves the fit AND
-                // reduces the boundary-control-point instability that masks introduce (a finer
-                // grid makes the ambiguous band straddling the mask edge thinner).
-                var bsplineScaleFactors = new uint[numLevels];
-                for (int i = 0; i < numLevels; i++)
-                    bsplineScaleFactors[i] = (uint)(1 << i);   // 1, 2, 4, ...
+                // NOTE: a SINGLE fixed B-spline grid is used across all pyramid levels.
+                // Per-level grid refinement (SetInitialTransformAsBSpline with scaleFactors) is
+                // incompatible with the L-BFGS-B optimizer: when the grid refines at a new level
+                // the parameter count changes (e.g. 1536 -> 6591) but the optimizer's scales array
+                // is not resized, producing
+                //   "Size of scales (N) must equal number of local parameters (M)".
+                // A single grid keeps the parameter count constant and, being coarser, also has
+                // fewer under-constrained control points at the mask boundary (more stable).
+                // To capture finer deformation, increase BSplineGridNodes in the config.
+                // (Per-level refinement would require switching the optimizer to LBFGS2.)
 
                 // ---- Diagnostics: log every resolved parameter so test runs are actionable ----
                 Helpers.SeriLog.LogInfo(
                     "B-spline DIR parameters: " +
-                    $"grid(level0)={string.Join("x", gridNodes)}, " +
-                    $"gridScaleFactors=[{string.Join(",", bsplineScaleFactors)}], " +
+                    $"grid={string.Join("x", gridNodes)}, " +
                     $"shrink=[{string.Join(",", shrinkFactors)}], " +
                     $"smoothSigmas=[{string.Join(",", smoothSigmas)}], " +
                     $"itersPerLevel=[{string.Join(",", iterPerLevel)}], " +
@@ -1495,9 +1496,9 @@ namespace DoseConverter
                 reg.SetSmoothingSigmasPerLevel(new VectorDouble(smoothSigmas));
                 reg.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn();
 
-                // Register the B-spline as a multi-resolution transform so the control grid is
-                // refined per level (bsplineScaleFactors above) rather than using one fixed grid.
-                reg.SetInitialTransformAsBSpline(bspline, true, new VectorUInt32(bsplineScaleFactors));
+                // Single fixed B-spline grid across all pyramid levels (see note above on why
+                // per-level refinement is not used with L-BFGS-B).
+                reg.SetInitialTransform(bspline, inPlace: true);
 
                 // Progress-only level tracking.  IMPORTANT: do NOT call any reg.Set*() here — the
                 // registration is mid-Execute and reconfiguring it is unsafe.
