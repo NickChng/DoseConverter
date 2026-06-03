@@ -24,6 +24,14 @@
       <xs:minInclusive value="0"/>
     </xs:restriction>
   </xs:simpleType>
+  <xs:simpleType name="RegistrationAlgorithmType">
+    <xs:restriction base="xs:string">
+      <!-- Diffeomorphic demons (PDE/Thirion). Best with NO masks; masking is approximated by intensity-zeroing. -->
+      <xs:enumeration value="Demons" />
+      <!-- B-spline + Mattes MI via ImageRegistrationMethod. Supports TRUE metric masks (fixed/moving) so out-of-body anatomy (e.g. bolus) is excluded from the optimisation itself. -->
+      <xs:enumeration value="BSpline" />
+    </xs:restriction>
+  </xs:simpleType>
   <xs:element name="DoseConverterConfig">
     <xs:complexType>
       <xs:sequence>
@@ -68,28 +76,37 @@
         </xs:element>
         <xs:element name="RegistrationParameters" minOccurs="0">
           <xs:complexType>
-            <!-- B-spline grid: number of control points along each image axis (e.g. "5 5 5") -->
-            <xs:attribute name="BSplineGridNodes" type="xs:string" use="optional" default="5 5 5"/>
+            <!-- Which registration algorithm to use by default. The UI can override this per-run. -->
+            <xs:attribute name="RegistrationAlgorithm" type="RegistrationAlgorithmType" use="optional" default="Demons"/>
+            <!-- B-spline grid: number of control points along each image axis.
+                 For a typical H&N CT (~350×300×250 mm) "12 12 8" gives ~30 mm spacing.
+                 Coarser grids (e.g. "5 5 5") cannot capture soft-tissue shifts. -->
+            <xs:attribute name="BSplineGridNodes" type="xs:string" use="optional" default="12 12 8"/>
             <!-- B-spline polynomial order (3 = cubic) -->
             <xs:attribute name="BSplineOrder" type="xs:positiveInteger" use="optional" default="3"/>
-            <!-- Fraction of voxels sampled per iteration (0–1) -->
-            <xs:attribute name="MetricSamplingPercentage" type="PositiveDouble" use="optional" default="0.1"/>
+            <!-- Fraction of voxels sampled per iteration (0–1).
+                 With metric masks the effective image volume is already small; REGULAR sampling
+                 gives L-BFGS-B consistent per-evaluation gradients and converges faster than RANDOM.
+                 Set to 1.0 to use every voxel inside the mask (most consistent, recommended). -->
+            <xs:attribute name="MetricSamplingPercentage" type="PositiveDouble" use="optional" default="1.0"/>
             <!-- L-BFGS-B: gradient convergence tolerance -->
             <xs:attribute name="GradientConvergenceTolerance" type="PositiveDouble" use="optional" default="1e-5"/>
-            <!-- L-BFGS-B: maximum iterations -->
+            <!-- L-BFGS-B: per-level max iterations fallback (overridden by MaxIterationsPerLevel) -->
             <xs:attribute name="MaxIterations" type="xs:positiveInteger" use="optional" default="100"/>
-            <!-- L-BFGS-B: maximum corrections stored in memory -->
+            <!-- L-BFGS-B: number of corrections stored in memory (5–20; higher = better curvature estimate) -->
             <xs:attribute name="MaxCorrections" type="xs:positiveInteger" use="optional" default="5"/>
-            <!-- L-BFGS-B: maximum function evaluations -->
+            <!-- L-BFGS-B: max function evaluations per level -->
             <xs:attribute name="MaxFunctionEvaluations" type="xs:positiveInteger" use="optional" default="1000"/>
-            <!-- L-BFGS-B: cost-function convergence factor -->
-            <xs:attribute name="CostFunctionConvergenceFactor" type="PositiveDouble" use="optional" default="1e7"/>
+            <!-- L-BFGS-B: cost-function convergence factor. Set to 0 to disable (rely on iteration count
+                 and gradient tolerance). With stochastic sampling, 0 prevents premature early exit. -->
+            <xs:attribute name="CostFunctionConvergenceFactor" type="PositiveDouble" use="optional" default="0"/>
             <!-- Multi-resolution: downsample factors per level, space-separated (e.g. "4 2 1") -->
             <xs:attribute name="ShrinkFactorsPerLevel" type="xs:string" use="optional" default="4 2 1"/>
             <!-- Multi-resolution: Gaussian smoothing sigmas per level in mm, space-separated (e.g. "2.0 1.0 0.0") -->
             <xs:attribute name="SmoothingSigmasPerLevel" type="xs:string" use="optional" default="2.0 1.0 0.0"/>
-            <!-- Per-level iteration caps, space-separated (one per level, e.g. "100 50 20"). Overrides MaxIterations. -->
-            <xs:attribute name="MaxIterationsPerLevel" type="xs:string" use="optional" default="100 50 20"/>
+            <!-- Per-level iteration caps, space-separated (one per level, e.g. "50 30 20"). Overrides MaxIterations.
+                 L-BFGS-B takes large steps so fewer iterations are needed vs. gradient descent. -->
+            <xs:attribute name="MaxIterationsPerLevel" type="xs:string" use="optional" default="50 30 20"/>
             <!-- Margin in mm around the mask bounding box used to crop the fixed image for B-spline initialisation -->
             <xs:attribute name="MaskMarginMm" type="PositiveDouble" use="optional" default="20"/>
             <!-- Diffeomorphic demons: space-separated Gaussian std-devs (mm) for displacement-field smoothing; one value is broadcast to all levels -->

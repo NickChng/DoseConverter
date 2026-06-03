@@ -1,0 +1,221 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SimpleITKCSharpManaged</name>
+    </assembly>
+    <members>
+        <member name="T:itk.simple.DoubleDoubleMap.DoubleDoubleMapEnumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="M:itk.simple.Image.op_UnaryNegation(itk.simple.Image)">
+            <summary>Unary negation operator calls SimpleITK.UnaryMinus.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_UnaryPlus(itk.simple.Image)">
+            <summary>Unary addition operator returns self.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_LogicalNot(itk.simple.Image)">
+            <summary>Logical negation operator calls SimpleITK.Not.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_OnesComplement(itk.simple.Image)">
+            <summary>Bitwise complement operator calls SimpleITK.BitwiseNot.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_True(itk.simple.Image)">
+            <summary>True operator provided to keep compiler happy. Always returns true.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_False(itk.simple.Image)">
+            <summary>False operator provided to keep compiler happy. Always returns false.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_Addition(itk.simple.Image,itk.simple.Image)">
+            <summary>Binary addition operator calls SimpleITK.Add.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_Addition(itk.simple.Image,System.Double)">
+            <summary>Binary addition operator calls SimpleITK.Add.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_Addition(System.Double,itk.simple.Image)">
+            <summary>Binary addition operator calls SimpleITK.Add.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_Subtraction(itk.simple.Image,itk.simple.Image)">
+            <summary>Binary subtraction operator calls SimpleITK.Subtract.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_Subtraction(itk.simple.Image,System.Double)">
+            <summary>Binary subtraction operator calls SimpleITK.Subtract.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_Subtraction(System.Double,itk.simple.Image)">
+            <summary>Binary subtraction operator calls SimpleITK.Subtract.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_Multiply(itk.simple.Image,itk.simple.Image)">
+            <summary>Binary multiply operator calls SimpleITK.Multiply.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_Multiply(itk.simple.Image,System.Double)">
+            <summary>Binary multiply operator calls SimpleITK.Multiply.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_Multiply(System.Double,itk.simple.Image)">
+            <summary>Binary multiply operator calls SimpleITK.Multiply.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_Division(itk.simple.Image,itk.simple.Image)">
+            <summary>Binary division operator calls SimpleITK.Divide.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_Division(itk.simple.Image,System.Double)">
+            <summary>Binary division operator calls SimpleITK.Divide.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_Division(System.Double,itk.simple.Image)">
+            <summary>Binary division operator calls SimpleITK.Divide.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_BitwiseAnd(itk.simple.Image,itk.simple.Image)">
+            <summary>Binary bitwise AND operator calls SimpleITK.And.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_BitwiseAnd(itk.simple.Image,System.Int32)">
+            <summary>Binary bitwise AND operator calls SimpleITK.And.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_BitwiseAnd(System.Int32,itk.simple.Image)">
+            <summary>Binary bitwise AND operator calls SimpleITK.And.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_BitwiseOr(itk.simple.Image,itk.simple.Image)">
+            <summary>Binary bitwise OR operator calls SimpleITK.Or.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_BitwiseOr(itk.simple.Image,System.Int32)">
+            <summary>Binary bitwise OR operator calls SimpleITK.Or.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_BitwiseOr(System.Int32,itk.simple.Image)">
+            <summary>Binary bitwise OR operator calls SimpleITK.Or.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_ExclusiveOr(itk.simple.Image,itk.simple.Image)">
+            <summary>Binary bitwise XOR operator calls SimpleITK.Xor.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_ExclusiveOr(itk.simple.Image,System.Int32)">
+            <summary>Binary bitwise XOR operator calls SimpleITK.Xor.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_ExclusiveOr(System.Int32,itk.simple.Image)">
+            <summary>Binary bitwise XOR operator calls SimpleITK.Xor.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_LessThan(itk.simple.Image,itk.simple.Image)">
+            <summary>Less than operator calls SimpleITK.Less.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_LessThan(itk.simple.Image,System.Double)">
+            <summary>Less than operator calls SimpleITK.Less.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_LessThan(System.Double,itk.simple.Image)">
+            <summary>Less than operator calls SimpleITK.Less.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_GreaterThan(itk.simple.Image,itk.simple.Image)">
+            <summary>Greater than operator calls SimpleITK.Greater.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_GreaterThan(itk.simple.Image,System.Double)">
+            <summary>Greater than operator calls SimpleITK.Greater.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_GreaterThan(System.Double,itk.simple.Image)">
+            <summary>Greater than operator calls SimpleITK.Greater.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_LessThanOrEqual(itk.simple.Image,itk.simple.Image)">
+            <summary>Less than or equal to operator calls SimpleITK.LessEqual.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_LessThanOrEqual(itk.simple.Image,System.Double)">
+            <summary>Less than or equal to operator calls SimpleITK.LessEqual.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_LessThanOrEqual(System.Double,itk.simple.Image)">
+            <summary>Less than or equal to operator calls SimpleITK.LessEqual.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_GreaterThanOrEqual(itk.simple.Image,itk.simple.Image)">
+            <summary>Greater than or equal to operator calls SimpleITK.GreaterEqual.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_GreaterThanOrEqual(itk.simple.Image,System.Double)">
+            <summary>Greater than or equal to operator calls SimpleITK.GreaterEqual.</summary>
+        </member>
+        <member name="M:itk.simple.Image.op_GreaterThanOrEqual(System.Double,itk.simple.Image)">
+            <summary>Greater than or equal to operator calls SimpleITK.GreaterEqual.</summary>
+        </member>
+        <member name="T:itk.simple.VectorBool.VectorBoolEnumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="T:itk.simple.VectorDouble.VectorDoubleEnumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="T:itk.simple.VectorFloat.VectorFloatEnumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="T:itk.simple.VectorInt16.VectorInt16Enumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="T:itk.simple.VectorInt32.VectorInt32Enumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="T:itk.simple.VectorInt64.VectorInt64Enumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="T:itk.simple.VectorInt8.VectorInt8Enumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="T:itk.simple.VectorOfImage.VectorOfImageEnumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="T:itk.simple.VectorOfTransform.VectorOfTransformEnumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="T:itk.simple.VectorString.VectorStringEnumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="T:itk.simple.VectorUInt16.VectorUInt16Enumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="T:itk.simple.VectorUInt32.VectorUInt32Enumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="T:itk.simple.VectorUInt64.VectorUInt64Enumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="T:itk.simple.VectorUInt8.VectorUInt8Enumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+        <member name="T:itk.simple.VectorUIntList.VectorUIntListEnumerator">
+            Note that the IEnumerator documentation requires an InvalidOperationException to be thrown
+            whenever the collection is modified. This has been done for changes in the size of the
+            collection but not when one of the elements of the collection is modified as it is a bit
+            tricky to detect unmanaged code that modifies the collection under our feet.
+        </member>
+    </members>
+</doc>

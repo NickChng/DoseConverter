@@ -103,6 +103,10 @@
     <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>packages\Expression.Interaction.3.0.40218.0\lib\net45\System.Windows.Interactivity.dll</HintPath>
     </Reference>
+    <Reference Include="fo-dicom.core">
+      <HintPath>packages\fo-dicom.5.2.6\lib\netstandard2.0\fo-dicom.core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -157,9 +161,23 @@
     <Compile Include="Script.cs" />
     <Compile Include="ViewModels\ViewModel.cs" />
     <Compile Include="ViewModels\DeformableRegistrationViewModel.cs" />
+    <Compile Include="ViewModels\DirReviewViewModel.cs" />
+    <Compile Include="ViewModels\RigidRegistrationOption.cs" />
+    <Compile Include="ViewModels\StructureSetSelectionViewModel.cs" />
+    <Compile Include="Model\DicomExportService.cs" />
     <Compile Include="Model\DeformableRegistrationService.cs" />
     <Compile Include="Views\DeformableRegistrationView.xaml.cs">
       <DependentUpon>DeformableRegistrationView.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Views\DirReviewView.xaml.cs">
+      <DependentUpon>DirReviewView.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Views\RangeSlider.xaml.cs">
+      <DependentUpon>RangeSlider.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -187,6 +205,7 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <EmbeddedResource Include="Resources\StructureCodes.csv" />
+    <None Include="RegistrationAssessment.md" />
     <None Include="Schemas\DoseConverterConfig.xsd">
       <SubType>Designer</SubType>
     </None>
@@ -213,6 +232,14 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\DeformableRegistrationView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\DirReviewView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\RangeSlider.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

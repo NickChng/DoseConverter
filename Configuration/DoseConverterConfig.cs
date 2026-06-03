@@ -279,6 +279,8 @@ namespace DoseConverter {
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
     public partial class DoseConverterConfigRegistrationParameters {
         
+        private RegistrationAlgorithmType registrationAlgorithmField;
+        
         private string bSplineGridNodesField;
         
         private string bSplineOrderField;
@@ -304,32 +306,44 @@ namespace DoseConverter {
         private double maskMarginMmField;
         
         private string demonsStandardDeviationsField;
-
+        
         private double demonsMaxStepLengthField;
-
+        
         private string dicomExportDirectoryField;
         
         public DoseConverterConfigRegistrationParameters() {
-            this.bSplineGridNodesField = "5 5 5";
+            this.registrationAlgorithmField = RegistrationAlgorithmType.Demons;
+            this.bSplineGridNodesField = "12 12 8";
             this.bSplineOrderField = "3";
-            this.metricSamplingPercentageField = 0.1D;
+            this.metricSamplingPercentageField = 1D;
             this.gradientConvergenceToleranceField = 1E-05D;
             this.maxIterationsField = "100";
             this.maxCorrectionsField = "5";
             this.maxFunctionEvaluationsField = "1000";
-            this.costFunctionConvergenceFactorField = 10000000D;
+            this.costFunctionConvergenceFactorField = 0D;
             this.shrinkFactorsPerLevelField = "4 2 1";
             this.smoothingSigmasPerLevelField = "2.0 1.0 0.0";
-            this.maxIterationsPerLevelField = "100 50 20";
+            this.maxIterationsPerLevelField = "50 30 20";
             this.maskMarginMmField = 20D;
             this.demonsStandardDeviationsField = "1.0";
             this.demonsMaxStepLengthField = 2D;
-            this.dicomExportDirectoryField = null;
         }
         
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        [System.ComponentModel.DefaultValueAttribute("5 5 5")]
+        [System.ComponentModel.DefaultValueAttribute(RegistrationAlgorithmType.Demons)]
+        public RegistrationAlgorithmType RegistrationAlgorithm {
+            get {
+                return this.registrationAlgorithmField;
+            }
+            set {
+                this.registrationAlgorithmField = value;
+            }
+        }
+        
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [System.ComponentModel.DefaultValueAttribute("12 12 8")]
         public string BSplineGridNodes {
             get {
                 return this.bSplineGridNodesField;
@@ -353,7 +367,7 @@ namespace DoseConverter {
         
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        [System.ComponentModel.DefaultValueAttribute(0.1D)]
+        [System.ComponentModel.DefaultValueAttribute(1D)]
         public double MetricSamplingPercentage {
             get {
                 return this.metricSamplingPercentageField;
@@ -413,7 +427,7 @@ namespace DoseConverter {
         
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        [System.ComponentModel.DefaultValueAttribute(10000000D)]
+        [System.ComponentModel.DefaultValueAttribute(0D)]
         public double CostFunctionConvergenceFactor {
             get {
                 return this.costFunctionConvergenceFactorField;
@@ -449,7 +463,7 @@ namespace DoseConverter {
         
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        [System.ComponentModel.DefaultValueAttribute("100 50 20")]
+        [System.ComponentModel.DefaultValueAttribute("50 30 20")]
         public string MaxIterationsPerLevel {
             get {
                 return this.maxIterationsPerLevelField;
@@ -494,7 +508,7 @@ namespace DoseConverter {
                 this.demonsMaxStepLengthField = value;
             }
         }
-
+        
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
         public string DicomExportDirectory {
@@ -505,6 +519,18 @@ namespace DoseConverter {
                 this.dicomExportDirectoryField = value;
             }
         }
+    }
+    
+    /// <remarks/>
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("xsd", "4.8.3928.0")]
+    [System.SerializableAttribute()]
+    public enum RegistrationAlgorithmType {
+        
+        /// <remarks/>
+        Demons,
+        
+        /// <remarks/>
+        BSpline,
     }
     
     /// <remarks/>

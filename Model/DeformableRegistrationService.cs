@@ -144,7 +144,8 @@ namespace DoseConverter
             string sourceMaskStructureId = null,
             string targetMaskStructureId = null,
             IProgress<string> progress = null,
-            double[] rigidMatrixRowMajor = null)
+            double[] rigidMatrixRowMajor = null,
+            RegistrationAlgorithmType algorithm = RegistrationAlgorithmType.Demons)
         {
             // ---- 1. Extract image and dose data inside the Eclipse dispatcher --------
             float[] movingCTBuffer = null, fixedCTBuffer = null, sourceDoseBuffer = null;
@@ -323,12 +324,19 @@ namespace DoseConverter
                             ? BuildMaskImage(movingMaskBuffer, movingCTSize, movingCTSpacing, movingCTOrigin, movingCTDirection)
                             : null;
 
-                        Report(progress, "Starting diffeomorphic demons registration...");
-                        SitkTransform finalTransform = RunDiffeomorphicDemonsRegistration(
-                            fixedCT, movingCT, progress, fixedMaskImg, movingMaskImg, rigidMatrixRowMajor);
-
-                        // Capture warped moving CT + fixed CT for the post-DIR quality review.
-                        Report(progress, "Building DIR review images...");
+                        SitkTransform finalTransform;
+                        if (algorithm == RegistrationAlgorithmType.BSpline)
+                        {
+                            Report(progress, "Starting B-spline registration (metric masks)...");
+                            finalTransform = RunBSplineMaskedRegistration(
+                                fixedCT, movingCT, progress, fixedMaskImg, movingMaskImg, rigidMatrixRowMajor);
+                        }
+                        else
+                        {
+                            Report(progress, "Starting diffeomorphic demons registration...");
+                            finalTransform = RunDiffeomorphicDemonsRegistration(
+                                fixedCT, movingCT, progress, fixedMaskImg, movingMaskImg, rigidMatrixRowMajor);
+                        }
                         try
                         {
                             using (var warpedMovingCt = SimpleITK.Resample(
@@ -874,6 +882,20 @@ namespace DoseConverter
         {
             var rp = _model.Config?.RegistrationParameters ?? new DoseConverterConfigRegistrationParameters();
 
+            // ---- Diagnostic: confirm masks are present and non-empty -------------
+            // Demons has NO native mask support, so the ONLY way masks constrain the
+            // registration is by zeroing image intensity outside the contour.  If a
+            // mask buffer is silently empty (e.g. a structure id mismatch), the run
+            // will proceed completely unconstrained and the failure is only visible
+            // after an expensive visual review.  Logging the in-body voxel counts here
+            // lets the user confirm from the log file that masking is actually active.
+            LogMaskCoverage("fixed (target) body mask", fixedMask);
+            LogMaskCoverage("moving (source) body mask", movingMask);
+            if (fixedMask == null && movingMask == null)
+                Helpers.SeriLog.LogInfo(
+                    "DIR WARNING: no body masks supplied - registration is fully UNCONSTRAINED. " +
+                    "Bolus or other out-of-body anatomy CAN influence the deformation.");
+
             var shrinkFactors  = ParseUIntList(rp.ShrinkFactorsPerLevel, new uint[]   { 4, 2, 1 });
             var smoothSigmas   = ParseDoubleList(rp.SmoothingSigmasPerLevel, new double[] { 2.0, 1.0, 0.0 });
             int numLevels      = shrinkFactors.Length;
@@ -898,6 +920,14 @@ namespace DoseConverter
             SitkImage preAlignedMoving = movingCT;
             bool disposedPreAligned = false;
 
+            // The moving body mask must be transformed into the fixed image's physical
+            // coordinate space by the same rigid transform used for the moving CT.
+            // If it is left in the original moving space, the mask boundary ends up
+            // displaced from the actual rigidly-aligned skin surface in the fixed frame,
+            // producing a sharp artefact ring floating 3-5 cm from the patient surface.
+            SitkImage preAlignedMovingMask = movingMask;
+            bool disposePreAlignedMovingMask = false;
+
             if (rigidMatrixRowMajor != null && rigidMatrixRowMajor.Length == 16)
             {
                 Report(progress, "Pre-aligning moving CT with rigid registration...");
@@ -915,6 +945,16 @@ namespace DoseConverter
                     movingCT, fixedCT, rigidAffine,
                     InterpolatorEnum.sitkLinear, 0.0, movingCT.GetPixelID());
                 disposedPreAligned = true;
+
+                // Warp the moving body mask into the fixed coordinate space using the
+                // same rigid transform so its boundary coincides with the pre-aligned anatomy.
+                if (movingMask != null)
+                {
+                    preAlignedMovingMask = SimpleITK.Resample(
+                        movingMask, fixedCT, rigidAffine,
+                        InterpolatorEnum.sitkNearestNeighbor, 0.0, movingMask.GetPixelID());
+                    disposePreAlignedMovingMask = true;
+                }
             }
 
             // ---- Intensity normalisation (demons works best on matched ranges) --
@@ -963,13 +1003,73 @@ namespace DoseConverter
                 movingOnFixedGrid.Dispose();
                 normMoving = rawNormMoving;
 
-                // NOTE: masks are NOT applied to the input images here.
-                // Zeroing images outside the body would:
-                //   (a) create sharp artificial edges at the body boundary that corrupt the
-                //       gradient signal driving the demons optimisation, and
-                //   (b) dilute the per-voxel RMS with a large zero-background, causing the
-                //       convergence threshold to fire after only a handful of iterations.
-                // Instead, the displacement field is masked AFTER the pyramid (see below).
+                // ---- Apply body masks to the normalised images ------------------
+                // Pre-registration masking uses the INTERSECTION (AND) of both body masks.
+                //
+                // Why intersection, not union:
+                //   Demons minimises per-voxel intensity differences.  If a structure
+                //   exists only in one image — e.g. a bolus present only on the fixed
+                //   (target) CT — using the union means the fixed image retains the
+                //   bolus intensities while the moving image has zero there.  This
+                //   non-zero vs zero difference creates a large gradient force that
+                //   drives displacement vectors toward the bolus, pulling source tissue
+                //   into an unrealistic position.  The Gaussian field-smoothing that
+                //   demons applies at every iteration then propagates ("bleeds") this
+                //   artefact across the surrounding field, producing the characteristic
+                //   outward-stretching artefact outside the body contour even after the
+                //   post-registration displacement field is zeroed.
+                //
+                //   With intersection masking, any voxel outside EITHER body is zeroed
+                //   in BOTH images (fixed = 0, moving = 0), so the intensity difference
+                //   is already zero and demons produces no update force there.  The
+                //   bolus region (inside fixed body, outside moving body) therefore
+                //   receives zero displacement, which is the clinically correct result.
+                //
+                // Post-registration field masking (below) keeps the UNION so that
+                // displacement vectors outside both bodies are zeroed in the final field.
+                if (fixedMask != null || preAlignedMovingMask != null)
+                {
+                    SitkImage preMask = null;
+                    if (fixedMask != null && preAlignedMovingMask != null)
+                    {
+                        // Resample the (already rigidly-aligned) moving mask onto the fixed
+                        // grid, then AND with the fixed mask to get the intersection of both
+                        // bodies.  Intersection ensures that regions present only in one image
+                        // (e.g. a bolus on the target CT) appear as 0/0 in both images so
+                        // demons sees zero gradient there and produces no displacement force.
+                        var rsmp = new ResampleImageFilter();
+                        rsmp.SetReferenceImage(fixedCT);
+                        rsmp.SetInterpolator(InterpolatorEnum.sitkNearestNeighbor);
+                        rsmp.SetDefaultPixelValue(0);
+                        using (var movOnFixed = rsmp.Execute(preAlignedMovingMask))
+                            preMask = SimpleITK.And(
+                                SimpleITK.Cast(fixedMask,         PixelIDValueEnum.sitkUInt8),
+                                SimpleITK.Cast(movOnFixed,        PixelIDValueEnum.sitkUInt8));
+                    }
+                    else if (fixedMask != null)
+                    {
+                        preMask = SimpleITK.Cast(fixedMask, PixelIDValueEnum.sitkUInt8);
+                    }
+                    else
+                    {
+                        var rsmp = new ResampleImageFilter();
+                        rsmp.SetReferenceImage(fixedCT);
+                        rsmp.SetInterpolator(InterpolatorEnum.sitkNearestNeighbor);
+                        rsmp.SetDefaultPixelValue(0);
+                        using (var movOnFixed = rsmp.Execute(preAlignedMovingMask))
+                            preMask = SimpleITK.Cast(movOnFixed, PixelIDValueEnum.sitkUInt8);
+                    }
+
+                    using (preMask)
+                    {
+                        SitkImage maskedFixed  = SimpleITK.Mask(normFixed,  preMask);
+                        SitkImage maskedMoving = SimpleITK.Mask(normMoving, preMask);
+                        normFixed.Dispose();
+                        normMoving.Dispose();
+                        normFixed  = maskedFixed;
+                        normMoving = maskedMoving;
+                    }
+                }
 
                 // ---- Multi-resolution pyramid -----------------------------------
                 // Run demons at each pyramid level; upsample the resulting displacement
@@ -1078,20 +1178,45 @@ namespace DoseConverter
                     fullResField = t2d.Execute(identity);
                 }
 
+                // ---- Compute rigid-only displacement field (used for blending below) ----
+                // We need this BEFORE the flatten step consumes rigidAffine.
+                // When rigid pre-alignment is in use, voxels outside the body should be
+                // transformed by the rigid component only, not left at zero displacement.
+                // Zero displacement means "sample movingCT at the same physical position as
+                // the fixed voxel", which — because the patient bodies are offset by the
+                // rigid registration — lands on patient anatomy at the wrong location.
+                // This manifests as (a) a ghost of the source image floating at its
+                // pre-rigid position outside the body contour, and (b) an apparent
+                // "tissue pulled over the bolus" where the bolus is outside the body.
+                // Both artefacts are caused by the zero-displacement approximation, not
+                // by a real demons registration error.
+                SitkImage rigidOnlyField = null;
+                if (rigidAffine != null)
+                {
+                    var rigidT2df = new TransformToDisplacementFieldFilter();
+                    rigidT2df.SetReferenceImage(fixedCT);
+                    rigidOnlyField = rigidT2df.Execute(rigidAffine);
+                }
+
                 // ---- Flatten rigid + demons into one displacement field -----------
-                // This MUST happen before masking.  If we mask the demons-only field
-                // and then compose with rigidAffine, the rigid rotation still applies
-                // globally — outside the mask d=0 so the composite reduces to just
-                // rigidAffine, making the background/couch appear rotated.
-                // By flattening first we get the total displacement per voxel, and
-                // zeroing that outside the body gives true identity (no rotation) there.
+                // The demons field was estimated with preAlignedMoving (which is already
+                // in fixed-image space after the rigid resample).  Therefore the demons
+                // field D maps fixed-space → pre-aligned-moving-space (which IS fixed-space).
+                // To reach the original moving CT space we must then apply the rigid:
+                //   finalPoint = rigidAffine( x + D(x) )
+                //              = rigidAffine( dispTransform(x) )
+                // In SimpleITK's CompositeTransform, AddTransform applies in insertion order,
+                // so T2(T1(x)) requires: AddTransform(T1); AddTransform(T2).
+                // Correct order: AddTransform(dispTransform); AddTransform(rigidAffine).
                 if (rigidAffine != null)
                 {
                     Report(progress, "Composing rigid + deformable fields...");
                     var tempDisp = new DisplacementFieldTransform(fullResField);
                     var tempComposite = new CompositeTransform(3);
-                    tempComposite.AddTransform(rigidAffine);
+                    // Apply demons residual first (fixed → pre-aligned-moving),
+                    // then rigid to reach original moving space.
                     tempComposite.AddTransform(tempDisp);
+                    tempComposite.AddTransform(rigidAffine);
 
                     var flattenFilter = new TransformToDisplacementFieldFilter();
                     flattenFilter.SetReferenceImage(fixedCT);
@@ -1102,27 +1227,29 @@ namespace DoseConverter
                     rigidAffine = null;
                 }
 
-                // ---- Mask the displacement field -----------------------------------
-                // Zero displacement vectors outside the body region.  This is the
-                // correct place to apply the mask: the optimisation has run on real
-                // image gradients and real RMS values; we now simply suppress the
-                // (unreliable) field outside the anatomy before wrapping it in a
-                // transform.  We take the union of fixed + moving masks so that the
-                // full extent of both bodies is covered.
-                // Crucially, masking must happen AFTER flattening rigid + demons (above)
-                // so that the rigid component is also zeroed outside the mask.
-                if (fixedMask != null || movingMask != null)
+                // ---- Blend: rigid-only outside body, full field inside body ------
+                // Simply zeroing the displacement field outside the body is incorrect when
+                // a rigid pre-alignment is present: zero displacement means "sample movingCT
+                // at the same world coordinates as the fixed voxel", which misses the rigid
+                // offset and produces ghosting and false tissue pull near asymmetric anatomy
+                // (e.g. a bolus present only on one image).
+                // The correct behaviour outside the body is to use the rigid-only displacement
+                // so that the resampler lands on the correct anatomical position in the
+                // original moving CT even where demons was not constrained to run.
+                // Inside the body: use the full flat field (rigid + demons).
+                // When no rigid transform was used, rigidOnlyField is null and the behaviour
+                // reduces to the simpler zero-outside-body case.
+                if (fixedMask != null || preAlignedMovingMask != null)
                 {
-                    // Build a combined uint8 mask on the fixed-CT grid.
+                    // Build the union of both body masks on the fixed-CT grid.
                     SitkImage combinedMask = null;
-                    if (fixedMask != null && movingMask != null)
+                    if (fixedMask != null && preAlignedMovingMask != null)
                     {
-                        // Resample moving mask to fixed grid, then OR with fixed mask.
                         var rsmpMov = new ResampleImageFilter();
                         rsmpMov.SetReferenceImage(fixedCT);
                         rsmpMov.SetInterpolator(InterpolatorEnum.sitkNearestNeighbor);
                         rsmpMov.SetDefaultPixelValue(0);
-                        using (var movOnFixed = rsmpMov.Execute(movingMask))
+                        using (var movOnFixed = rsmpMov.Execute(preAlignedMovingMask))
                         {
                             combinedMask = SimpleITK.Or(
                                 SimpleITK.Cast(fixedMask,  PixelIDValueEnum.sitkUInt8),
@@ -1139,31 +1266,50 @@ namespace DoseConverter
                         rsmpMov.SetReferenceImage(fixedCT);
                         rsmpMov.SetInterpolator(InterpolatorEnum.sitkNearestNeighbor);
                         rsmpMov.SetDefaultPixelValue(0);
-                        using (var movOnFixed = rsmpMov.Execute(movingMask))
+                        using (var movOnFixed = rsmpMov.Execute(preAlignedMovingMask))
                             combinedMask = SimpleITK.Cast(movOnFixed, PixelIDValueEnum.sitkUInt8);
                     }
 
-                    // Resample the combined mask to the displacement-field grid (same as
-                    // fixedCT after the final upsample), then zero vectors outside it.
-                    // The displacement field is a vector image; Mask() zeroes all components.
                     using (combinedMask)
                     {
-                        SitkImage maskedField = SimpleITK.Mask(fullResField, combinedMask);
-                        fullResField.Dispose();
-                        fullResField = maskedField;
+                        if (rigidOnlyField != null)
+                        {
+                            // Compute: result = rigidOnly + Mask(fullField - rigidOnly, body)
+                            // Inside body: rigidOnly + (fullField - rigidOnly) = fullField
+                            // Outside body: rigidOnly + 0 = rigidOnly  (correct, no ghost)
+                            using (var diff = SimpleITK.Subtract(fullResField, rigidOnlyField))
+                            using (var maskedDiff = SimpleITK.Mask(diff, combinedMask))
+                            {
+                                SitkImage blended = SimpleITK.Add(rigidOnlyField, maskedDiff);
+                                fullResField.Dispose();
+                                fullResField = blended;
+                            }
+                        }
+                        else
+                        {
+                            // No rigid: outside body should be identity (zero displacement).
+                            SitkImage maskedField = SimpleITK.Mask(fullResField, combinedMask);
+                            fullResField.Dispose();
+                            fullResField = maskedField;
+                        }
                     }
                 }
+
+                rigidOnlyField?.Dispose();
 
                 var dispTransform = new DisplacementFieldTransform(fullResField);
                 fullResField.Dispose();
 
                 if (rigidAffine != null)
                 {
-                    // No mask was set, so the flatten-and-mask block above was skipped.
-                    // Compose rigid + demons field in the normal way.
+                    // No mask was set, so the flatten-and-blend block above was skipped.
+                    // Compose rigid + demons with the correct order:
+                    //   demons residual first (fixed → pre-aligned-moving space),
+                    //   then rigid (pre-aligned-moving → original-moving space).
+                    // In SimpleITK CompositeTransform: T2(T1(x)) = AddTransform(T1); AddTransform(T2).
                     var composite = new CompositeTransform(3);
-                    composite.AddTransform(rigidAffine);
                     composite.AddTransform(dispTransform);
+                    composite.AddTransform(rigidAffine);
                     Helpers.SeriLog.LogInfo("Diffeomorphic demons registration complete (rigid + deformable).");
                     return composite;
                 }
@@ -1180,6 +1326,196 @@ namespace DoseConverter
                 histMatchedMoving?.Dispose();
                 if (disposedPreAligned && !ReferenceEquals(preAlignedMoving, movingCT))
                     preAlignedMoving?.Dispose();
+                if (disposePreAlignedMovingMask && !ReferenceEquals(preAlignedMovingMask, movingMask))
+                    preAlignedMovingMask?.Dispose();
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // B-spline registration with TRUE metric masks (ImageRegistrationMethod)
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// Registers <paramref name="movingCT"/> to <paramref name="fixedCT"/> using a
+        /// multi-resolution B-spline transform optimised by <c>ImageRegistrationMethod</c>
+        /// with Mattes mutual information.  Unlike diffeomorphic demons, this method supports
+        /// TRUE metric masks: when fixed/moving body masks are supplied they are passed to
+        /// <c>SetMetricFixedMask</c>/<c>SetMetricMovingMask</c> so voxels OUTSIDE the body
+        /// (e.g. a bolus present only on one image) are excluded from the similarity metric
+        /// and its gradient entirely — no artificial intensity edge is created, so out-of-body
+        /// anatomy cannot drive the deformation.
+        ///
+        /// An optional rigid pre-alignment (<paramref name="rigidMatrixRowMajor"/>) is applied
+        /// to the moving CT and moving mask first; the returned transform composes the rigid
+        /// alignment with the estimated B-spline so it can be used directly to resample the dose.
+        /// </summary>
+        private SitkTransform RunBSplineMaskedRegistration(
+            SitkImage fixedCT, SitkImage movingCT,
+            IProgress<string> progress,
+            SitkImage fixedMask = null, SitkImage movingMask = null,
+            double[] rigidMatrixRowMajor = null)
+        {
+            var rp = _model.Config?.RegistrationParameters ?? new DoseConverterConfigRegistrationParameters();
+
+            LogMaskCoverage("fixed (target) body mask", fixedMask);
+            LogMaskCoverage("moving (source) body mask", movingMask);
+            if (fixedMask == null && movingMask == null)
+                Helpers.SeriLog.LogInfo(
+                    "B-spline DIR: no masks supplied - registration uses the whole image. " +
+                    "For bolus exclusion, select source and target body masks.");
+
+            uint[] gridNodes      = ParseUIntList(rp.BSplineGridNodes, new uint[] { 12, 12, 8 });
+            uint[] shrinkFactors  = ParseUIntList(rp.ShrinkFactorsPerLevel, new uint[] { 4, 2, 1 });
+            double[] smoothSigmas = ParseDoubleList(rp.SmoothingSigmasPerLevel, new double[] { 2.0, 1.0, 0.0 });
+            uint[] iterPerLevel   = ParseUIntList(rp.MaxIterationsPerLevel, new uint[] { 50, 30, 20 });
+            // initialise with level-0 cap; reconfigured per level inside sitkMultiResolutionIterationEvent.
+            double samplingPct    = rp.MetricSamplingPercentage > 0 ? rp.MetricSamplingPercentage : 1.0;
+            double gradTol        = rp.GradientConvergenceTolerance > 0 ? rp.GradientConvergenceTolerance : 1e-5;
+            int    maxCorrections = (int)ParseUInt(rp.MaxCorrections, 5);
+            int    maxFuncEval    = (int)ParseUInt(rp.MaxFunctionEvaluations, 1000);
+            // CostFunctionConvergenceFactor: 0 means disabled (rely on iteration count + gradient tolerance).
+            // With stochastic sampling a nonzero factor can cause premature early exit on noise-level metric changes.
+            double costConvFactor = rp.CostFunctionConvergenceFactor;
+
+            // ---- Optional rigid pre-alignment (same convention as the demons path) ----
+            AffineTransform rigidAffine = null;
+            SitkImage preAlignedMoving = movingCT;
+            bool disposedPreAligned = false;
+            SitkImage preAlignedMovingMask = movingMask;
+            bool disposePreAlignedMovingMask = false;
+
+            try
+            {
+                if (rigidMatrixRowMajor != null && rigidMatrixRowMajor.Length == 16)
+                {
+                    Report(progress, "Pre-aligning moving CT with rigid registration...");
+                    double[] inv = InvertRigidMatrix4x4(rigidMatrixRowMajor);
+                    rigidAffine = new AffineTransform(3);
+                    rigidAffine.SetMatrix(new VectorDouble(new double[]
+                    {
+                        inv[0], inv[1], inv[2],
+                        inv[4], inv[5], inv[6],
+                        inv[8], inv[9], inv[10]
+                    }));
+                    rigidAffine.SetTranslation(new VectorDouble(new double[] { inv[3], inv[7], inv[11] }));
+
+                    preAlignedMoving = SimpleITK.Resample(
+                        movingCT, fixedCT, rigidAffine,
+                        InterpolatorEnum.sitkLinear, 0.0, movingCT.GetPixelID());
+                    disposedPreAligned = true;
+
+                    if (movingMask != null)
+                    {
+                        preAlignedMovingMask = SimpleITK.Resample(
+                            movingMask, fixedCT, rigidAffine,
+                            InterpolatorEnum.sitkNearestNeighbor, 0.0, movingMask.GetPixelID());
+                        disposePreAlignedMovingMask = true;
+                    }
+                }
+
+                // ---- Initialise the B-spline transform over the fixed image domain ----
+                Report(progress, "Initialising B-spline transform...");
+                var meshSize = new VectorUInt32(new uint[]
+                {
+                    gridNodes.Length > 0 ? gridNodes[0] : 5,
+                    gridNodes.Length > 1 ? gridNodes[1] : 5,
+                    gridNodes.Length > 2 ? gridNodes[2] : 5
+                });
+                BSplineTransform bspline = SimpleITK.BSplineTransformInitializer(fixedCT, meshSize, 3);
+
+                // ---- Configure the registration method ----
+                var reg = new ImageRegistrationMethod();
+                reg.SetMetricAsMattesMutualInformation(50);
+                // REGULAR sampling gives L-BFGS-B the same set of voxels on every function evaluation,
+                // so its gradient estimates are consistent across line-search steps.
+                // With metric masks the effective domain is already restricted; sampling fraction of 1.0
+                // means every in-mask voxel is used (most accurate; still fast because the mask is small).
+                reg.SetMetricSamplingStrategy(ImageRegistrationMethod.MetricSamplingStrategyType.REGULAR);
+                reg.SetMetricSamplingPercentage(samplingPct);
+                reg.SetInterpolator(InterpolatorEnum.sitkLinear);
+
+                // TRUE metric masks: voxels == 0 are excluded from the metric entirely.
+                if (fixedMask != null)
+                    reg.SetMetricFixedMask(SimpleITK.Cast(fixedMask, PixelIDValueEnum.sitkUInt8));
+                if (preAlignedMovingMask != null)
+                    reg.SetMetricMovingMask(SimpleITK.Cast(preAlignedMovingMask, PixelIDValueEnum.sitkUInt8));
+
+                // L-BFGS-B: well-suited to large-DOF problems (one B-spline grid has 3×N³ parameters).
+                // Its approximate Hessian lets it take large correlated steps; GradientDescent is far slower.
+                // We set the per-level cap and re-configure inside sitkMultiResolutionIterationEvent so the
+                // optimizer hard-stops at the per-level budget rather than running the max across all levels.
+                uint level0Cap = iterPerLevel.Length > 0 ? iterPerLevel[0] : ParseUInt(rp.MaxIterations, 50);
+                reg.SetOptimizerAsLBFGSB(
+                    gradientConvergenceTolerance: gradTol,
+                    numberOfIterations: level0Cap,
+                    maximumNumberOfCorrections: (uint)maxCorrections,
+                    maximumNumberOfFunctionEvaluations: (uint)maxFuncEval,
+                    costFunctionConvergenceFactor: costConvFactor);
+                reg.SetOptimizerScalesFromPhysicalShift();
+
+                // Multi-resolution pyramid (shared with the demons configuration).
+                reg.SetShrinkFactorsPerLevel(new VectorUInt32(shrinkFactors));
+                reg.SetSmoothingSigmasPerLevel(new VectorDouble(smoothSigmas));
+                reg.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn();
+
+                reg.SetInitialTransform(bspline, inPlace: true);
+
+                // sitkMultiResolutionIterationEvent fires BEFORE each level starts.
+                // We track the current level index (0-based) and reconfigure the optimizer so
+                // L-BFGS-B's numberOfIterations matches the per-level budget exactly.
+                // That also means GetOptimizerIteration() will never exceed the displayed cap.
+                int levelIdx  = 0;
+                int numLevels = shrinkFactors.Length;
+                var lvlCmd = new ActionCommand(() =>
+                {
+                    if (levelIdx < numLevels)
+                    {
+                        uint cap = levelIdx < iterPerLevel.Length ? iterPerLevel[levelIdx] : level0Cap;
+                        reg.SetOptimizerAsLBFGSB(
+                            gradientConvergenceTolerance: gradTol,
+                            numberOfIterations: cap,
+                            maximumNumberOfCorrections: (uint)maxCorrections,
+                            maximumNumberOfFunctionEvaluations: (uint)maxFuncEval,
+                            costFunctionConvergenceFactor: costConvFactor);
+                    }
+                    if (levelIdx < numLevels - 1) levelIdx++;
+                });
+                reg.AddCommand(EventEnum.sitkMultiResolutionIterationEvent, lvlCmd);
+
+                var iterCmd = new ActionCommand(() =>
+                {
+                    int displayLevel = levelIdx + 1;
+                    uint levelCap    = levelIdx < iterPerLevel.Length ? iterPerLevel[levelIdx] : level0Cap;
+                    Report(progress,
+                        $"  B-spline level {displayLevel}/{numLevels} — metric {reg.GetMetricValue():F4} (iter {reg.GetOptimizerIteration()}/{levelCap})...");
+                });
+                reg.AddCommand(EventEnum.sitkIterationEvent, iterCmd);
+
+                Report(progress, "Running B-spline registration (this may take several minutes)...");
+                // Histogram normalisation is not required for Mattes MI; use raw CTs.
+                reg.Execute(fixedCT, preAlignedMoving);
+
+                Helpers.SeriLog.LogInfo(
+                    $"B-spline registration complete. Stop condition: {reg.GetOptimizerStopConditionDescription()}");
+
+                // ---- Compose rigid (if any) with the B-spline ----
+                // finalPoint = rigidAffine( bspline(x) ): apply B-spline first, then rigid.
+                if (rigidAffine != null)
+                {
+                    var composite = new CompositeTransform(3);
+                    composite.AddTransform(bspline);
+                    composite.AddTransform(rigidAffine);
+                    return composite;
+                }
+
+                return bspline;
+            }
+            finally
+            {
+                if (disposedPreAligned && !ReferenceEquals(preAlignedMoving, movingCT))
+                    preAlignedMoving?.Dispose();
+                if (disposePreAlignedMovingMask && !ReferenceEquals(preAlignedMovingMask, movingMask))
+                    preAlignedMovingMask?.Dispose();
             }
         }
 
@@ -1517,6 +1853,44 @@ namespace DoseConverter
                     for (int ix = ixStart; ix <= ixEnd; ix++)
                         mask[baseIdx + ix] = 1;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Logs the in-body voxel count and fractional coverage of a mask so the user
+        /// can confirm from the log file that masking is actually active and non-empty
+        /// before committing to an expensive visual review of the deformed result.
+        /// </summary>
+        private static void LogMaskCoverage(string label, SitkImage mask)
+        {
+            if (mask == null)
+            {
+                Helpers.SeriLog.LogInfo($"DIR mask: {label} = NONE (not supplied).");
+                return;
+            }
+            try
+            {
+                var stats = new StatisticsImageFilter();
+                using (var u8 = SimpleITK.Cast(mask, PixelIDValueEnum.sitkUInt8))
+                {
+                    stats.Execute(u8);
+                    double sum = stats.GetSum();          // number of voxels == 1
+                    var size = u8.GetSize();
+                    double total = 1.0;
+                    for (int i = 0; i < size.Count; i++) total *= size[i];
+                    double pct = total > 0 ? 100.0 * sum / total : 0.0;
+                    if (sum <= 0)
+                        Helpers.SeriLog.LogInfo(
+                            $"DIR mask: {label} is EMPTY (0 voxels). Masking will have NO effect - " +
+                            "check the structure id and that it has contours on this image.");
+                    else
+                        Helpers.SeriLog.LogInfo(
+                            $"DIR mask: {label} = {sum:F0} voxels in-body ({pct:F1}% of volume).");
+                }
+            }
+            catch (Exception ex)
+            {
+                Helpers.SeriLog.LogError($"Failed to compute mask coverage for {label}", ex);
             }
         }
 

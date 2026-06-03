@@ -111,6 +111,54 @@ namespace DoseConverter.ViewModels
         }
 
         // -----------------------------------------------------------------------
+        // Registration algorithm selection
+        // -----------------------------------------------------------------------
+
+        /// <summary>A selectable registration algorithm presented in the UI.</summary>
+        public sealed class AlgorithmOption
+        {
+            public RegistrationAlgorithmType Value { get; }
+            public string DisplayString { get; }
+            public string Description { get; }
+            public AlgorithmOption(RegistrationAlgorithmType value, string display, string description)
+            {
+                Value = value; DisplayString = display; Description = description;
+            }
+            public override string ToString() => DisplayString;
+        }
+
+        public ObservableCollection<AlgorithmOption> AlgorithmOptions { get; }
+            = new ObservableCollection<AlgorithmOption>
+            {
+                new AlgorithmOption(RegistrationAlgorithmType.Demons,
+                    "Diffeomorphic Demons (best without masks)",
+                    "PDE/Thirion demons. Smooth, fast CT-CT registration. Masks are only approximated by zeroing intensity outside the contour, so out-of-body anatomy (e.g. bolus) can still bias the result near the body surface."),
+                new AlgorithmOption(RegistrationAlgorithmType.BSpline,
+                    "B-spline + metric masks (excludes out-of-body)",
+                    "ImageRegistrationMethod with Mattes mutual information and TRUE metric masks. Voxels outside the selected body masks are excluded from the optimisation itself, so a bolus present on only one image cannot pull tissue. Recommended when masks are used."),
+            };
+
+        private AlgorithmOption _selectedAlgorithm;
+        public AlgorithmOption SelectedAlgorithm
+        {
+            get => _selectedAlgorithm;
+            set
+            {
+                _selectedAlgorithm = value;
+                if (_regParams != null && value != null)
+                    _regParams.RegistrationAlgorithm = value.Value;
+                RaisePropertyChangedEvent(nameof(SelectedAlgorithm));
+                RaisePropertyChangedEvent(nameof(SelectedAlgorithmDescription));
+                RaisePropertyChangedEvent(nameof(IsBSplineSelected));
+                RaisePropertyChangedEvent(nameof(IsDemonsSelected));
+            }
+        }
+
+        public string SelectedAlgorithmDescription => _selectedAlgorithm?.Description ?? string.Empty;
+        public bool IsBSplineSelected => _selectedAlgorithm?.Value == RegistrationAlgorithmType.BSpline;
+        public bool IsDemonsSelected => _selectedAlgorithm?.Value != RegistrationAlgorithmType.BSpline;
+
+        // -----------------------------------------------------------------------
         // Registration parameter overrides (most influential knobs)
         // -----------------------------------------------------------------------
 
@@ -425,6 +473,14 @@ namespace DoseConverter.ViewModels
                 LoadSitePresetsFromConfig(model?.Config);
                 // Sync smoothing slider from loaded config.
                 _smoothingSigma = ParseDoubleOrDefault(_regParams?.DemonsStandardDeviations, 1.5);
+                // Sync algorithm selection from loaded config (default Demons).
+                var configAlgo = _regParams?.RegistrationAlgorithm ?? RegistrationAlgorithmType.Demons;
+                _selectedAlgorithm = AlgorithmOptions.FirstOrDefault(a => a.Value == configAlgo)
+                                     ?? AlgorithmOptions[0];
+                RaisePropertyChangedEvent(nameof(SelectedAlgorithm));
+                RaisePropertyChangedEvent(nameof(SelectedAlgorithmDescription));
+                RaisePropertyChangedEvent(nameof(IsBSplineSelected));
+                RaisePropertyChangedEvent(nameof(IsDemonsSelected));
                 RaisePropertyChangedEvent(nameof(RegGridNodes));
                 RaisePropertyChangedEvent(nameof(RegMaxIterationsPerLevel));
                 RaisePropertyChangedEvent(nameof(RegSamplingPercent));
@@ -543,7 +599,8 @@ namespace DoseConverter.ViewModels
                     _selectedSourceStructure == NoMaskSentinel ? null : _selectedSourceStructure,
                     _selectedTargetStructure == NoMaskSentinel ? null : _selectedTargetStructure,
                     progressReporter,
-                    _selectedRigidRegistration?.MatrixRowMajor);
+                    _selectedRigidRegistration?.MatrixRowMajor,
+                    _selectedAlgorithm?.Value ?? RegistrationAlgorithmType.Demons);
             }
             catch (Exception ex)
             {

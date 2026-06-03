@@ -240,9 +240,33 @@
         </Grid>
 
 		<!-- Registration parameters panel -->
-		<GroupBox Grid.Row="2" Header="Registration parameters (Diffeomorphic Demons)" Margin="0,0,0,10" VerticalAlignment="Stretch">
+		<GroupBox Grid.Row="2" Header="Registration parameters" Margin="0,0,0,10" VerticalAlignment="Stretch">
 			<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
 				<StackPanel Margin="8,8,8,8">
+
+					<!-- Algorithm selection row -->
+					<Grid Margin="0,0,0,8">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="180"/>
+							<ColumnDefinition Width="320"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+						<Label Grid.Column="0" Content="Algorithm:" VerticalAlignment="Center" FontWeight="Bold"
+							   ToolTip="Choose the registration algorithm. Use Diffeomorphic Demons when no masks are needed; use B-spline + metric masks to exclude out-of-body anatomy (e.g. bolus) from the optimisation."/>
+						<ComboBox Grid.Column="1"
+								  Style="{StaticResource ComboBoxStyle}"
+								  Template="{StaticResource ComboBoxControlTemplate}"
+								  Height="28"
+								  ItemsSource="{Binding AlgorithmOptions}"
+								  SelectedItem="{Binding SelectedAlgorithm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+								  DisplayMemberPath="DisplayString"
+								  VerticalContentAlignment="Center"/>
+						<TextBlock Grid.Column="2" VerticalAlignment="Center" TextWrapping="Wrap"
+								   Foreground="DimGray" FontSize="10" FontStyle="Italic" Margin="8,0,0,0"
+								   Text="{Binding SelectedAlgorithmDescription}"/>
+					</Grid>
+
+					<Border Height="1" Background="LightGray" Margin="0,0,0,8"/>
 
 					<!-- Site preset row -->
 					<Grid Margin="0,0,0,8">
@@ -327,7 +351,7 @@
 
 						<!-- Algorithm (static) -->
 						<TextBlock Grid.Row="2" Grid.Column="3" Text="Algorithm:" VerticalAlignment="Center" Foreground="DimGray"/>
-						<TextBlock Grid.Row="2" Grid.Column="4" Text="Diffeomorphic Demons (CT-CT)" VerticalAlignment="Center" Foreground="DimGray"/>
+						<TextBlock Grid.Row="2" Grid.Column="4" Text="{Binding SelectedAlgorithm.DisplayString}" VerticalAlignment="Center" Foreground="DimGray" TextWrapping="Wrap"/>
 
 						<!-- Max step length -->
 						<TextBlock Grid.Row="4" Grid.Column="0" Text="Max update step (mm):" VerticalAlignment="Center"
@@ -344,6 +368,13 @@
 						<!-- Intensity pre-processing (static) -->
 						<TextBlock Grid.Row="6" Grid.Column="3" Text="Intensity pre-processing:" VerticalAlignment="Center" Foreground="DimGray"/>
 						<TextBlock Grid.Row="6" Grid.Column="4" Text="Histogram match + rescale 0-255" VerticalAlignment="Center" Foreground="DimGray"/>
+
+						<!-- B-spline grid nodes (used by the B-spline algorithm) -->
+						<TextBlock Grid.Row="6" Grid.Column="0" Text="B-spline grid nodes:" VerticalAlignment="Center"
+								   ToolTip="Number of B-spline control points along each image axis (e.g. '5 5 5'). Used only by the B-spline + metric masks algorithm. More nodes allow finer local deformation but increase runtime and folding risk."/>
+						<TextBox   Grid.Row="6" Grid.Column="1" Height="24" Padding="4,0,4,0" VerticalContentAlignment="Center"
+								   Text="{Binding RegGridNodes, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+								   ToolTip="Space-separated integers, one per axis (e.g. '5 5 5'). Applies to the B-spline algorithm."/>
 
 						<!-- Mask crop margin -->
 						<TextBlock Grid.Row="8" Grid.Column="0" Text="Mask crop margin (mm):" VerticalAlignment="Center"
