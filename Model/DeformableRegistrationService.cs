@@ -1203,20 +1203,20 @@ namespace DoseConverter
                 // in fixed-image space after the rigid resample).  Therefore the demons
                 // field D maps fixed-space → pre-aligned-moving-space (which IS fixed-space).
                 // To reach the original moving CT space we must then apply the rigid:
-                //   finalPoint = rigidAffine( x + D(x) )
-                //              = rigidAffine( dispTransform(x) )
-                // In SimpleITK's CompositeTransform, AddTransform applies in insertion order,
-                // so T2(T1(x)) requires: AddTransform(T1); AddTransform(T2).
-                // Correct order: AddTransform(dispTransform); AddTransform(rigidAffine).
+                //   finalPoint = rigidAffine( x + D(x) ) = rigidAffine( dispTransform(x) )
+                // SimpleITK's CompositeTransform applies the LAST-added transform FIRST (LIFO),
+                // so to evaluate rigidAffine(dispTransform(x)) we add the rigid first (outer,
+                // applied last) and the demons field second (inner, applied first).
+                // (The earlier "insertion order" comment here was wrong; the inverted order
+                // produced a folded composite — see DIR_troubleshooting.md.)
                 if (rigidAffine != null)
                 {
                     Report(progress, "Composing rigid + deformable fields...");
                     var tempDisp = new DisplacementFieldTransform(fullResField);
                     var tempComposite = new CompositeTransform(3);
-                    // Apply demons residual first (fixed → pre-aligned-moving),
-                    // then rigid to reach original moving space.
-                    tempComposite.AddTransform(tempDisp);
+                    // demons residual is inner (applied first); rigid is outer (applied last).
                     tempComposite.AddTransform(rigidAffine);
+                    tempComposite.AddTransform(tempDisp);
 
                     var flattenFilter = new TransformToDisplacementFieldFilter();
                     flattenFilter.SetReferenceImage(fixedCT);
@@ -1303,20 +1303,20 @@ namespace DoseConverter
                 if (rigidAffine != null)
                 {
                     // No mask was set, so the flatten-and-blend block above was skipped.
-                    // Compose rigid + demons with the correct order:
-                    //   demons residual first (fixed → pre-aligned-moving space),
-                    //   then rigid (pre-aligned-moving → original-moving space).
-                    // In SimpleITK CompositeTransform: T2(T1(x)) = AddTransform(T1); AddTransform(T2).
+                    // rigidAffine(dispTransform(x)): SimpleITK applies the LAST-added first, so
+                    // add rigid first (outer) and the demons field second (inner).
                     var composite = new CompositeTransform(3);
-                    composite.AddTransform(dispTransform);
                     composite.AddTransform(rigidAffine);
+                    composite.AddTransform(dispTransform);
                     Helpers.SeriLog.LogInfo("Diffeomorphic demons registration complete (rigid + deformable).");
+                    LogTransformDiagnostics("Demons + rigid (final)", composite, fixedCT, fixedMask, progress);
                     return composite;
                 }
 
                 // Either no rigid pre-alignment, or it was already baked into the
                 // displacement field by the flatten step above.
                 Helpers.SeriLog.LogInfo("Diffeomorphic demons registration complete.");
+                LogTransformDiagnostics("Demons (final)", dispTransform, fixedCT, fixedMask, progress);
                 return dispTransform;
             }
             finally
@@ -1480,6 +1480,12 @@ namespace DoseConverter
                 uint iterCap = 0;
                 foreach (var it in iterPerLevel) iterCap = Math.Max(iterCap, it);
                 if (iterCap == 0) iterCap = ParseUInt(rp.MaxIterations, 50);
+                // L-BFGS-B uses ONE iteration cap for every pyramid level (it cannot vary the cap
+                // per level — that would need LBFGS2).  The config's per-level list collapses to
+                // its maximum, applied uniformly.  This is the denominator the progress display shows.
+                Helpers.SeriLog.LogInfo(
+                    $"B-spline optimizer: L-BFGS-B, uniform per-level iteration cap = {iterCap} " +
+                    $"(from MaxIterationsPerLevel=[{string.Join(",", iterPerLevel)}], using max).");
                 reg.SetOptimizerAsLBFGSB(
                     gradientConvergenceTolerance: gradTol,
                     numberOfIterations: iterCap,
@@ -1502,16 +1508,22 @@ namespace DoseConverter
 
                 // Progress-only level tracking.  IMPORTANT: do NOT call any reg.Set*() here — the
                 // registration is mid-Execute and reconfiguring it is unsafe.
-                int levelIdx = 0;
+                // sitkMultiResolutionIterationEvent fires once at the START of each level (before
+                // that level's first iteration).  Start at -1 and increment on each fire so the
+                // first level reads 1/N.  (Starting at 0 and pre-incrementing showed it as 2/N.)
+                int levelIdx = -1;
                 var lvlCmd = new ActionCommand(() =>
                 {
-                    if (levelIdx < numLevels - 1) levelIdx++;
+                    levelIdx = Math.Min(levelIdx + 1, numLevels - 1);
+                    Report(progress, $"  B-spline entering level {levelIdx + 1}/{numLevels} (iteration cap {iterCap})...");
                 });
                 reg.AddCommand(EventEnum.sitkMultiResolutionIterationEvent, lvlCmd);
 
                 var iterCmd = new ActionCommand(() =>
                 {
-                    int displayLevel = levelIdx + 1;
+                    int displayLevel = Math.Max(levelIdx + 1, 1);
+                    // GetOptimizerIteration() resets to 0 at the start of each pyramid level, so it
+                    // counts 0..iterCap WITHIN the current level (not cumulatively across levels).
                     Report(progress,
                         $"  B-spline level {displayLevel}/{numLevels} — metric {reg.GetMetricValue():F4} (iter {reg.GetOptimizerIteration()}/{iterCap})...");
                 });
@@ -1532,14 +1544,23 @@ namespace DoseConverter
 
                 // ---- Compose rigid (if any) with the B-spline ----
                 // The B-spline was estimated on preAlignedMoving (already in fixed space after the
-                // rigid resample), so it maps fixed -> pre-aligned-moving.  Applying the rigid next
-                // reaches ORIGINAL moving space.  This uses the SAME composition order as the
-                // (working) demons path: deformable added first, rigid added second.
+                // rigid resample), so it maps fixed -> pre-aligned-moving.  To reach ORIGINAL
+                // moving space we need finalPoint = rigidAffine( bspline(x) ): apply the B-spline
+                // FIRST, then the rigid.
+                //
+                // SimpleITK's CompositeTransform applies the LAST-added transform FIRST (LIFO).
+                // So to evaluate rigidAffine(bspline(x)) we must add the rigid first (outer,
+                // applied last) and the B-spline second (inner, applied first).
+                //
+                // (Verified empirically: the previous order — bspline added first, rigid second —
+                // evaluated bspline(rigidAffine(x)), which pushes points outside the B-spline grid
+                // domain and produced a folded field: Jacobian min -1.3 with 62k folded voxels,
+                // despite a clean deformable-only field. See DIR_troubleshooting.md.)
                 if (rigidAffine != null)
                 {
                     var composite = new CompositeTransform(3);
-                    composite.AddTransform(optimizedTransform);
-                    composite.AddTransform(rigidAffine);
+                    composite.AddTransform(rigidAffine);        // outer (applied last)
+                    composite.AddTransform(optimizedTransform); // inner (applied first)
                     LogTransformDiagnostics("B-spline + rigid (final)", composite, fixedCT, fixedMask, progress);
                     return composite;
                 }
