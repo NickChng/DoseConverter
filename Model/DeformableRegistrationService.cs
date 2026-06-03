@@ -1556,16 +1556,78 @@ namespace DoseConverter
                 // evaluated bspline(rigidAffine(x)), which pushes points outside the B-spline grid
                 // domain and produced a folded field: Jacobian min -1.3 with 62k folded voxels,
                 // despite a clean deformable-only field. See DIR_troubleshooting.md.)
+                SitkTransform deformableThenRigid;
                 if (rigidAffine != null)
                 {
                     var composite = new CompositeTransform(3);
                     composite.AddTransform(rigidAffine);        // outer (applied last)
                     composite.AddTransform(optimizedTransform); // inner (applied first)
-                    LogTransformDiagnostics("B-spline + rigid (final)", composite, fixedCT, fixedMask, progress);
-                    return composite;
+                    deformableThenRigid = composite;
+                }
+                else
+                {
+                    deformableThenRigid = optimizedTransform;
                 }
 
-                return optimizedTransform;
+                // Report the raw transform first (whole-grid numbers reveal the out-of-body
+                // extrapolation magnitude — the part the in-body number hides).
+                LogTransformDiagnostics("B-spline + rigid (pre-blend)", deformableThenRigid, fixedCT, fixedMask, progress);
+
+                // ---- Constrain the deformation to inside the target body --------------------
+                // Metric masks stop out-of-body anatomy (e.g. a bolus excluded from the target
+                // body contour) from DRIVING the optimisation, but the B-spline field is still
+                // defined everywhere and EXTRAPOLATES outside the body, where nothing constrains
+                // it.  Resampling with that extrapolated field is what drags the bolus region.
+                // So — exactly as the demons path does — keep the full transform inside the target
+                // body and fall back to rigid-only (identity when there is no rigid) outside it.
+                // This guarantees nothing outside the target body contour is deformed.
+                if (fixedMask != null)
+                {
+                    Report(progress, "Constraining B-spline deformation to inside the target body...");
+                    var t2df = new TransformToDisplacementFieldFilter();
+                    t2df.SetReferenceImage(fixedCT);
+                    SitkImage fullField = t2df.Execute(deformableThenRigid);
+
+                    SitkImage rigidOnlyField = null;
+                    if (rigidAffine != null)
+                    {
+                        var rt2df = new TransformToDisplacementFieldFilter();
+                        rt2df.SetReferenceImage(fixedCT);
+                        rigidOnlyField = rt2df.Execute(rigidAffine);
+                    }
+
+                    using (var bodyU8 = SimpleITK.Cast(fixedMask, PixelIDValueEnum.sitkUInt8))
+                    {
+                        if (rigidOnlyField != null)
+                        {
+                            // inside body: rigidOnly + (full - rigidOnly) = full
+                            // outside body: rigidOnly + 0 = rigidOnly  (no deformable warp)
+                            using (var diff = SimpleITK.Subtract(fullField, rigidOnlyField))
+                            using (var maskedDiff = SimpleITK.Mask(diff, bodyU8))
+                            {
+                                SitkImage blended = SimpleITK.Add(rigidOnlyField, maskedDiff);
+                                fullField.Dispose();
+                                fullField = blended;
+                            }
+                        }
+                        else
+                        {
+                            // no rigid: outside body -> identity (zero displacement)
+                            SitkImage masked = SimpleITK.Mask(fullField, bodyU8);
+                            fullField.Dispose();
+                            fullField = masked;
+                        }
+                    }
+                    rigidOnlyField?.Dispose();
+
+                    var blendedTransform = new DisplacementFieldTransform(fullField);
+                    fullField.Dispose();
+                    LogTransformDiagnostics("B-spline + rigid (final, body-constrained)", blendedTransform, fixedCT, fixedMask, progress);
+                    return blendedTransform;
+                }
+
+                LogTransformDiagnostics("B-spline + rigid (final)", deformableThenRigid, fixedCT, fixedMask, progress);
+                return deformableThenRigid;
             }
             finally
             {
@@ -1594,28 +1656,23 @@ namespace DoseConverter
                 using (var field = t2df.Execute(transform))
                 using (var magnitude = SimpleITK.VectorMagnitude(field))
                 {
-                    // Restrict displacement stats to the body when a mask is available so the
-                    // numbers reflect anatomy, not unconstrained out-of-body control points.
-                    SitkImage magForStats = magnitude;
-                    bool disposeMag = false;
+                    // Always report WHOLE-GRID displacement — this exposes the out-of-body
+                    // extrapolation that the in-body number hides (the bolus-dragging culprit).
+                    var wholeStats = new StatisticsImageFilter();
+                    wholeStats.Execute(magnitude);
+                    string dispText = $"maxDisp(whole-grid)={wholeStats.GetMaximum():F1} mm, " +
+                                      $"meanDisp(whole-grid)={wholeStats.GetMean():F1} mm";
+
+                    // When a body mask is available, also report the in-body max so anatomy and
+                    // out-of-body extrapolation can be compared directly.
                     if (bodyMask != null)
                     {
-                        magForStats = SimpleITK.Mask(magnitude, SimpleITK.Cast(bodyMask, PixelIDValueEnum.sitkUInt8));
-                        disposeMag = true;
-                    }
-
-                    string dispScope = bodyMask != null ? "in-body" : "whole-grid";
-                    double maxMag, meanMag;
-                    try
-                    {
-                        var magStats = new StatisticsImageFilter();
-                        magStats.Execute(magForStats);
-                        maxMag  = magStats.GetMaximum();
-                        meanMag = magStats.GetMean();
-                    }
-                    finally
-                    {
-                        if (disposeMag) magForStats.Dispose();
+                        using (var masked = SimpleITK.Mask(magnitude, SimpleITK.Cast(bodyMask, PixelIDValueEnum.sitkUInt8)))
+                        {
+                            var inStats = new StatisticsImageFilter();
+                            inStats.Execute(masked);
+                            dispText += $"; maxDisp(in-body)={inStats.GetMaximum():F1} mm";
+                        }
                     }
 
                     string jacText;
@@ -1641,8 +1698,7 @@ namespace DoseConverter
                         jacText = $"jacDet=<unavailable: {exJac.Message}>";
                     }
 
-                    string msg = $"DIR diagnostics [{label}]: maxDisp({dispScope})={maxMag:F1} mm, " +
-                                 $"meanDisp({dispScope})={meanMag:F1} mm, {jacText}";
+                    string msg = $"DIR diagnostics [{label}]: {dispText}, {jacText}";
                     Helpers.SeriLog.LogInfo(msg);
                     progress?.Report(msg);
                 }

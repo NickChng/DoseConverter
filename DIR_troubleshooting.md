@@ -153,6 +153,47 @@ show a **positive** Jacobian min (roughly matching the deformable-only range, ~0
 > CompositeTransform is LIFO (last-added applied first). The folded-voxel diagnostic is the
 > fastest way to detect a bad composition.
 
+### Entry 6 — Composition fix confirmed; B-spline lacked the out-of-body guard
+The 2026-06-02 22:xx run confirmed Entry 5's fix:
+```
+[B-spline + rigid (final)]: maxDisp(in-body)=67.3mm, jacDet[min=0.745, max=1.292], folded=0
+```
+Positive Jacobian, zero folds — the rigid composition is now correct, and demons gave a
+"decent match." **But** the B-spline + body masks still pulled the bolus in, even though the
+bolus is excluded from the target body contour (user double-checked).
+
+**Why metric masks alone were not enough:** a metric mask only stops out-of-body voxels from
+*driving* the optimisation. The B-spline transform is still defined **everywhere** and
+**extrapolates** outside the target body, where nothing constrains it. Resampling the source
+image/dose with that extrapolated field is what drags the bolus region. The in-body
+displacement was tiny and clean (mean 1.0 mm, max 15 mm, no folds) — the damage was in the
+*out-of-body* field, which the in-body-only diagnostic was hiding.
+
+Notably, the **demons path already guards against this** with its "rigid-only outside body,
+full field inside body" blend (Entry-0-era work). The **B-spline path had no equivalent** —
+it returned the raw B-spline(+rigid) with unconstrained out-of-body extrapolation.
+
+**Fix applied:**
+1. B-spline path now applies the same body-constraining blend: convert the composite to a
+   displacement field, keep the full field **inside the target (fixed) body mask**, and use
+   **rigid-only outside** (identity if no rigid). Nothing outside the target body is deformed.
+   (Uses the FIXED/target mask specifically — that is the contour the user confirmed excludes
+   the bolus. The demons path uses the union of both masks; revisit if the source-body extent
+   matters.)
+2. `LogTransformDiagnostics` now reports **whole-grid** displacement as well as in-body, so the
+   out-of-body extrapolation magnitude is visible. Two B-spline lines are now logged:
+   `(pre-blend)` and `(final, body-constrained)`.
+
+**How to confirm on the next run:** compare the two B-spline diagnostic lines — `(pre-blend)`
+`maxDisp(whole-grid)` should be large (the extrapolation), and `(final, body-constrained)`
+`maxDisp(whole-grid)` should drop to roughly the rigid-only level, with in-body unchanged.
+Visually, the bolus region should no longer show pulled-in tissue.
+
+> Open: if the bolus still appears pulled in *after* this, the artefact is **in-body** (within
+> the target contour), which would point to the mask not excluding what we think, or the
+> source body mask including its bolus. Check the SOURCE body contour excludes its bolus too,
+> and confirm both mask coverage lines look right.
+
 ---
 
 ## Current state (pending the next test run)
