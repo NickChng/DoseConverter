@@ -1338,7 +1338,7 @@ namespace DoseConverter
         /// <summary>
         /// Registers <paramref name="movingCT"/> to <paramref name="fixedCT"/> using a
         /// multi-resolution B-spline transform optimised by <c>ImageRegistrationMethod</c>
-        /// with Mattes mutual information.  Unlike diffeomorphic demons, this method supports
+        /// with normalised cross-correlation (unimodal CT-to-CT).  Unlike diffeomorphic demons, this method supports
         /// TRUE metric masks: when fixed/moving body masks are supplied they are passed to
         /// <c>SetMetricFixedMask</c>/<c>SetMetricMovingMask</c> so voxels OUTSIDE the body
         /// (e.g. a bolus present only on one image) are excluded from the similarity metric
@@ -1368,8 +1368,12 @@ namespace DoseConverter
             uint[] shrinkFactors  = ParseUIntList(rp.ShrinkFactorsPerLevel, new uint[] { 4, 2, 1 });
             double[] smoothSigmas = ParseDoubleList(rp.SmoothingSigmasPerLevel, new double[] { 2.0, 1.0, 0.0 });
             uint[] iterPerLevel   = ParseUIntList(rp.MaxIterationsPerLevel, new uint[] { 50, 30, 20 });
-            // initialise with level-0 cap; reconfigured per level inside sitkMultiResolutionIterationEvent.
             double samplingPct    = rp.MetricSamplingPercentage > 0 ? rp.MetricSamplingPercentage : 1.0;
+            // With metric masks the in-body sample count is already small; sample densely so the
+            // high-DOF B-spline gradient is not starved.  REGULAR sampling (set below) keeps this
+            // deterministic, which L-BFGS-B's line search requires.
+            if (fixedMask != null || movingMask != null)
+                samplingPct = Math.Max(samplingPct, 0.5);
             double gradTol        = rp.GradientConvergenceTolerance > 0 ? rp.GradientConvergenceTolerance : 1e-5;
             int    maxCorrections = (int)ParseUInt(rp.MaxCorrections, 5);
             int    maxFuncEval    = (int)ParseUInt(rp.MaxFunctionEvaluations, 1000);
@@ -1423,13 +1427,39 @@ namespace DoseConverter
                 });
                 BSplineTransform bspline = SimpleITK.BSplineTransformInitializer(fixedCT, meshSize, 3);
 
+                int numLevels = shrinkFactors.Length;
+
+                // Per-level B-spline grid refinement: the mesh above is the COARSEST (level-0)
+                // grid; it is doubled at each finer level.  Refining the grid with the pyramid
+                // keeps control points local at fine resolution, which improves the fit AND
+                // reduces the boundary-control-point instability that masks introduce (a finer
+                // grid makes the ambiguous band straddling the mask edge thinner).
+                var bsplineScaleFactors = new uint[numLevels];
+                for (int i = 0; i < numLevels; i++)
+                    bsplineScaleFactors[i] = (uint)(1 << i);   // 1, 2, 4, ...
+
+                // ---- Diagnostics: log every resolved parameter so test runs are actionable ----
+                Helpers.SeriLog.LogInfo(
+                    "B-spline DIR parameters: " +
+                    $"grid(level0)={string.Join("x", gridNodes)}, " +
+                    $"gridScaleFactors=[{string.Join(",", bsplineScaleFactors)}], " +
+                    $"shrink=[{string.Join(",", shrinkFactors)}], " +
+                    $"smoothSigmas=[{string.Join(",", smoothSigmas)}], " +
+                    $"itersPerLevel=[{string.Join(",", iterPerLevel)}], " +
+                    $"sampling={samplingPct:F3}, gradTol={gradTol:E2}, " +
+                    $"maxCorrections={maxCorrections}, maxFuncEval={maxFuncEval}, " +
+                    $"costConvFactor={costConvFactor:E2}, rigidStart={rigidAffine != null}, " +
+                    $"fixedMask={fixedMask != null}, movingMask={preAlignedMovingMask != null}");
+
                 // ---- Configure the registration method ----
                 var reg = new ImageRegistrationMethod();
-                reg.SetMetricAsMattesMutualInformation(50);
-                // REGULAR sampling gives L-BFGS-B the same set of voxels on every function evaluation,
-                // so its gradient estimates are consistent across line-search steps.
-                // With metric masks the effective domain is already restricted; sampling fraction of 1.0
-                // means every in-mask voxel is used (most accurate; still fast because the mask is small).
+                // Correlation (normalised cross-correlation) is the right metric for unimodal
+                // CT-to-CT: far less noisy than Mattes mutual information (which targets multi-
+                // modal data), giving L-BFGS-B a smoother, better-conditioned gradient — important
+                // for a high-DOF B-spline driven through small masked regions.
+                reg.SetMetricAsCorrelation();
+                // REGULAR sampling gives L-BFGS-B the SAME voxel set on every function evaluation,
+                // so its line search sees a deterministic metric (RANDOM would break it).
                 reg.SetMetricSamplingStrategy(ImageRegistrationMethod.MetricSamplingStrategyType.REGULAR);
                 reg.SetMetricSamplingPercentage(samplingPct);
                 reg.SetInterpolator(InterpolatorEnum.sitkLinear);
@@ -1440,44 +1470,40 @@ namespace DoseConverter
                 if (preAlignedMovingMask != null)
                     reg.SetMetricMovingMask(SimpleITK.Cast(preAlignedMovingMask, PixelIDValueEnum.sitkUInt8));
 
-                // L-BFGS-B: well-suited to large-DOF problems (one B-spline grid has 3×N³ parameters).
-                // Its approximate Hessian lets it take large correlated steps; GradientDescent is far slower.
-                // We set the per-level cap and re-configure inside sitkMultiResolutionIterationEvent so the
-                // optimizer hard-stops at the per-level budget rather than running the max across all levels.
-                uint level0Cap = iterPerLevel.Length > 0 ? iterPerLevel[0] : ParseUInt(rp.MaxIterations, 50);
+                // L-BFGS-B handles the large B-spline parameter set well via its approximate
+                // Hessian.  numberOfIterations is applied PER pyramid level by SimpleITK, so a
+                // single configuration suffices — we use the largest per-level cap.
+                // (The previous code reconfigured the optimizer from inside the multi-resolution
+                // callback during Execute(); that is not a supported pattern — at best ignored,
+                // at worst it perturbs optimizer state — and has been removed.)
+                uint iterCap = 0;
+                foreach (var it in iterPerLevel) iterCap = Math.Max(iterCap, it);
+                if (iterCap == 0) iterCap = ParseUInt(rp.MaxIterations, 50);
                 reg.SetOptimizerAsLBFGSB(
                     gradientConvergenceTolerance: gradTol,
-                    numberOfIterations: level0Cap,
+                    numberOfIterations: iterCap,
                     maximumNumberOfCorrections: (uint)maxCorrections,
                     maximumNumberOfFunctionEvaluations: (uint)maxFuncEval,
                     costFunctionConvergenceFactor: costConvFactor);
-                reg.SetOptimizerScalesFromPhysicalShift();
+                // SetOptimizerScalesFromPhysicalShift() is intentionally NOT used for B-spline:
+                // every parameter is already a control-point displacement in mm (uniform units),
+                // so physical-shift scaling adds nothing but is very slow (it perturbs each of
+                // thousands of parameters).
 
-                // Multi-resolution pyramid (shared with the demons configuration).
+                // Multi-resolution pyramid.
                 reg.SetShrinkFactorsPerLevel(new VectorUInt32(shrinkFactors));
                 reg.SetSmoothingSigmasPerLevel(new VectorDouble(smoothSigmas));
                 reg.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn();
 
-                reg.SetInitialTransform(bspline, inPlace: true);
+                // Register the B-spline as a multi-resolution transform so the control grid is
+                // refined per level (bsplineScaleFactors above) rather than using one fixed grid.
+                reg.SetInitialTransformAsBSpline(bspline, true, new VectorUInt32(bsplineScaleFactors));
 
-                // sitkMultiResolutionIterationEvent fires BEFORE each level starts.
-                // We track the current level index (0-based) and reconfigure the optimizer so
-                // L-BFGS-B's numberOfIterations matches the per-level budget exactly.
-                // That also means GetOptimizerIteration() will never exceed the displayed cap.
-                int levelIdx  = 0;
-                int numLevels = shrinkFactors.Length;
+                // Progress-only level tracking.  IMPORTANT: do NOT call any reg.Set*() here — the
+                // registration is mid-Execute and reconfiguring it is unsafe.
+                int levelIdx = 0;
                 var lvlCmd = new ActionCommand(() =>
                 {
-                    if (levelIdx < numLevels)
-                    {
-                        uint cap = levelIdx < iterPerLevel.Length ? iterPerLevel[levelIdx] : level0Cap;
-                        reg.SetOptimizerAsLBFGSB(
-                            gradientConvergenceTolerance: gradTol,
-                            numberOfIterations: cap,
-                            maximumNumberOfCorrections: (uint)maxCorrections,
-                            maximumNumberOfFunctionEvaluations: (uint)maxFuncEval,
-                            costFunctionConvergenceFactor: costConvFactor);
-                    }
                     if (levelIdx < numLevels - 1) levelIdx++;
                 });
                 reg.AddCommand(EventEnum.sitkMultiResolutionIterationEvent, lvlCmd);
@@ -1485,30 +1511,39 @@ namespace DoseConverter
                 var iterCmd = new ActionCommand(() =>
                 {
                     int displayLevel = levelIdx + 1;
-                    uint levelCap    = levelIdx < iterPerLevel.Length ? iterPerLevel[levelIdx] : level0Cap;
                     Report(progress,
-                        $"  B-spline level {displayLevel}/{numLevels} — metric {reg.GetMetricValue():F4} (iter {reg.GetOptimizerIteration()}/{levelCap})...");
+                        $"  B-spline level {displayLevel}/{numLevels} — metric {reg.GetMetricValue():F4} (iter {reg.GetOptimizerIteration()}/{iterCap})...");
                 });
                 reg.AddCommand(EventEnum.sitkIterationEvent, iterCmd);
 
                 Report(progress, "Running B-spline registration (this may take several minutes)...");
-                // Histogram normalisation is not required for Mattes MI; use raw CTs.
-                reg.Execute(fixedCT, preAlignedMoving);
+                // Correlation does not require histogram normalisation; use raw CTs.
+                SitkTransform optimizedTransform = reg.Execute(fixedCT, preAlignedMoving);
 
                 Helpers.SeriLog.LogInfo(
-                    $"B-spline registration complete. Stop condition: {reg.GetOptimizerStopConditionDescription()}");
+                    $"B-spline registration complete. Final metric: {reg.GetMetricValue():F6}. " +
+                    $"Stop condition: {reg.GetOptimizerStopConditionDescription()}");
+
+                // ---- Diagnostics: quantify the deformation so 'garbage' is measurable ----
+                // Logs max in-body displacement and Jacobian range.  A very large displacement or
+                // a Jacobian <= 0 (folding) is the signature of the masked-boundary instability.
+                LogTransformDiagnostics("B-spline (deformable only)", optimizedTransform, fixedCT, fixedMask, progress);
 
                 // ---- Compose rigid (if any) with the B-spline ----
-                // finalPoint = rigidAffine( bspline(x) ): apply B-spline first, then rigid.
+                // The B-spline was estimated on preAlignedMoving (already in fixed space after the
+                // rigid resample), so it maps fixed -> pre-aligned-moving.  Applying the rigid next
+                // reaches ORIGINAL moving space.  This uses the SAME composition order as the
+                // (working) demons path: deformable added first, rigid added second.
                 if (rigidAffine != null)
                 {
                     var composite = new CompositeTransform(3);
-                    composite.AddTransform(bspline);
+                    composite.AddTransform(optimizedTransform);
                     composite.AddTransform(rigidAffine);
+                    LogTransformDiagnostics("B-spline + rigid (final)", composite, fixedCT, fixedMask, progress);
                     return composite;
                 }
 
-                return bspline;
+                return optimizedTransform;
             }
             finally
             {
@@ -1516,6 +1551,83 @@ namespace DoseConverter
                     preAlignedMoving?.Dispose();
                 if (disposePreAlignedMovingMask && !ReferenceEquals(preAlignedMovingMask, movingMask))
                     preAlignedMovingMask?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Logs quantitative diagnostics for a registration transform over the reference grid:
+        /// maximum / mean displacement magnitude (restricted to the body mask when supplied) and
+        /// the Jacobian-determinant range plus a folded-voxel count (Jacobian &lt;= 0 over the
+        /// whole grid).  Large displacements or folding are the measurable signature of a B-spline
+        /// that has diverged — e.g. the masked-boundary instability.  All failures are non-fatal.
+        /// </summary>
+        private static void LogTransformDiagnostics(
+            string label, SitkTransform transform, SitkImage referenceGrid,
+            SitkImage bodyMask, IProgress<string> progress)
+        {
+            try
+            {
+                var t2df = new TransformToDisplacementFieldFilter();
+                t2df.SetReferenceImage(referenceGrid);
+                using (var field = t2df.Execute(transform))
+                using (var magnitude = SimpleITK.VectorMagnitude(field))
+                {
+                    // Restrict displacement stats to the body when a mask is available so the
+                    // numbers reflect anatomy, not unconstrained out-of-body control points.
+                    SitkImage magForStats = magnitude;
+                    bool disposeMag = false;
+                    if (bodyMask != null)
+                    {
+                        magForStats = SimpleITK.Mask(magnitude, SimpleITK.Cast(bodyMask, PixelIDValueEnum.sitkUInt8));
+                        disposeMag = true;
+                    }
+
+                    string dispScope = bodyMask != null ? "in-body" : "whole-grid";
+                    double maxMag, meanMag;
+                    try
+                    {
+                        var magStats = new StatisticsImageFilter();
+                        magStats.Execute(magForStats);
+                        maxMag  = magStats.GetMaximum();
+                        meanMag = magStats.GetMean();
+                    }
+                    finally
+                    {
+                        if (disposeMag) magForStats.Dispose();
+                    }
+
+                    string jacText;
+                    try
+                    {
+                        using (var jac = SimpleITK.DisplacementFieldJacobianDeterminant(field))
+                        {
+                            var jStats = new StatisticsImageFilter();
+                            jStats.Execute(jac);
+                            // Count folded voxels (Jacobian <= 0) — a direct divergence indicator.
+                            using (var folded = SimpleITK.BinaryThreshold(jac, -1.0e9, 0.0, 1, 0))
+                            {
+                                var fStats = new StatisticsImageFilter();
+                                fStats.Execute(folded);
+                                long foldVoxels = (long)Math.Round(fStats.GetSum());
+                                jacText = $"jacDet[min={jStats.GetMinimum():F3}, max={jStats.GetMaximum():F3}], " +
+                                          $"foldedVoxels(jac<=0, whole-grid)={foldVoxels}";
+                            }
+                        }
+                    }
+                    catch (Exception exJac)
+                    {
+                        jacText = $"jacDet=<unavailable: {exJac.Message}>";
+                    }
+
+                    string msg = $"DIR diagnostics [{label}]: maxDisp({dispScope})={maxMag:F1} mm, " +
+                                 $"meanDisp({dispScope})={meanMag:F1} mm, {jacText}";
+                    Helpers.SeriLog.LogInfo(msg);
+                    progress?.Report(msg);
+                }
+            }
+            catch (Exception ex)
+            {
+                Helpers.SeriLog.LogError($"DIR diagnostics [{label}] failed", ex);
             }
         }
 
