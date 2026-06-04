@@ -162,14 +162,26 @@ namespace DoseConverter.ViewModels
         // Registration parameter overrides (most influential knobs)
         // -----------------------------------------------------------------------
 
-        /// <summary>B-spline grid nodes along each axis, e.g. "5 5 5".</summary>
-        public string RegGridNodes
+        /// <summary>
+        /// B-spline control-point spacing in mm over the body region. The grid mesh is derived from
+        /// this spacing and the (auto-detected or masked) body extent, so it is FOV-independent.
+        /// Smaller = finer local deformation. Replaces the old raw grid-node count in the UI.
+        /// </summary>
+        public string RegControlPointSpacing
         {
-            get => _regParams?.BSplineGridNodes ?? "5 5 5";
+            get => (_regParams != null && _regParams.BSplineControlPointSpacing > 0
+                        ? _regParams.BSplineControlPointSpacing : 20.0)
+                   .ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
             set
             {
-                if (_regParams != null) _regParams.BSplineGridNodes = value;
-                RaisePropertyChangedEvent(nameof(RegGridNodes));
+                if (_regParams != null
+                    && double.TryParse(value, System.Globalization.NumberStyles.Float,
+                                       System.Globalization.CultureInfo.InvariantCulture, out double mm)
+                    && mm > 0)
+                {
+                    _regParams.BSplineControlPointSpacing = mm;
+                }
+                RaisePropertyChangedEvent(nameof(RegControlPointSpacing));
             }
         }
 
@@ -255,14 +267,16 @@ namespace DoseConverter.ViewModels
         /// <summary>A single site preset record.</summary>
         public sealed class SitePreset
         {
-            public string Name           { get; }
-            public double StdDev         { get; }   // smoothing σ
-            public string Iterations     { get; }   // MaxIterationsPerLevel string
-            public double MaxStepLength  { get; }
+            public string Name             { get; }
+            public double StdDev           { get; }   // smoothing σ
+            public string Iterations       { get; }   // MaxIterationsPerLevel string
+            public double MaxStepLength    { get; }
+            public double BSplineSpacingMm { get; }   // B-spline control-point spacing (mm); 0 = use config default
 
-            public SitePreset(string name, double stdDev, string iters, double maxStep)
+            public SitePreset(string name, double stdDev, string iters, double maxStep, double bsplineSpacingMm = 0)
             {
                 Name = name; StdDev = stdDev; Iterations = iters; MaxStepLength = maxStep;
+                BSplineSpacingMm = bsplineSpacingMm;
             }
             public override string ToString() => Name;
         }
@@ -270,13 +284,14 @@ namespace DoseConverter.ViewModels
         public static readonly SitePreset CustomSitePreset = new SitePreset("(custom)", 1.5, "75 50 20", 2.0);
 
         // Built-in fallback presets used when the XML config contains no SitePresets element.
+        // BSplineSpacingMm (last arg) sets the B-spline control-point spacing for that site.
         private static readonly IReadOnlyList<SitePreset> _fallbackPresets = new List<SitePreset>
         {
-            new SitePreset("Brain",                 2.5, "50 50 20",  1.0),
-            new SitePreset("Head & Neck",           2.0, "50 50 20",  1.5),
-            new SitePreset("Thorax / Lung",         1.0, "75 75 20",  3.0),
-            new SitePreset("Abdomen",               1.5, "75 50 20",  2.5),
-            new SitePreset("Pelvis / Bladder",      1.5, "75 50 20",  3.0),
+            new SitePreset("Brain",                 2.5, "50 50 20",  1.0, 20),
+            new SitePreset("Head & Neck",           2.0, "50 50 20",  1.5, 15),
+            new SitePreset("Thorax / Lung",         1.0, "75 75 20",  3.0, 20),
+            new SitePreset("Abdomen",               1.5, "75 50 20",  2.5, 20),
+            new SitePreset("Pelvis / Bladder",      1.5, "75 50 20",  3.0, 20),
         };
 
         // The ObservableCollection presented to the combo; includes Custom at the bottom.
@@ -294,7 +309,7 @@ namespace DoseConverter.ViewModels
             if (configPresets != null && configPresets.Length > 0)
             {
                 foreach (var cp in configPresets)
-                    SitePresets.Add(new SitePreset(cp.Name, cp.StdDev, cp.Iterations, cp.MaxStepLength));
+                    SitePresets.Add(new SitePreset(cp.Name, cp.StdDev, cp.Iterations, cp.MaxStepLength, cp.BSplineSpacing));
             }
             else
             {
@@ -325,11 +340,15 @@ namespace DoseConverter.ViewModels
                 _regParams.DemonsStandardDeviations = preset.StdDev.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
                 _regParams.MaxIterationsPerLevel    = preset.Iterations;
                 _regParams.DemonsMaxStepLength      = preset.MaxStepLength;
+                // B-spline control-point spacing for this site (0 = leave the config default in place).
+                if (preset.BSplineSpacingMm > 0)
+                    _regParams.BSplineControlPointSpacing = preset.BSplineSpacingMm;
             }
             RaisePropertyChangedEvent(nameof(SmoothingSigma));
             RaisePropertyChangedEvent(nameof(RegDemonsStdDev));
             RaisePropertyChangedEvent(nameof(RegMaxIterationsPerLevel));
             RaisePropertyChangedEvent(nameof(RegMaxStepLength));
+            RaisePropertyChangedEvent(nameof(RegControlPointSpacing));
             RaisePropertyChangedEvent(nameof(SmoothingLabel));
         }
 
@@ -481,7 +500,7 @@ namespace DoseConverter.ViewModels
                 RaisePropertyChangedEvent(nameof(SelectedAlgorithmDescription));
                 RaisePropertyChangedEvent(nameof(IsBSplineSelected));
                 RaisePropertyChangedEvent(nameof(IsDemonsSelected));
-                RaisePropertyChangedEvent(nameof(RegGridNodes));
+                RaisePropertyChangedEvent(nameof(RegControlPointSpacing));
                 RaisePropertyChangedEvent(nameof(RegMaxIterationsPerLevel));
                 RaisePropertyChangedEvent(nameof(RegSamplingPercent));
                 RaisePropertyChangedEvent(nameof(RegDemonsStdDev));

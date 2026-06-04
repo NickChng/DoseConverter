@@ -194,6 +194,43 @@ Visually, the bolus region should no longer show pulled-in tissue.
 > source body mask including its bolus. Check the SOURCE body contour excludes its bolus too,
 > and confirm both mask coverage lines look right.
 
+### Entry 7 — B-spline under-deforming (can't capture weight loss / contour change)
+With the composition + out-of-body guard fixed, the B-spline (vs demons, no masks) was found
+**not to capture large position changes** — e.g. body-contour change from weight loss. The
+deformation grid showed only small smooth changes.
+
+**Evidence:** the optimizer converges (stop reason "function tolerance reached") at a finest-
+level Correlation of only **~−0.63** (good CT-CT would be ~−0.9), and the in-body field mean
+was ~1 mm. It plateaus because the **5×5×5 B-spline mesh is far too coarse** (~6–7 cm
+control-point spacing over a whole body) to represent cm-scale surface movement. The grid is
+the representational ceiling. (Cross-level metric values are NOT comparable — Correlation is
+resolution-dependent — so the per-level "resets" are expected, not regressions.)
+
+**Fixes applied:**
+1. **Increased the B-spline grid:** `BSplineGridNodes` `5 5 5` → `10 10 8` in
+   `Configuration/DoseConverterConfig.xml`. This is THE knob for representational capacity.
+   Finer = more local deformation captured, but slower and higher folding risk. (Verify the
+   *deployed* config — the app reads its own copy; the repo value only takes effect after the
+   config is redeployed/copied to the output dir.)
+2. **Re-added `SetOptimizerScalesFromPhysicalShift()`** (after `SetInitialTransform`). Without
+   it L-BFGS-B takes timid, poorly-scaled steps and converges to a shallow minimum
+   (under-deformation). It had been removed earlier for speed; quality wins here. Scales are
+   valid across levels because the single grid keeps the parameter count fixed.
+
+**Runtime warning:** the finer grid multiplies parameters (5×5×5→~1.5k params; 10×10×8→~5.5k)
+so each iteration is slower; the finest level may take noticeably longer than the ~6 min seen
+before. Dial `BSplineGridNodes` back if too slow.
+
+**How to confirm:** finest-level Correlation should reach a more negative value than −0.63, and
+`maxDisp(in-body)` / the deformation grid should show larger, broader movement that follows the
+target body contour.
+
+> Open: if a single fine grid is too slow OR still under-fits, the proper fix is **per-level
+> grid refinement** (coarse grid at coarse levels, fine at fine levels). That requires
+> switching the optimizer to **LBFGS2** (`SetOptimizerAsLBFGS2`) + `SetInitialTransformAsBSpline`
+> with `scaleFactors` — the combination L-BFGS-B could not do (Entry 3). This is the
+> recommended next escalation if Entry 7's single-grid bump is insufficient.
+
 ---
 
 ## Current state (pending the next test run)

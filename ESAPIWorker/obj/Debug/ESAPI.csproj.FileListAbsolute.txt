@@ -41,3 +41,6 @@ Z:\DoseConverter\ESAPIWorker\obj\Debug\ESAPIWorker.pdb
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\Debug\ESAPI.csproj.Up2Date
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\Debug\ESAPIWorker.dll
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\Debug\ESAPIWorker.pdb
+C:\users\nickc\source\repos\nickchng\doseconverter\ESAPIWorker\obj\Debug\ESAPI.csproj.AssemblyReference.cache
+C:\users\nickc\source\repos\nickchng\doseconverter\ESAPIWorker\obj\Debug\ESAPI.csproj.CoreCompileInputs.cache
+C:\users\nickc\source\repos\nickchng\doseconverter\ESAPIWorker\obj\Debug\ESAPIWorker.dll

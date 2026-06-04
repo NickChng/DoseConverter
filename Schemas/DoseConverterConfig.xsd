@@ -82,6 +82,11 @@
                  For a typical H&N CT (~350×300×250 mm) "12 12 8" gives ~30 mm spacing.
                  Coarser grids (e.g. "5 5 5") cannot capture soft-tissue shifts. -->
             <xs:attribute name="BSplineGridNodes" type="xs:string" use="optional" default="12 12 8"/>
+            <!-- B-spline control-point spacing (mm) over the BODY region. The grid mesh is derived
+                 from this spacing and the auto-detected (or masked) body bounding box, so density is
+                 anatomically meaningful and independent of CT FOV / patient size. This supersedes
+                 BSplineGridNodes, which is now only a fallback used if body detection fails. -->
+            <xs:attribute name="BSplineControlPointSpacing" type="PositiveDouble" use="optional" default="20"/>
             <!-- B-spline polynomial order (3 = cubic) -->
             <xs:attribute name="BSplineOrder" type="xs:positiveInteger" use="optional" default="3"/>
             <!-- Fraction of voxels sampled per iteration (0–1).
@@ -130,6 +135,10 @@
                   <xs:attribute name="Iterations" type="xs:string" use="required"/>
                   <!-- Maximum demons update step length (mm) -->
                   <xs:attribute name="MaxStepLength" type="PositiveDouble" use="required"/>
+                  <!-- B-spline control-point spacing (mm) for this site. Optional; 0 / omitted = use
+                       the global BSplineControlPointSpacing default. Finer (smaller) = more local
+                       deformation, e.g. H&N ~15 mm to capture neck flexion / nodal tissue loss. -->
+                  <xs:attribute name="BSplineSpacing" type="PositiveDouble" use="optional" default="20"/>
                 </xs:complexType>
               </xs:element>
             </xs:sequence>

@@ -23,6 +23,12 @@ namespace DoseConverter
         private readonly EsapiWorker _ew;
         private readonly Model _model;
 
+        // Bounds on the B-spline mesh size derived from control-point spacing, applied per axis.
+        // Floor keeps a usable grid on tiny body extents; ceiling caps the parameter count so a
+        // very fine spacing cannot explode the L-BFGS-B problem (e.g. 5 mm over a long FOV).
+        private const uint MinBSplineMeshCells = 3;
+        private const uint MaxBSplineMeshCells = 40;
+
         public DeformableRegistrationService(EsapiWorker ew, Model model)
         {
             _ew = ew;
@@ -1417,15 +1423,80 @@ namespace DoseConverter
                     }
                 }
 
-                // ---- Initialise the B-spline transform over the fixed image domain ----
+                // ---- Initialise the B-spline grid over the BODY region with physical spacing ----
+                // A node COUNT spread over the whole (mostly-air) CT FOV places almost all control
+                // points outside the patient, leaving anatomy undersampled — the dominant reason a
+                // coarse-looking grid under-deforms.  Instead derive the mesh from a target control-
+                // point SPACING (mm) over the body bounding box, so density is anatomically meaningful
+                // and independent of FOV / patient size.  The body region is the supplied fixed mask
+                // when present, else auto-detected from the CT so the grid is well placed even with
+                // no mask selected.  Outside its grid domain a B-spline is identity, so confining the
+                // grid to the body also avoids deforming out-of-body anatomy (bolus / immobilisation).
                 Report(progress, "Initialising B-spline transform...");
-                var meshSize = new VectorUInt32(new uint[]
+
+                double cpSpacingMm  = rp.BSplineControlPointSpacing > 0 ? rp.BSplineControlPointSpacing : 20.0;
+                double gridMarginMm = rp.MaskMarginMm > 0 ? rp.MaskMarginMm : 20.0;
+
+                // Resolve a body-region grid reference image (cropped to body bbox + margin).
+                SitkImage gridRef = null;
+                SitkImage autoBodyMask = null;
+                try
                 {
-                    gridNodes.Length > 0 ? gridNodes[0] : 5,
-                    gridNodes.Length > 1 ? gridNodes[1] : 5,
-                    gridNodes.Length > 2 ? gridNodes[2] : 5
-                });
-                BSplineTransform bspline = SimpleITK.BSplineTransformInitializer(fixedCT, meshSize, 3);
+                    SitkImage bodyForBounds = fixedMask;
+                    if (bodyForBounds == null)
+                    {
+                        autoBodyMask = BuildAutoBodyMask(fixedCT);
+                        bodyForBounds = autoBodyMask;
+                    }
+                    if (bodyForBounds != null)
+                    {
+                        var (cropImg, cropMask) = CropImageToMaskBounds(fixedCT, bodyForBounds, gridMarginMm);
+                        cropMask?.Dispose();
+                        gridRef = cropImg;
+                    }
+                }
+                catch (Exception exBody)
+                {
+                    Helpers.SeriLog.LogError(
+                        "B-spline body-region detection failed; falling back to full-FOV node-count grid.", exBody);
+                }
+
+                uint[] resolvedMesh;
+                string gridDomainDesc;
+                BSplineTransform bspline;
+                if (gridRef != null)
+                {
+                    // Mesh size = body extent / target spacing, clamped per axis.
+                    var gSize    = gridRef.GetSize();
+                    var gSpacing = gridRef.GetSpacing();
+                    resolvedMesh = new uint[3];
+                    for (int a = 0; a < 3; a++)
+                    {
+                        double extentMm = gSize[a] * gSpacing[a];
+                        long cells = (long)Math.Round(extentMm / cpSpacingMm);
+                        if (cells < MinBSplineMeshCells) cells = MinBSplineMeshCells;
+                        if (cells > MaxBSplineMeshCells) cells = MaxBSplineMeshCells;
+                        resolvedMesh[a] = (uint)cells;
+                    }
+                    bspline = SimpleITK.BSplineTransformInitializer(gridRef, new VectorUInt32(resolvedMesh), 3);
+                    gridDomainDesc =
+                        $"body-region {gSize[0] * gSpacing[0]:F0}x{gSize[1] * gSpacing[1]:F0}x{gSize[2] * gSpacing[2]:F0} mm " +
+                        $"@ {cpSpacingMm:F0} mm spacing ({(fixedMask != null ? "mask" : "auto-detected")})";
+                    gridRef.Dispose();
+                }
+                else
+                {
+                    // Fallback: legacy fixed node count over the full fixed-image FOV.
+                    resolvedMesh = new uint[]
+                    {
+                        gridNodes.Length > 0 ? gridNodes[0] : 5u,
+                        gridNodes.Length > 1 ? gridNodes[1] : 5u,
+                        gridNodes.Length > 2 ? gridNodes[2] : 5u
+                    };
+                    bspline = SimpleITK.BSplineTransformInitializer(fixedCT, new VectorUInt32(resolvedMesh), 3);
+                    gridDomainDesc = "full-FOV node-count fallback (body detection unavailable)";
+                }
+                autoBodyMask?.Dispose();
 
                 int numLevels = shrinkFactors.Length;
 
@@ -1437,13 +1508,14 @@ namespace DoseConverter
                 //   "Size of scales (N) must equal number of local parameters (M)".
                 // A single grid keeps the parameter count constant and, being coarser, also has
                 // fewer under-constrained control points at the mask boundary (more stable).
-                // To capture finer deformation, increase BSplineGridNodes in the config.
+                // To capture finer deformation, DECREASE BSplineControlPointSpacing in the config
+                // (or pick a site preset with a smaller spacing).
                 // (Per-level refinement would require switching the optimizer to LBFGS2.)
 
                 // ---- Diagnostics: log every resolved parameter so test runs are actionable ----
                 Helpers.SeriLog.LogInfo(
                     "B-spline DIR parameters: " +
-                    $"grid={string.Join("x", gridNodes)}, " +
+                    $"mesh={string.Join("x", resolvedMesh)} cells [{gridDomainDesc}], " +
                     $"shrink=[{string.Join(",", shrinkFactors)}], " +
                     $"smoothSigmas=[{string.Join(",", smoothSigmas)}], " +
                     $"itersPerLevel=[{string.Join(",", iterPerLevel)}], " +
@@ -1492,19 +1564,23 @@ namespace DoseConverter
                     maximumNumberOfCorrections: (uint)maxCorrections,
                     maximumNumberOfFunctionEvaluations: (uint)maxFuncEval,
                     costFunctionConvergenceFactor: costConvFactor);
-                // SetOptimizerScalesFromPhysicalShift() is intentionally NOT used for B-spline:
-                // every parameter is already a control-point displacement in mm (uniform units),
-                // so physical-shift scaling adds nothing but is very slow (it perturbs each of
-                // thousands of parameters).
 
                 // Multi-resolution pyramid.
                 reg.SetShrinkFactorsPerLevel(new VectorUInt32(shrinkFactors));
                 reg.SetSmoothingSigmasPerLevel(new VectorDouble(smoothSigmas));
                 reg.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn();
 
-                // Single fixed B-spline grid across all pyramid levels (see note above on why
-                // per-level refinement is not used with L-BFGS-B).
+                // Single fixed B-spline grid across all pyramid levels (per-level refinement is
+                // not used with L-BFGS-B — that would need LBFGS2; see DIR_troubleshooting.md).
                 reg.SetInitialTransform(bspline, inPlace: true);
+
+                // Calibrate optimizer step scaling to physical shift.  Without this, L-BFGS-B
+                // takes poorly-scaled, timid steps on the B-spline parameters and converges to a
+                // shallow minimum — under-deforming, so it cannot capture large changes such as
+                // weight loss / body-contour change.  Must be called AFTER SetInitialTransform
+                // (it needs the transform's parameter layout).  Scales are valid across all
+                // levels because the grid (parameter count) is fixed.
+                reg.SetOptimizerScalesFromPhysicalShift();
 
                 // Progress-only level tracking.  IMPORTANT: do NOT call any reg.Set*() here — the
                 // registration is mid-Execute and reconfiguring it is unsafe.
@@ -1786,6 +1862,23 @@ namespace DoseConverter
             SitkImage croppedImage = roiFilter.Execute(image);
             SitkImage croppedMask  = roiFilter.Execute(mask);
             return (croppedImage, croppedMask);
+        }
+
+        /// <summary>
+        /// Auto-detects the patient body region on a CT when no body mask is supplied, returning a
+        /// binary (UInt8) mask on the input grid.  Thresholds out air (HU &lt; ~-350) and keeps the
+        /// largest connected component, which drops disconnected couch rails / immobilisation noise.
+        /// Used only to BOUND the B-spline grid (so control points concentrate on anatomy rather than
+        /// the mostly-air FOV); precise contouring is not required, so a simple threshold suffices.
+        /// </summary>
+        private static SitkImage BuildAutoBodyMask(SitkImage fixedCT)
+        {
+            // -350 HU sits well below soft tissue/fat and above air, cleanly separating the patient
+            // (and contacting immobilisation) from the surrounding air.
+            using (var bin = SimpleITK.BinaryThreshold(fixedCT, -350.0, 1.0e6, 1, 0))
+            using (var cc = SimpleITK.ConnectedComponent(bin))
+            using (var relabel = SimpleITK.RelabelComponent(cc, 0, true)) // label 1 = largest component
+                return SimpleITK.BinaryThreshold(relabel, 1.0, 1.0, 1, 0);
         }
 
         // -----------------------------------------------------------------------

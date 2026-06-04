@@ -23,3 +23,4 @@
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\DoseConverter.Tests.dll.config
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\SimpleITKCSharpManaged.dll
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\SimpleITKCSharpManaged.xml
+C:\users\nickc\source\repos\nickchng\doseconverter\DoseConverter.Tests\obj\Debug\DoseConverter.Tests.dll

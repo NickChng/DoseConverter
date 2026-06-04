@@ -282,7 +282,9 @@ namespace DoseConverter {
         private RegistrationAlgorithmType registrationAlgorithmField;
         
         private string bSplineGridNodesField;
-        
+
+        private double bSplineControlPointSpacingField;
+
         private string bSplineOrderField;
         
         private double metricSamplingPercentageField;
@@ -314,6 +316,7 @@ namespace DoseConverter {
         public DoseConverterConfigRegistrationParameters() {
             this.registrationAlgorithmField = RegistrationAlgorithmType.Demons;
             this.bSplineGridNodesField = "12 12 8";
+            this.bSplineControlPointSpacingField = 20D;
             this.bSplineOrderField = "3";
             this.metricSamplingPercentageField = 1D;
             this.gradientConvergenceToleranceField = 1E-05D;
@@ -353,6 +356,18 @@ namespace DoseConverter {
             }
         }
         
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [System.ComponentModel.DefaultValueAttribute(20D)]
+        public double BSplineControlPointSpacing {
+            get {
+                return this.bSplineControlPointSpacingField;
+            }
+            set {
+                this.bSplineControlPointSpacingField = value;
+            }
+        }
+
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute(DataType="positiveInteger")]
         [System.ComponentModel.DefaultValueAttribute("3")]
@@ -546,9 +561,11 @@ namespace DoseConverter {
         private double stdDevField;
         
         private string iterationsField;
-        
+
         private double maxStepLengthField;
-        
+
+        private double bSplineSpacingField;
+
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
         public string Name {
@@ -590,6 +607,18 @@ namespace DoseConverter {
             }
             set {
                 this.maxStepLengthField = value;
+            }
+        }
+
+        /// <remarks/>
+        /// <summary>B-spline control-point spacing (mm) for this site. 0 = use the global default.</summary>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public double BSplineSpacing {
+            get {
+                return this.bSplineSpacingField;
+            }
+            set {
+                this.bSplineSpacingField = value;
             }
         }
     }
