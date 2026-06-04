@@ -26,10 +26,12 @@ namespace DoseConverter.ViewModels
         private float[] _warpedMoving;
         private float[] _fixedCt;
         private float[] _jacobianDet;        // one float per voxel, same grid
-        private float[] _dispField;          // interleaved [dx,dy,dz] per voxel
+        private float[] _dispField;          // interleaved [dx,dy,dz] per voxel (deformable-only for the grid overlay)
         private float[] _deformedDose;       // Gy, same grid as CT
         private float   _deformedDoseMaxGy  = 1f;
         private int _nx, _ny, _nz;
+        private double[] _spacing   = { 1.0, 1.0, 1.0 };                       // [sx, sy, sz] mm
+        private double[] _direction = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };           // row-major 3x3 direction cosines
 
         // -----------------------------------------------------------------------
         // Availability
@@ -262,9 +264,14 @@ namespace DoseConverter.ViewModels
             _warpedMoving       = data.WarpedMovingCt;
             _fixedCt            = data.FixedCt;
             _jacobianDet        = data.JacobianDet;
-            _dispField          = data.DisplacementField;
+            // Grid overlay uses the deformable-ONLY field so the rigid shift doesn't dominate the
+            // picture; fall back to the composite field if the deformable-only field is unavailable.
+            _dispField          = data.DeformableDisplacementField ?? data.DisplacementField;
             _deformedDose       = data.DeformedDoseGy;
             _deformedDoseMaxGy  = data.DeformedDoseMaxGy > 0 ? data.DeformedDoseMaxGy : 1f;
+
+            if (data.Spacing   != null && data.Spacing.Length   == 3) _spacing   = data.Spacing;
+            if (data.Direction != null && data.Direction.Length == 9) _direction = data.Direction;
 
             _nx = (int)data.Size[0];
             _ny = (int)data.Size[1];
@@ -443,6 +450,20 @@ namespace DoseConverter.ViewModels
                 }
             }
 
+            // Convert a world-frame displacement (mm) at grid node (gx,gy) to a warped pixel
+            // position.  SimpleITK displacement fields are in PHYSICAL space, so project the vector
+            // onto the in-plane image axes (columns of the direction matrix) and divide by spacing to
+            // get index-space offsets.  Reduces to (dx/sx, dy/sy) for an identity direction; using the
+            // direction makes the overlay orientation-correct instead of mirrored on non-axial frames.
+            void WarpNode(int gx, int gy, int fi, out int wx, out int wy)
+            {
+                double dwx = _dispField[fi], dwy = _dispField[fi + 1], dwz = _dispField[fi + 2];
+                double diX = (dwx * _direction[0] + dwy * _direction[3] + dwz * _direction[6]) / _spacing[0];
+                double diY = (dwx * _direction[1] + dwy * _direction[4] + dwz * _direction[7]) / _spacing[1];
+                wx = gx + (int)Math.Round(diX);
+                wy = gy + (int)Math.Round(diY);
+            }
+
             // Draw horizontal grid lines: for each row that is a multiple of GridSpacingPx,
             // connect consecutive warped nodes along that row.
             for (int gy = 0; gy < _ny; gy += GridSpacingPx)
@@ -452,10 +473,7 @@ namespace DoseConverter.ViewModels
                 {
                     int voxelIdx = gy * _nx + gx;
                     int fi = fieldBase + voxelIdx * 3;
-                    // dx/dy are in mm; approximate pixel displacement assuming 1 px â‰ˆ 1 mm
-                    // (acceptable for visualisation; exact conversion would need spacing).
-                    int wx = gx + (int)Math.Round(_dispField[fi]);
-                    int wy = gy + (int)Math.Round(_dispField[fi + 1]);
+                    WarpNode(gx, gy, fi, out int wx, out int wy);
                     if (prevWx >= 0)
                         DrawLine(prevWx, prevWy, wx, wy, 0, 220, 0, 200);
                     prevWx = wx; prevWy = wy;
@@ -470,8 +488,7 @@ namespace DoseConverter.ViewModels
                 {
                     int voxelIdx = gy * _nx + gx;
                     int fi = fieldBase + voxelIdx * 3;
-                    int wx = gx + (int)Math.Round(_dispField[fi]);
-                    int wy = gy + (int)Math.Round(_dispField[fi + 1]);
+                    WarpNode(gx, gy, fi, out int wx, out int wy);
                     if (prevWx >= 0)
                         DrawLine(prevWx, prevWy, wx, wy, 0, 220, 0, 200);
                     prevWx = wx; prevWy = wy;

@@ -64,6 +64,7 @@ namespace DoseConverter
             public float[] FixedCt;         // target CT on the same grid
             public uint[]  Size;            // [W, H, D] of the fixed grid
             public double[] Spacing;        // [sx, sy, sz] mm
+            public double[] Direction;      // row-major 3x3 direction cosines [Xx Xy Xz Yx Yy Yz Zx Zy Zz]
 
             // --- Overlay data (may be null if computation failed) ---
 
@@ -76,8 +77,19 @@ namespace DoseConverter
             /// <summary>
             /// Displacement field on the fixed CT grid, interleaved [dx, dy, dz] per voxel
             /// in [x + y*nx + z*nx*ny] order — i.e. length = 3 * nx * ny * nz.  Units: mm.
+            /// This is the FULL composite (rigid + deformable) field, used for the Jacobian and
+            /// structure warping.
             /// </summary>
             public float[] DisplacementField;
+
+            /// <summary>
+            /// Deformable-ONLY displacement field (the composite minus the rigid component) on the
+            /// fixed CT grid, same interleaved layout and units as <see cref="DisplacementField"/>.
+            /// The rigid translation/rotation is removed so the review grid overlay shows true local
+            /// deformation (≈zero outside the body) rather than the large rigid shift.  Falls back to
+            /// the composite field when there was no rigid start.  Null if computation failed.
+            /// </summary>
+            public float[] DeformableDisplacementField;
 
             /// <summary>
             /// Deformed dose (Gy) resampled onto the fixed CT grid.  Same Size/Spacing as
@@ -366,7 +378,8 @@ namespace DoseConverter
                                     Spacing = new double[]
                                     {
                                         fixedCTSpacing[0], fixedCTSpacing[1], fixedCTSpacing[2]
-                                    }
+                                    },
+                                    Direction = (double[])fixedCTDirection.Clone()
                                 };
 
                                 // Retain the deformed CT + fixed-grid geometry for an optional
@@ -415,6 +428,36 @@ namespace DoseConverter
                                     // Retain the same field for structure warping during DICOM export.
                                     if (exportData != null)
                                         exportData.DisplacementField = reviewData.DisplacementField;
+
+                                    // Deformable-ONLY field for the review grid overlay: subtract the
+                                    // rigid component so the overlay shows true local deformation instead
+                                    // of the large (~5 cm) rigid shift.  Subtracting the rigid field also
+                                    // zeroes the out-of-body region (where the final field is rigid-only),
+                                    // so the grid bunches only where real deformation occurs.
+                                    try
+                                    {
+                                        using (var rigidAffine = BuildInvertedRigidAffine(rigidMatrixRowMajor))
+                                        {
+                                            if (rigidAffine != null)
+                                            {
+                                                var rt2df = new TransformToDisplacementFieldFilter();
+                                                rt2df.SetReferenceImage(fixedCT);
+                                                using (var rigidField = rt2df.Execute(rigidAffine))
+                                                using (var deformField = SimpleITK.Subtract(fullField, rigidField))
+                                                    reviewData.DeformableDisplacementField = ExtractVectorImageBuffer(deformField);
+                                            }
+                                            else
+                                            {
+                                                // No rigid start: the composite IS the deformable field.
+                                                reviewData.DeformableDisplacementField = reviewData.DisplacementField;
+                                            }
+                                        }
+                                    }
+                                    catch (Exception exDef)
+                                    {
+                                        Helpers.SeriLog.LogError("Failed to compute deformable-only field for review", exDef);
+                                        // Non-fatal: overlay falls back to the composite field.
+                                    }
                                 }
                             }
                             catch (Exception exJac)
@@ -1908,6 +1951,28 @@ namespace DoseConverter
         /// Inverts a row-major 4×4 rigid homogeneous matrix using R^-1 = R^T.
         /// (For a pure rigid body transform the 3×3 rotation block is orthonormal.)
         /// </summary>
+        /// <summary>
+        /// Builds the SimpleITK fixed→moving <see cref="AffineTransform"/> from a row-major 4×4 ESAPI
+        /// rigid matrix (source→target). SimpleITK transforms map fixed→moving, so the ESAPI matrix is
+        /// inverted (rotation transposed, translation re-derived). Returns null when the matrix is null
+        /// or not length 16. Mirrors the inline construction in the registration methods so the rigid
+        /// field used for the deformable-only overlay matches exactly.
+        /// </summary>
+        private static AffineTransform BuildInvertedRigidAffine(double[] rigidMatrixRowMajor)
+        {
+            if (rigidMatrixRowMajor == null || rigidMatrixRowMajor.Length != 16) return null;
+            double[] inv = InvertRigidMatrix4x4(rigidMatrixRowMajor);
+            var rigidAffine = new AffineTransform(3);
+            rigidAffine.SetMatrix(new VectorDouble(new double[]
+            {
+                inv[0], inv[1], inv[2],
+                inv[4], inv[5], inv[6],
+                inv[8], inv[9], inv[10]
+            }));
+            rigidAffine.SetTranslation(new VectorDouble(new double[] { inv[3], inv[7], inv[11] }));
+            return rigidAffine;
+        }
+
         private static double[] InvertRigidMatrix4x4(double[] m)
         {
             double[] inv = new double[16];

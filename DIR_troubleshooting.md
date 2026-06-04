@@ -7,7 +7,7 @@ Read this before changing `Model/DeformableRegistrationService.cs` registration 
 Companion doc: `RegistrationAssessment.md` (design-level assessment). Where the two
 disagree, **this log is newer** — see the divergence notes below.
 
-_Last updated: 2026-06-02._
+_Last updated: 2026-06-03._
 
 ---
 
@@ -231,6 +231,119 @@ target body contour.
 > with `scaleFactors` — the combination L-BFGS-B could not do (Entry 3). This is the
 > recommended next escalation if Entry 7's single-grid bump is insufficient.
 
+### Entry 8 — Body-anchored, spacing-driven B-spline grid + sampling heuristic fix (2026-06-03)
+Root problem found in the grid construction: `BSplineTransformInitializer(fixedCT, meshSize, 3)`
+laid the mesh over the **entire CT FOV**, which for H&N is mostly air. A node *count* (e.g.
+`5×5×5`) therefore put almost all control points outside the patient → the body was
+**undersampled** independent of any metric mask. (Deployed config was running `5×5×5`, ~100 mm
+effective spacing.)
+
+**Fixes applied (B-spline path only; demons untouched):**
+1. Grid is now driven by a **physical control-point spacing (mm) over the body extent**, not a
+   node count over the FOV. The body region is the supplied fixed mask if present, else
+   **auto-detected** from the CT (`BuildAutoBodyMask`: threshold ~−350 HU → largest connected
+   component). A grid-reference image is cropped to that bbox + `MaskMarginMm` (reuses the
+   previously-unused `CropImageToMaskBounds`), and `meshSize[axis] = round(extent / spacing)`,
+   clamped to `[MinBSplineMeshCells=3, MaxBSplineMeshCells=40]`. Bonus: a B-spline is identity
+   outside its grid domain, so confining the grid to the body also limits out-of-body warp even
+   with no mask. Falls back to the legacy `BSplineGridNodes` count if body detection fails.
+   New config: `BSplineControlPointSpacing` (mm, default 20) + per-site `BSplineSpacing` on
+   `SitePreset`; the advanced-panel field/VM property switched from grid-nodes to CP-spacing.
+2. **Sampling heuristic fixed.** The old `samplingPct = Max(samplingPct, 0.5)` whenever a mask
+   was present assumed "mask = small ROI." For a **body** mask that's false (≈18.7% of volume,
+   millions of voxels), so it was forcing 50% sampling = ~5× cost for no benefit. Now the 0.5
+   floor only applies when the mask is genuinely small (< 5% of volume, via new
+   `MaskInBodyFraction`); a body mask keeps the configured 0.1. Logged either way.
+
+**Observed effect:** with an H&N body mask the grid resolved to `mesh=31x21x12 cells`
+(`body-region 465×309×175 mm @ 15 mm`) ≈ **36.7k params** — first-iteration stall ~60 s. After
+dropping H&N preset spacing **15 → 20 mm** (→ ~16.8k params) and the sampling fix (0.5 → 0.1),
+the per-iteration cost fell ~9×. Even so, **B-spline + L-BFGS-B remains far slower than Varian's
+DIR** — that's an algorithm-class gap (dense-field demons vs. per-parameter optimisation + line
+search), not a tuning problem. Don't expect to tune it to demons-class speed.
+
+> Reminder confirmed this session: the **demons path already implements out-of-body exclusion**
+> (intersection intensity-masking pre-registration + rigid-only-outside-body field blend) and
+> already runs < 5 min (~3 min in the logs). Every demons run to date used **no masks**; the
+> "demons can't be masked" premise is wrong — it just hadn't been tested with masks.
+
+### Entry 9 — NEW SYMPTOMS: demons+mask still pulls bolus; deformation-grid looks AP-shifted
+First masked **demons** run (2026-06-03) + continued B-spline runs. Two symptoms reported:
+(a) the deformation **pulls the source into the target bolus** despite body masks (both
+algorithms); (b) the **deformation-grid overlay looks systematically shifted** off the contour —
+visible warp in the air *anterior* to the patient, ~none along the *posterior* edge. User asked
+whether the rigid registration introduces a systematic error.
+
+**Diagnosis (strong hypotheses — not execution-verified; assistant can't run the app):**
+
+- **The grid overlay draws the rigid+deformable COMPOSITE field, not deformable-only.**
+  `DirReviewViewModel.RenderGrid` warps the grid by `reviewData.DisplacementField`, which the
+  service fills from `TransformToDisplacementFieldFilter(finalTransform)` where `finalTransform`
+  is the composite. Whole-grid mean displacement is ~53–57 mm — **dominated by the rigid**. So
+  "warp in the air" is the rigid translation/rotation shown everywhere (outside the body the
+  guard sets the field to rigid-only), and the apparent global shift is the rigid component
+  *in the picture*, **not** a registration error. The deformed **dose** uses the transform
+  correctly in physical space, so the dose can be fine even when the overlay looks shifted.
+- **Second, real overlay bug:** `RenderGrid` adds the field's **world-frame** `dx`/`dy` (mm)
+  directly to pixel **row/column indices**, assuming 1 px = 1 mm and an **identity image
+  direction**. For a non-identity direction (orientation-dependent), the warp is drawn mirrored
+  along an axis — which can place the deformation on the wrong A/P side. Visualization only;
+  does not affect the dose. Proper fix: convert world→index via `Directionᵀ` and divide by
+  spacing before drawing, and ideally render the **deformable-only** field (store it separately,
+  before composing the rigid) so the overlay shows true deformation localized to the body.
+- **Bolus pull is a SEPARATE, genuine issue.** The mask is provably co-registered to the fixed
+  CT — `RasterizeStructureMask` (`ProjectPolygonToPixelSpace` + `FillPolygonIntoSlice`) and
+  `ExtractCTBuffers` use the **same** `img.Origin`/`XDirection`/`YDirection` and the **same**
+  `ix + iy*nx + z*nx*ny` layout, and `BuildMaskImage` gets the **same** geometry args as the CT
+  → mask and fixed CT cannot be spatially shifted in SimpleITK space. So the bolus pull is
+  **in-body**: most likely the target body/External contour **includes or abuts the bolus**, or
+  the demons out-of-body guard isn't catching it. Next: dump/inspect that the target body mask
+  truly *excludes* the bolus on the slices where the pull appears; verify the SOURCE body mask
+  excludes its bolus too (Entry 6 open item).
+
+> Flag: **the deformation-grid overlay is not a trustworthy view of *deformation*** right now —
+> it shows rigid+deformable and ignores image direction/spacing. Fix the visualization first,
+> then re-judge whether bolus is *actually* being pulled (vs. just looking that way).
+
+### Entry 10 — Visualization fixes IMPLEMENTED + a REAL demons bug found (double rigid outside body)
+**Two visualization fixes applied** (do not affect the deformed dose, only the review overlay):
+1. **Deformable-only grid overlay.** The service now also stores `DeformableDisplacementField`
+   (`reviewData`), computed as `fullField − rigidField` (rigid rebuilt via new
+   `BuildInvertedRigidAffine`). Subtracting the rigid removes the ~5 cm rigid shift that dominated
+   the grid and (for a correct composition) zeroes the out-of-body region, so the grid bunches only
+   where real deformation occurs. `DirReviewViewModel` uses this field for the grid, falling back to
+   the composite if absent.
+2. **Orientation/spacing-correct warp.** `RenderGrid` previously added the field's **world-frame**
+   `dx/dy` straight onto pixel indices (1 px = 1 mm, identity direction assumed). New `WarpNode`
+   projects the physical displacement onto the image axes (columns of the direction matrix) and
+   divides by spacing → correct, non-mirrored overlay on any orientation. `DirReviewData` gained a
+   `Direction` field; the VM stores `_spacing`/`_direction`.
+
+**REAL BUG found while tracing the demons path (NOT just visualization):** the masked demons +
+rigid path **double-applies the rigid transform outside the body.** `fullResField` is the demons
+field estimated on the **rigidly pre-aligned** moving image, so it is deformable-only
+(`fixed → preAligned`). The mask blend sets inside-body = `fullResField`, outside-body =
+`rigidOnlyField` (= `rigidAffine(x) − x`). Then the tail **unconditionally** composes
+`rigidAffine ∘ dispTransform`:
+- inside body: `rigidAffine(x + fullResField)` → single rigid ✓
+- outside body: `rigidAffine(x + (rigidAffine(x)−x))` = `rigidAffine(rigidAffine(x))` → **double rigid ✗**
+
+The `if (rigidAffine != null)` tail (comment: "No mask was set, so the flatten-and-blend block was
+skipped") was meant for the **no-mask** case only, but its guard doesn't exclude the mask case. The
+B-spline path is correct (bakes rigid into the field, no outer composite). This double-rigid is a
+strong candidate cause of the masked-demons "warp in the air / systematic shift / bolus pull"
+symptoms (Entry 9), independent of the overlay issue.
+
+**Proposed fix (NOT yet applied — needs user go-ahead + a test run; registration-output change):**
+mirror the B-spline path — for the masked demons case, build the **full** composite field (rigid
+baked into the inside-body deformable) and blend `rigidOnly` outside, then wrap as a
+`DisplacementFieldTransform` and **skip** the outer `rigidAffine` composite. Equivalent guard:
+only apply the outer composite when **no** mask blend ran.
+
+> Diagnostic prediction once the overlay fix is in: with the deformable-only overlay, the
+> **B-spline** out-of-body grid should be ~flat (clean), while **demons** may still show a uniform
+> out-of-body shift until the double-rigid bug is fixed — which would corroborate this entry.
+
 ---
 
 ## Current state (pending the next test run)
@@ -251,8 +364,17 @@ SimpleITK API surface mismatches at compile time.
 - **CompositeTransform order (rigid + deformable).** RESOLVED in Entry 5 — it was inverted in
   both paths and is now fixed (rigid added first/outer, deformable second/inner). Pending
   confirmation on the next run via the folded-voxel diagnostic.
-- **Grid resolution** is now the single most important quality knob (`BSplineGridNodes`):
-  too fine → boundary instability returns; too coarse → under-fits real anatomy.
+- **Grid resolution** is now expressed as **`BSplineControlPointSpacing` (mm) over the body**
+  (Entry 8), not `BSplineGridNodes` over the FOV: too fine → slow + boundary instability; too
+  coarse → under-fits. `BSplineGridNodes` is now only a fallback if body detection fails.
+- **Is the deformation-grid overlay misleading us?** (Entry 9) It renders the rigid+deformable
+  composite and ignores image direction/spacing. Before chasing the "AP shift" as a registration
+  bug, fix the overlay to show the **deformable-only** field converted to index space; then
+  re-judge. Likely the dose is more correct than the picture suggests.
+- **Bolus still pulled in with masks (both algorithms).** Mask is provably co-registered to the
+  fixed CT (Entry 9), so this is in-body: confirm the target *and* source body contours actually
+  exclude the bolus on the affected slices; check whether the demons out-of-body guard is active
+  (needs both masks non-empty — see the `LogMaskCoverage` lines).
 
 ## Dead ends — DO NOT RETREAD
 
