@@ -75,7 +75,7 @@
            BSplineSpacing – B-spline control-point spacing (mm) over the body region; smaller =
                             finer local deformation (B-spline algorithm only) -->
     <SitePreset Name="Brain"            StdDev="2.5" Iterations="50 50 20" MaxStepLength="1.0" BSplineSpacing="20"/>
-    <SitePreset Name="Head &amp; Neck"  StdDev="2.0" Iterations="50 50 20" MaxStepLength="1.5" BSplineSpacing="15"/>
+    <SitePreset Name="Head &amp; Neck"  StdDev="2.0" Iterations="50 50 20" MaxStepLength="1.5" BSplineSpacing="20"/>
     <SitePreset Name="Thorax / Lung"    StdDev="1.0" Iterations="75 75 20" MaxStepLength="3.0" BSplineSpacing="20"/>
     <SitePreset Name="Abdomen"          StdDev="1.5" Iterations="75 50 20" MaxStepLength="2.5" BSplineSpacing="20"/>
     <SitePreset Name="Pelvis / Bladder" StdDev="1.5" Iterations="75 50 20" MaxStepLength="3.0" BSplineSpacing="20"/>

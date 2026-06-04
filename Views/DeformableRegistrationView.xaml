@@ -371,10 +371,10 @@
 
 						<!-- B-spline control-point spacing (used by the B-spline algorithm) -->
 						<TextBlock Grid.Row="6" Grid.Column="0" Text="B-spline CP spacing (mm):" VerticalAlignment="Center"
-								   ToolTip="B-spline control-point spacing in mm over the patient body. The grid is placed on the auto-detected (or masked) body extent, so spacing is independent of CT field-of-view. Smaller = finer local deformation but more runtime and folding risk. Site presets set this automatically (e.g. Head &amp; Neck = 15 mm)."/>
+								   ToolTip="B-spline control-point spacing in mm over the patient body. The grid is placed on the auto-detected (or masked) body extent, so spacing is independent of CT field-of-view. Smaller = finer local deformation but more runtime and folding risk. Site presets set this automatically (e.g. Head &amp; Neck = 20 mm)."/>
 						<TextBox   Grid.Row="6" Grid.Column="1" Height="24" Padding="4,0,4,0" VerticalContentAlignment="Center"
 								   Text="{Binding RegControlPointSpacing, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-								   ToolTip="Positive number in mm (e.g. 15 for Head &amp; Neck, 20 for body sites). Applies to the B-spline algorithm."/>
+								   ToolTip="Positive number in mm (e.g. 20 for most sites; lower toward 15 for finer Head &amp; Neck deformation). Applies to the B-spline algorithm."/>
 
 						<!-- Mask crop margin -->
 						<TextBlock Grid.Row="8" Grid.Column="0" Text="Mask crop margin (mm):" VerticalAlignment="Center"

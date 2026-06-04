@@ -288,7 +288,7 @@ namespace DoseConverter.ViewModels
         private static readonly IReadOnlyList<SitePreset> _fallbackPresets = new List<SitePreset>
         {
             new SitePreset("Brain",                 2.5, "50 50 20",  1.0, 20),
-            new SitePreset("Head & Neck",           2.0, "50 50 20",  1.5, 15),
+            new SitePreset("Head & Neck",           2.0, "50 50 20",  1.5, 20),
             new SitePreset("Thorax / Lung",         1.0, "75 75 20",  3.0, 20),
             new SitePreset("Abdomen",               1.5, "75 50 20",  2.5, 20),
             new SitePreset("Pelvis / Bladder",      1.5, "75 50 20",  3.0, 20),

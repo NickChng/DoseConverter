@@ -137,7 +137,9 @@
                   <xs:attribute name="MaxStepLength" type="PositiveDouble" use="required"/>
                   <!-- B-spline control-point spacing (mm) for this site. Optional; 0 / omitted = use
                        the global BSplineControlPointSpacing default. Finer (smaller) = more local
-                       deformation, e.g. H&N ~15 mm to capture neck flexion / nodal tissue loss. -->
+                       deformation but higher DOF / runtime; ~20 mm is a reasonable H&N starting point,
+                       lower toward 15 mm once runtime is acceptable to better capture neck flexion /
+                       nodal tissue loss. -->
                   <xs:attribute name="BSplineSpacing" type="PositiveDouble" use="optional" default="20"/>
                 </xs:complexType>
               </xs:element>

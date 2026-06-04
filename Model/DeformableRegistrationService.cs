@@ -1375,11 +1375,30 @@ namespace DoseConverter
             double[] smoothSigmas = ParseDoubleList(rp.SmoothingSigmasPerLevel, new double[] { 2.0, 1.0, 0.0 });
             uint[] iterPerLevel   = ParseUIntList(rp.MaxIterationsPerLevel, new uint[] { 50, 30, 20 });
             double samplingPct    = rp.MetricSamplingPercentage > 0 ? rp.MetricSamplingPercentage : 1.0;
-            // With metric masks the in-body sample count is already small; sample densely so the
-            // high-DOF B-spline gradient is not starved.  REGULAR sampling (set below) keeps this
-            // deterministic, which L-BFGS-B's line search requires.
-            if (fixedMask != null || movingMask != null)
-                samplingPct = Math.Max(samplingPct, 0.5);
+            // A SMALL metric mask (e.g. a tumour bed) leaves few in-body voxels, so sample densely to
+            // avoid starving the high-DOF B-spline gradient.  But a BODY mask is large (often 15-20% of
+            // the volume = millions of voxels); forcing dense sampling there multiplies per-iteration
+            // cost 5x for no benefit.  So only raise the floor when the masked region is actually small.
+            // (REGULAR sampling, set below, keeps the sample set deterministic for L-BFGS-B regardless.)
+            const double SmallMaskFractionThreshold = 0.05; // 5% of the image volume
+            SitkImage samplingMask = fixedMask ?? movingMask; // metric samples on the fixed domain
+            if (samplingMask != null)
+            {
+                double maskFrac = MaskInBodyFraction(samplingMask);
+                if (maskFrac > 0 && maskFrac < SmallMaskFractionThreshold)
+                {
+                    samplingPct = Math.Max(samplingPct, 0.5);
+                    Helpers.SeriLog.LogInfo(
+                        $"B-spline DIR: small metric mask ({maskFrac * 100:F1}% of volume) - " +
+                        $"raising sampling to {samplingPct:F2} so the gradient is not starved.");
+                }
+                else
+                {
+                    Helpers.SeriLog.LogInfo(
+                        $"B-spline DIR: large metric mask ({maskFrac * 100:F1}% of volume) - " +
+                        $"keeping configured sampling {samplingPct:F2} (dense sampling would only add cost).");
+                }
+            }
             double gradTol        = rp.GradientConvergenceTolerance > 0 ? rp.GradientConvergenceTolerance : 1e-5;
             int    maxCorrections = (int)ParseUInt(rp.MaxCorrections, 5);
             int    maxFuncEval    = (int)ParseUInt(rp.MaxFunctionEvaluations, 1000);
@@ -2144,6 +2163,34 @@ namespace DoseConverter
         /// can confirm from the log file that masking is actually active and non-empty
         /// before committing to an expensive visual review of the deformed result.
         /// </summary>
+        /// <summary>
+        /// Returns the fraction (0–1) of the image volume that is inside the mask (voxels == 1),
+        /// or 0 if the mask is null/empty or the computation fails.  Used to decide whether a
+        /// metric mask is a small ROI (sample densely) or a large body mask (keep configured sampling).
+        /// </summary>
+        private static double MaskInBodyFraction(SitkImage mask)
+        {
+            if (mask == null) return 0.0;
+            try
+            {
+                using (var u8 = SimpleITK.Cast(mask, PixelIDValueEnum.sitkUInt8))
+                {
+                    var stats = new StatisticsImageFilter();
+                    stats.Execute(u8);
+                    double sum = stats.GetSum();
+                    var size = u8.GetSize();
+                    double total = 1.0;
+                    for (int i = 0; i < size.Count; i++) total *= size[i];
+                    return total > 0 ? sum / total : 0.0;
+                }
+            }
+            catch (Exception ex)
+            {
+                Helpers.SeriLog.LogError("Failed to compute mask in-body fraction", ex);
+                return 0.0;
+            }
+        }
+
         private static void LogMaskCoverage(string label, SitkImage mask)
         {
             if (mask == null)
