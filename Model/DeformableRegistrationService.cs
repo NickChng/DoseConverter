@@ -478,12 +478,26 @@ namespace DoseConverter
                                     0.0,
                                     sourceDoseImg.GetPixelID()))
                                 {
-                                    reviewData.DeformedDoseGy = ImageToBuffer(resampledDoseOnCt);
+                                    // Restrict the deformed dose to the target body. The deformed dose
+                                    // represents "dose on the target image", which only exists where there
+                                    // is target tissue; outside the target body the transform is rigid-only
+                                    // and the source dose (build-up / exit dose in air) bleeds into the
+                                    // bolus/air region as a spurious halo.  The mask shares the fixed-CT
+                                    // grid with the resampled dose, so it applies directly.
+                                    SitkImage doseOnCt = resampledDoseOnCt;
+                                    SitkImage maskedDoseOnCt = null;
+                                    if (fixedMaskImg != null)
+                                    {
+                                        maskedDoseOnCt = SimpleITK.Mask(resampledDoseOnCt, fixedMaskImg);
+                                        doseOnCt = maskedDoseOnCt;
+                                    }
+                                    reviewData.DeformedDoseGy = ImageToBuffer(doseOnCt);
                                     // Find max for slider initialisation
                                     float doseMax = 0f;
                                     foreach (float v in reviewData.DeformedDoseGy)
                                         if (v > doseMax) doseMax = v;
                                     reviewData.DeformedDoseMaxGy = doseMax > 0 ? doseMax : 1f;
+                                    maskedDoseOnCt?.Dispose();
                                 }
                             }
                             catch (Exception exDose)
@@ -509,7 +523,18 @@ namespace DoseConverter
                             0.0,
                             sourceDoseImg.GetPixelID()))
                         {
-                            deformedDoseBuffer = ImageToBuffer(resampledDose);
+                            // Restrict the written dose to the target body too, so it is consistent with
+                            // the review overlay (dose on the target patient only). The mask is on the
+                            // fixed-CT grid, so resample it onto the (different) dose grid first.
+                            SitkImage outDose = resampledDose;
+                            SitkImage maskedOut = null;
+                            if (fixedMaskImg != null)
+                            {
+                                using (var maskOnDoseGrid = ResampleMaskToGrid(fixedMaskImg, targetDoseRef))
+                                    maskedOut = SimpleITK.Mask(resampledDose, maskOnDoseGrid);
+                                outDose = maskedOut;
+                            }
+                            deformedDoseBuffer = ImageToBuffer(outDose);
                             // Update size to match the resampled image (= target dose size)
                             targetDoseSize = new uint[]
                             {
@@ -517,6 +542,7 @@ namespace DoseConverter
                                 resampledDose.GetHeight(),
                                 resampledDose.GetDepth()
                             };
+                            maskedOut?.Dispose();
                         }
                         finalTransform.Dispose();
                         fixedMaskImg?.Dispose();
@@ -886,8 +912,20 @@ namespace DoseConverter
                         using (var targetDoseRef = BuildReferenceImage(targetDoseSize, targetDoseSpacing, targetDoseOrigin, targetDoseDirection))
                         using (var resampledDose = SimpleITK.Resample(sourceDoseImg, targetDoseRef, finalTransform, InterpolatorEnum.sitkLinear, 0.0, sourceDoseImg.GetPixelID()))
                         {
-                            deformedDoseBuffer = ImageToBuffer(resampledDose);
+                            // Restrict the accumulated dose to the target body (dose on the target patient
+                            // only) — consistent with the DIR review workflow. Mask is on the fixed-CT
+                            // grid, so resample onto the dose grid first.
+                            SitkImage outDose = resampledDose;
+                            SitkImage maskedOut = null;
+                            if (fixedMaskImg != null)
+                            {
+                                using (var maskOnDoseGrid = ResampleMaskToGrid(fixedMaskImg, targetDoseRef))
+                                    maskedOut = SimpleITK.Mask(resampledDose, maskOnDoseGrid);
+                                outDose = maskedOut;
+                            }
+                            deformedDoseBuffer = ImageToBuffer(outDose);
                             targetDoseSize = new uint[] { resampledDose.GetWidth(), resampledDose.GetHeight(), resampledDose.GetDepth() };
+                            maskedOut?.Dispose();
                         }
                         finalTransform.Dispose();
                         fixedMaskImg?.Dispose();
@@ -1120,7 +1158,7 @@ namespace DoseConverter
                 if (runSurfaceStage)
                 {
                     Report(progress, "Surface stage: matching body contours via signed distance maps...");
-                    using (var movMaskOnFixed = ResampleMaskToFixedGrid(preAlignedMovingMask, fixedCT))
+                    using (var movMaskOnFixed = ResampleMaskToGrid(preAlignedMovingMask, fixedCT))
                     using (var fixedSdt  = BuildSignedDistanceMap(fixedMask))
                     using (var movingSdt = BuildSignedDistanceMap(movMaskOnFixed))
                     {
@@ -1429,14 +1467,13 @@ namespace DoseConverter
         }
 
         /// <summary>
-        /// Resamples a binary mask onto the fixed-CT grid with nearest-neighbour interpolation.
-        /// (The source body mask is only pre-resampled to the fixed grid when a rigid start was used;
-        /// without a rigid it is still on the moving grid, so resample unconditionally before use.)
+        /// Resamples a binary mask onto an arbitrary reference grid with nearest-neighbour
+        /// interpolation (used to put a body mask on the fixed-CT grid or the dose grid before masking).
         /// </summary>
-        private static SitkImage ResampleMaskToFixedGrid(SitkImage mask, SitkImage fixedGridRef)
+        private static SitkImage ResampleMaskToGrid(SitkImage mask, SitkImage gridRef)
         {
             var rsmp = new ResampleImageFilter();
-            rsmp.SetReferenceImage(fixedGridRef);
+            rsmp.SetReferenceImage(gridRef);
             rsmp.SetInterpolator(InterpolatorEnum.sitkNearestNeighbor);
             rsmp.SetDefaultPixelValue(0);
             return rsmp.Execute(mask);

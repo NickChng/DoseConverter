@@ -453,6 +453,28 @@ compress to the target body INCLUDING the shoulders, with no source tissue in th
 show the `Surface` then `Intensity` stages. Toggle `DemonsSurfaceStage=false` to A/B against the
 intensity-only behaviour.
 
+### Entry 14 — Deformed dose restricted to the target body (no out-of-body halo)
+**Symptom:** with the cascade working, the deformed dose showed dose OUTSIDE the body (bolus / air),
+which doesn't represent "dose on the target image."
+
+**Confirmed the deformation IS applied to the dose** — both the review dose and the written dose are
+resampled with the same `finalTransform` as the CT warp, so inside the body the dose tracks the DIR
+exactly. The halo is because `finalTransform` is the blended field (full deformation inside the body,
+**rigid-only outside**), and the source dose extends past the skin (build-up / penumbra / exit dose in
+air); outside the target body that dose is placed rigidly → a halo in the bolus/air region.
+
+**Fix:** restrict the deformed dose to the **target body** (the supplied fixed mask) — dose on the
+target image only exists where there is target tissue. Applied in three places, gated on a target
+mask being present:
+- `PerformDIRAndWritePlan`: review dose (masked directly — same fixed-CT grid) and the written plan
+  dose (mask resampled onto the dose grid first).
+- `ComputeDeformedDoseGy` (accumulation workflow): the accumulated dose, for consistency.
+Generalised `ResampleMaskToFixedGrid` → `ResampleMaskToGrid(mask, gridRef)` for the dose-grid case.
+
+Inside the body the dose is unchanged (it already tracked the DIR); only the out-of-body halo is
+removed. It is a HARD cut at the body contour — build-up dose just under the skin is inside the body
+so it is kept; only dose in air/bolus beyond the External is zeroed. No target mask → dose unchanged.
+
 ---
 
 ## Current state (pending the next test run)
