@@ -310,7 +310,9 @@ namespace DoseConverter {
         private string demonsStandardDeviationsField;
         
         private double demonsMaxStepLengthField;
-        
+
+        private bool demonsSurfaceStageField;
+
         private string dicomExportDirectoryField;
         
         public DoseConverterConfigRegistrationParameters() {
@@ -330,6 +332,7 @@ namespace DoseConverter {
             this.maskMarginMmField = 20D;
             this.demonsStandardDeviationsField = "1.0";
             this.demonsMaxStepLengthField = 2D;
+            this.demonsSurfaceStageField = true;
         }
         
         /// <remarks/>
@@ -523,7 +526,19 @@ namespace DoseConverter {
                 this.demonsMaxStepLengthField = value;
             }
         }
-        
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [System.ComponentModel.DefaultValueAttribute(true)]
+        public bool DemonsSurfaceStage {
+            get {
+                return this.demonsSurfaceStageField;
+            }
+            set {
+                this.demonsSurfaceStageField = value;
+            }
+        }
+
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
         public string DicomExportDirectory {

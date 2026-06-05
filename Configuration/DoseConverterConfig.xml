@@ -63,7 +63,8 @@
     SmoothingSigmasPerLevel="2.0 1.0 0.0"
     MaskMarginMm="20"
     DemonsStandardDeviations="1.0"
-    DemonsMaxStepLength="2.0"/>
+    DemonsMaxStepLength="2.0"
+    DemonsSurfaceStage="true"/>
   <SitePresets>
     <!-- Each SitePreset appears in the anatomical site combo box.
          Add, remove, or edit entries here to customise available presets.

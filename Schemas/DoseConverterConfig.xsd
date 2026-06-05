@@ -118,6 +118,12 @@
             <xs:attribute name="DemonsStandardDeviations" type="xs:string" use="optional" default="1.0"/>
             <!-- Diffeomorphic demons: maximum update step length (mm) -->
             <xs:attribute name="DemonsMaxStepLength" type="PositiveDouble" use="optional" default="2.0"/>
+            <!-- Diffeomorphic demons: when true AND both body masks are supplied, run a surface stage
+                 first — a demons pass on the signed-distance maps of the body masks — to compress the
+                 source body onto the target body across large gaps (e.g. shoulders) before the masked-CT
+                 intensity stage refines internal tissue. The SDT gradient gives long capture range that
+                 masked-CT intensity alone lacks (it is flat-zero outside the body). -->
+            <xs:attribute name="DemonsSurfaceStage" type="xs:boolean" use="optional" default="true"/>
             <!-- Default output directory for deformed DICOM export.  If omitted the script assembly directory is used. -->
             <xs:attribute name="DicomExportDirectory" type="xs:string" use="optional"/>
           </xs:complexType>

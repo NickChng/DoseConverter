@@ -28,7 +28,7 @@ Two selectable algorithms in `DeformableRegistrationService.cs`, chosen via
 
 | Path | Method | Mask handling | Status |
 |---|---|---|---|
-| **Demons** | `RunDiffeomorphicDemonsRegistration` — `DiffeomorphicDemonsRegistrationFilter`, manual multi-resolution pyramid, histogram-match + rescale | Demons has **no** native mask support → masks applied by intensity-zeroing inputs (AND) + post-field rigid/identity blend (OR) | **Works** on the full image |
+| **Demons** | `RunDiffeomorphicDemonsRegistration` — `DiffeomorphicDemonsRegistrationFilter`, manual multi-resolution pyramid, histogram-match + rescale | Demons has **no** native mask support → masks applied by intensity-zeroing inputs **PER-BODY** (fixed←target body, moving←source body; Entry 11 — was intersection/AND) + post-field rigid/identity blend (OR) | **Works**; per-body masking now also captures tissue-loss |
 | **B-spline** | `RunBSplineMaskedRegistration` — `ImageRegistrationMethod`, L-BFGS-B, B-spline transform | **True metric masks** (`SetMetricFixedMask`/`SetMetricMovingMask`) — out-of-body voxels excluded from the metric & its gradient | **Under repair** (was producing garbage) |
 
 The B-spline path is the right tool for bolus exclusion (metric masks create no artificial
@@ -305,7 +305,7 @@ whether the rigid registration introduces a systematic error.
 > it shows rigid+deformable and ignores image direction/spacing. Fix the visualization first,
 > then re-judge whether bolus is *actually* being pulled (vs. just looking that way).
 
-### Entry 10 — Visualization fixes IMPLEMENTED + a REAL demons bug found (double rigid outside body)
+### Entry 10 — Visualization fixes IMPLEMENTED + a suspected demons bug investigated and RETRACTED
 **Two visualization fixes applied** (do not affect the deformed dose, only the review overlay):
 1. **Deformable-only grid overlay.** The service now also stores `DeformableDisplacementField`
    (`reviewData`), computed as `fullField − rigidField` (rigid rebuilt via new
@@ -319,30 +319,139 @@ whether the rigid registration introduces a systematic error.
    divides by spacing → correct, non-mirrored overlay on any orientation. `DirReviewData` gained a
    `Direction` field; the VM stores `_spacing`/`_direction`.
 
-**REAL BUG found while tracing the demons path (NOT just visualization):** the masked demons +
-rigid path **double-applies the rigid transform outside the body.** `fullResField` is the demons
-field estimated on the **rigidly pre-aligned** moving image, so it is deformable-only
-(`fixed → preAligned`). The mask blend sets inside-body = `fullResField`, outside-body =
-`rigidOnlyField` (= `rigidAffine(x) − x`). Then the tail **unconditionally** composes
-`rigidAffine ∘ dispTransform`:
-- inside body: `rigidAffine(x + fullResField)` → single rigid ✓
-- outside body: `rigidAffine(x + (rigidAffine(x)−x))` = `rigidAffine(rigidAffine(x))` → **double rigid ✗**
+**RETRACTED: suspected "double rigid in masked demons" was a MISREAD — there is no bug.**
+Initial trace (reading the blend at 1322+ and the tail `if (rigidAffine != null)` at 1352+) looked
+like the masked-demons path double-applied the rigid outside the body. **It does not.** The
+**flatten step at lines ~1261–1277** runs whenever `rigidAffine != null`: it composes
+`rigid ∘ deformable` into `fullResField` (full composite, everywhere) and then sets
+**`rigidAffine = null`**. So by line 1352 `rigidAffine` is always null whenever a rigid was present:
+- flatten → `fullResField` = full composite (rigid baked in) ✓
+- blend → inside-body = full composite ✓, outside-body = `rigidOnly` (single rigid) ✓
+- line 1352 `if (rigidAffine != null)` → **never true when a rigid exists → dead code**, not a
+  double-apply. Demons composition is **correct** (single rigid everywhere; matches B-spline).
 
-The `if (rigidAffine != null)` tail (comment: "No mask was set, so the flatten-and-blend block was
-skipped") was meant for the **no-mask** case only, but its guard doesn't exclude the mask case. The
-B-spline path is correct (bakes rigid into the field, no outer composite). This double-rigid is a
-strong candidate cause of the masked-demons "warp in the air / systematic shift / bolus pull"
-symptoms (Entry 9), independent of the overlay issue.
+Lesson (again): **read the whole tail before calling a bug** — the `rigidAffine = null` at 1276 is
+what makes 1352 unreachable. The only real defect there is **harmless dead code + a stale comment**
+at 1352 ("No mask was set…"), which could be deleted for clarity but changes nothing.
 
-**Proposed fix (NOT yet applied — needs user go-ahead + a test run; registration-output change):**
-mirror the B-spline path — for the masked demons case, build the **full** composite field (rigid
-baked into the inside-body deformable) and blend `rigidOnly` outside, then wrap as a
-`DisplacementFieldTransform` and **skip** the outer `rigidAffine` composite. Equivalent guard:
-only apply the outer composite when **no** mask blend ran.
+**Corrected expectation for the overlay fix:** because demons' outside-body field is `rigidOnly`,
+the deformable-only overlay (`fullField − rigidField`) is **≈zero outside the body for demons too**
+(not just B-spline). So both algorithms' grids should be clean out-of-body after the fix. The
+remaining masked "bolus pull" is therefore **in-body / contour-driven** (target or source body
+contour includes/abuts the bolus), per Entry 9 — not a composition error.
 
-> Diagnostic prediction once the overlay fix is in: with the deformable-only overlay, the
-> **B-spline** out-of-body grid should be ~flat (clean), while **demons** may still show a uniform
-> out-of-body shift until the double-rigid bug is fixed — which would corroborate this entry.
+### Entry 11 — Per-body masking (the key bolus + tissue-loss fix) + dead-code removal
+**Clinical requirement (user):** when the bolus is contoured OUT of the target image (a target body
+contour that excludes it), it must drive NO deformation; the source (within its own body) should map
+only to actual tissue within the target body.
+
+**Root cause of why masked demons under-deformed AND seemed to "pull bolus":** the demons
+pre-registration masking zeroed both images outside the **INTERSECTION** (`target ∩ source`). That
+zeroes the **tissue-loss gap** (inside the source body, outside the smaller target body) in BOTH
+images → demons sees no gradient there → it cannot compress the source skin inward to the target
+skin. So the source's "extra" tissue stays put (protruding beyond the target skin, often into the
+bolus region), which reads as "source deformed into the bolus" but is really *failure to compress*.
+Intersection was originally chosen to avoid a bolus pull, but it over-corrected and discarded the
+real deformation — a primary cause of the chronic under-deformation (Entry 7 was only half the story:
+grid resolution AND masking semantics both mattered).
+
+**Fix applied — PER-BODY intensity masking** (`RunDiffeomorphicDemonsRegistration`):
+- fixed (target) image ← masked by the **target body** (zeroes the bolus, since the bolus is outside
+  that contour; keeps the true skin boundary as the registration target).
+- moving (source) image ← masked by the **source body** (resampled to the fixed grid first; it is only
+  pre-resampled when a rigid start was used).
+- At the tissue-loss gap: fixed = 0 (air), moving = tissue → the skin-boundary gradient drives the
+  source **inward** to the true target skin (the deformation we want). At the bolus: fixed = 0
+  (removed), moving ≈ air → no force. **Key assumption:** the target contour excludes the bolus
+  (the user's stated input). Post-registration UNION field blend (rigid-only outside both bodies)
+  unchanged.
+
+**Also removed dead code** at the demons tail: the `if (rigidAffine != null)` branch after the blend
+was unreachable (the flatten step nulls `rigidAffine`; see Entry 10 retraction) — deleted, with the
+stale "No mask was set…" comment.
+
+**B-spline NOT changed this pass.** Its TRUE metric masks have the analogous limitation: a fixed
+metric mask = target body EXCLUDES the gap voxels from the metric entirely, so the metric gets no
+signal to compress the skin there → same under-deformation. Demons' intensity-masking is actually
+better for tissue loss because the masked (=air) fixed voxels stay IN the image, so the skin-boundary
+gradient still produces a compression force. To give B-spline the same behaviour we'd intensity-mask
+the fixed image by the target body (air-fill) instead of (or in addition to) the fixed *metric* mask.
+Candidate next step if the B-spline path is still wanted.
+
+**How to confirm on the next run:** with a target body contour that excludes the bolus, the deformed
+source should now compress to the target skin (visible tissue-loss capture), the bolus region should
+show no source tissue, and the deformable-only overlay (Entry 10) should show real in-body warp.
+
+### Entry 12 — Per-body masking captures SMALL tissue loss but NOT large surface gaps (shoulders)
+After Entry 11 (per-body masking) the deformable-only overlay aligned well (Entry 10 fix confirmed),
+**but the source body still does not compress to the target body over large-gap regions — notably the
+shoulders.** Without masks it tracks the body (but pulls the bolus); with masks the shoulders don't
+track at all.
+
+**Root cause (capture-range collapse in the flat-zero region):** masking the fixed image to 0 (air)
+outside the target body means the demons compression force `(M − F)·∇F` has a non-zero `∇F` ONLY at
+the thin true-skin edge. Everywhere the source protrudes beyond the target body, the masked fixed is
+**flat zero → ∇F ≈ 0 → no force**. So the masked fixed can only pull source tissue within ~a
+smoothing-width of the target skin edge; a shoulder sitting several cm outside the target body lands
+in the flat-zero region and feels nothing → no compression. In the no-mask case the bolus + anatomy
+provided tissue/gradient out where the source skin sits, bridging the gap (but locking to the bolus
+surface — the wrong place). So removing the bolus also removed the long-range "guide rail."
+
+**Correction to Entry 11's optimism:** per-body masking captures *small* tissue loss near the skin
+but NOT large surface differences (shoulder repositioning). This is an inherent tension — removing the
+bolus to stop the pull also removes the only structure bridging a large gap. Only a surface/distance
+term resolves it robustly.
+
+**Candidate fixes (NOT applied — pending direction + a test run):**
+- **A (robust, recommended): surface-driven via signed distance maps.** Register the SDTs of the body
+  masks (`SimpleITK.SignedMaurerDistanceMap`): the SDT gradient points to the surface *everywhere*, so
+  it pulls the source body surface onto the TRUE target contour regardless of gap size (no bolus).
+  Cleanest as a cascade — coarse SDT pass to compress the bodies, then masked-CT demons to refine
+  internal tissue, composing the fields. Has tuning knobs (SDT weight / cascade stages).
+- **B (quick experiment): widen capture range.** Larger coarse-level `SmoothingSigmasPerLevel` and
+  `DemonsStandardDeviations`, more/coarser pyramid levels. Cheap; helps moderate gaps; will NOT fix
+  truly large gaps (can't smooth a gradient into a genuinely flat-zero region). Use only to confirm the
+  capture-range diagnosis.
+
+> Key lesson: a masked-to-air fixed image cannot *pull* tissue that protrudes into the masked (zero)
+> region — the force needs a gradient there. Surface/distance maps supply that gradient; intensity
+> masking alone does not.
+
+### Entry 13 — IMPLEMENTED Option A: signed-distance surface-stage cascade (demons)
+Implements the Entry 12 fix. When **both body masks are present** and `DemonsSurfaceStage=true`
+(new config flag, default true), demons now runs a **two-stage cascade**:
+
+1. **Surface stage** — a demons pass on the **signed-distance maps** (`SignedMaurerDistanceMap`,
+   inside −, outside +, mm) of the target and source body masks. The SDT gradient points to the
+   surface EVERYWHERE → long capture range → it compresses the source body onto the target body
+   across large gaps (shoulders) that the masked-CT intensity stage cannot reach (its fixed image is
+   flat-zero outside the body). Diffeomorphic demons → the field stays fold-free.
+2. **Intensity stage** — the per-body-masked CT demons (Entry 11), **seeded** with the surface
+   stage's field (the demons `Execute(fixed, moving, initialField)` overload composes them), refines
+   the internal tissue match.
+
+**Structure:** the multi-resolution pyramid was factored into `RunDemonsMultiResolution(fixed, moving,
+…, initialField, finalGridRef, stageLabel, progress)` (returns the full-res field; consumes
+`initialField`). New helpers `BuildSignedDistanceMap` and `ResampleMaskToFixedGrid`. The rigid
+flatten + UNION blend tail is unchanged and runs on the cascade's combined field. No-mask runs (or
+flag off) use the single intensity stage exactly as before. Progress logs are prefixed
+`Surface … / Intensity … / Demons …`.
+
+**Tuning knobs / watch-outs (for the test run):**
+- **Runtime:** two pyramids. The surface stage on smooth SDTs should converge fast (early-stop via
+  `MaximumRMSError`), but if total time exceeds budget, consider running the surface stage coarse-only
+  (skip the finest level) — not yet done.
+- **Large-gap reach:** the surface stage inherits `DemonsMaxStepLength` (2 mm/iter) and
+  `MaxIterationsPerLevel`; bridging a very large shoulder gap needs enough iterations
+  (≈ step × iters of reach per level). Bump iterations / step for the surface stage if shoulders
+  still lag.
+- **API risk:** `SignedMaurerDistanceMapImageFilter` and the demons `Execute(…, initialField)`
+  overload are standard SimpleITK but not previously used here — confirm at first build.
+
+**How to confirm:** with both body masks (target excludes bolus), the deformed source should now
+compress to the target body INCLUDING the shoulders, with no source tissue in the bolus region; logs
+show the `Surface` then `Intensity` stages. Toggle `DemonsSurfaceStage=false` to A/B against the
+intensity-only behaviour.
 
 ---
 

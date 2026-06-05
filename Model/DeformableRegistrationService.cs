@@ -1052,179 +1052,97 @@ namespace DoseConverter
                 movingOnFixedGrid.Dispose();
                 normMoving = rawNormMoving;
 
-                // ---- Apply body masks to the normalised images ------------------
-                // Pre-registration masking uses the INTERSECTION (AND) of both body masks.
+                // ---- Apply body masks to the normalised images (PER-BODY) -------
+                // Each image is masked by ITS OWN body contour:
+                //   fixed  (target) → masked by the TARGET body  (which EXCLUDES the bolus)
+                //   moving (source) → masked by the SOURCE body
+                // This implements the clinical intent: deform the source (within its own body) to
+                // match the TARGET TISSUE within the target body, and let NOTHING outside the target
+                // body drive the registration.
                 //
-                // Why intersection, not union:
-                //   Demons minimises per-voxel intensity differences.  If a structure
-                //   exists only in one image — e.g. a bolus present only on the fixed
-                //   (target) CT — using the union means the fixed image retains the
-                //   bolus intensities while the moving image has zero there.  This
-                //   non-zero vs zero difference creates a large gradient force that
-                //   drives displacement vectors toward the bolus, pulling source tissue
-                //   into an unrealistic position.  The Gaussian field-smoothing that
-                //   demons applies at every iteration then propagates ("bleeds") this
-                //   artefact across the surrounding field, producing the characteristic
-                //   outward-stretching artefact outside the body contour even after the
-                //   post-registration displacement field is zeroed.
+                // Why PER-BODY and NOT the intersection (target ∩ source):
+                //   Masking BOTH images by the intersection zeroes the region inside the source body
+                //   but outside the target body — exactly the weight-loss / tissue-loss gap.  With
+                //   both images zero there, demons sees no gradient and CANNOT compress the source
+                //   skin inward to the (smaller) target skin, i.e. it discards the deformation we
+                //   most want.  This was a primary cause of the under-deformation.  Per-body masking
+                //   leaves the fixed image as air (0) outside the target body while the moving image
+                //   still has tissue in the gap, so the skin-boundary gradient drives the source
+                //   inward to the true target skin.
                 //
-                //   With intersection masking, any voxel outside EITHER body is zeroed
-                //   in BOTH images (fixed = 0, moving = 0), so the intensity difference
-                //   is already zero and demons produces no update force there.  The
-                //   bolus region (inside fixed body, outside moving body) therefore
-                //   receives zero displacement, which is the clinically correct result.
+                //   Bolus exclusion STILL holds because the bolus is OUTSIDE the target body contour:
+                //   masking the fixed image by the target body zeroes the bolus intensities, so the
+                //   bolus exerts no force (relies on the target contour excluding the bolus — the
+                //   user-supplied input).  The source side has only air there, so the bolus region is
+                //   0 (fixed) vs ~0 (moving) → no spurious outward pull.
                 //
-                // Post-registration field masking (below) keeps the UNION so that
-                // displacement vectors outside both bodies are zeroed in the final field.
-                if (fixedMask != null || preAlignedMovingMask != null)
+                // Post-registration field masking (below) still uses the UNION so the final field is
+                // rigid-only outside BOTH bodies.
+                if (fixedMask != null)
                 {
-                    SitkImage preMask = null;
-                    if (fixedMask != null && preAlignedMovingMask != null)
+                    using (var fm = SimpleITK.Cast(fixedMask, PixelIDValueEnum.sitkUInt8))
                     {
-                        // Resample the (already rigidly-aligned) moving mask onto the fixed
-                        // grid, then AND with the fixed mask to get the intersection of both
-                        // bodies.  Intersection ensures that regions present only in one image
-                        // (e.g. a bolus on the target CT) appear as 0/0 in both images so
-                        // demons sees zero gradient there and produces no displacement force.
-                        var rsmp = new ResampleImageFilter();
-                        rsmp.SetReferenceImage(fixedCT);
-                        rsmp.SetInterpolator(InterpolatorEnum.sitkNearestNeighbor);
-                        rsmp.SetDefaultPixelValue(0);
-                        using (var movOnFixed = rsmp.Execute(preAlignedMovingMask))
-                            preMask = SimpleITK.And(
-                                SimpleITK.Cast(fixedMask,         PixelIDValueEnum.sitkUInt8),
-                                SimpleITK.Cast(movOnFixed,        PixelIDValueEnum.sitkUInt8));
-                    }
-                    else if (fixedMask != null)
-                    {
-                        preMask = SimpleITK.Cast(fixedMask, PixelIDValueEnum.sitkUInt8);
-                    }
-                    else
-                    {
-                        var rsmp = new ResampleImageFilter();
-                        rsmp.SetReferenceImage(fixedCT);
-                        rsmp.SetInterpolator(InterpolatorEnum.sitkNearestNeighbor);
-                        rsmp.SetDefaultPixelValue(0);
-                        using (var movOnFixed = rsmp.Execute(preAlignedMovingMask))
-                            preMask = SimpleITK.Cast(movOnFixed, PixelIDValueEnum.sitkUInt8);
-                    }
-
-                    using (preMask)
-                    {
-                        SitkImage maskedFixed  = SimpleITK.Mask(normFixed,  preMask);
-                        SitkImage maskedMoving = SimpleITK.Mask(normMoving, preMask);
+                        SitkImage maskedFixed = SimpleITK.Mask(normFixed, fm);
                         normFixed.Dispose();
+                        normFixed = maskedFixed;
+                    }
+                }
+                if (preAlignedMovingMask != null)
+                {
+                    // Resample the source body mask onto the fixed grid before masking.  It is already
+                    // on the fixed grid when a rigid start was used, but is still on the moving grid
+                    // when no rigid was supplied — so resample unconditionally to be safe.
+                    var rsmp = new ResampleImageFilter();
+                    rsmp.SetReferenceImage(fixedCT);
+                    rsmp.SetInterpolator(InterpolatorEnum.sitkNearestNeighbor);
+                    rsmp.SetDefaultPixelValue(0);
+                    using (var movOnFixed = rsmp.Execute(preAlignedMovingMask))
+                    using (var mm = SimpleITK.Cast(movOnFixed, PixelIDValueEnum.sitkUInt8))
+                    {
+                        SitkImage maskedMoving = SimpleITK.Mask(normMoving, mm);
                         normMoving.Dispose();
-                        normFixed  = maskedFixed;
                         normMoving = maskedMoving;
                     }
                 }
 
-                // ---- Multi-resolution pyramid -----------------------------------
-                // Run demons at each pyramid level; upsample the resulting displacement
-                // field to initialise the next (finer) level.
-                // Both normFixed and normMoving are now on the same grid, so independent
-                // shrinking is safe and produces identical voxel counts at every level.
-                SitkImage currentDispField = null;
+                // ---- Multi-resolution demons (optionally a SURFACE stage first) ----
+                // The masked-CT intensity stage cannot compress tissue that protrudes far beyond the
+                // target body, because the masked fixed image is flat-zero there (no gradient → no
+                // force).  When both body masks are present we first run a SURFACE stage: a demons
+                // pass on the SIGNED-DISTANCE MAPS of the two body masks.  An SDT has a gradient that
+                // points to the surface EVERYWHERE, giving long capture range, so it compresses the
+                // source body onto the target body across large gaps (e.g. shoulders).  Its field
+                // then SEEDS the intensity stage, which refines internal tissue.  (See
+                // DIR_troubleshooting.md Entry 12/13.)
+                bool runSurfaceStage = rp.DemonsSurfaceStage && fixedMask != null && preAlignedMovingMask != null;
 
-                for (int lvl = 0; lvl < numLevels; lvl++)
-                {
-                    uint sf     = shrinkFactors[lvl];
-                    double sigma = smoothSigmas.Length > lvl ? smoothSigmas[lvl] : 0.0;
-                    uint iters  = maxIterPerLevel[lvl];
-                    double stdDev = stdDevs.Length > lvl ? stdDevs[lvl] : stdDevs[stdDevs.Length - 1];
-
-                    Report(progress, $"Demons level {lvl + 1}/{numLevels} (shrink×{sf}, σ={sigma:F1} mm, {iters} iters, field σ={stdDev:F1})...");
-
-                    // Smooth + downsample both CTs independently (safe because they share
-                    // the same grid after the pre-loop resample above).
-                    SitkImage shrunkFixed, shrunkMoving;
-                    if (sf > 1)
-                    {
-                        var smoother = new SmoothingRecursiveGaussianImageFilter();
-                        smoother.SetSigma(sigma);
-                        using (var smoothedFixed  = smoother.Execute(normFixed))
-                        using (var smoothedMoving = smoother.Execute(normMoving))
-                        {
-                            var shrinker  = new ShrinkImageFilter();
-                            var shrinkVec = new VectorUInt32(new uint[] { sf, sf, sf });
-                            shrinker.SetShrinkFactors(shrinkVec);
-                            shrunkFixed  = shrinker.Execute(smoothedFixed);
-                            shrunkMoving = shrinker.Execute(smoothedMoving);
-                        }
-                    }
-                    else
-                    {
-                        shrunkFixed  = normFixed;
-                        shrunkMoving = normMoving;
-                    }
-
-                    // Upsample previous displacement field to current resolution.
-                    SitkImage initField = null;
-                    if (currentDispField != null)
-                    {
-                        var upsampleFilter = new ResampleImageFilter();
-                        upsampleFilter.SetReferenceImage(shrunkFixed);
-                        upsampleFilter.SetInterpolator(InterpolatorEnum.sitkLinear);
-                        upsampleFilter.SetOutputPixelType(currentDispField.GetPixelID());
-                        initField = upsampleFilter.Execute(currentDispField);
-                        currentDispField.Dispose();
-                    }
-
-                    var demons = new DiffeomorphicDemonsRegistrationFilter();
-                    demons.SetNumberOfIterations(iters);
-                    demons.SetStandardDeviations(stdDev);
-                    demons.SetMaximumUpdateStepLength(maxStepLength);
-                    demons.SetMaximumRMSError(1e-4);   // stop early when RMS drops below this
-                    demons.SmoothDisplacementFieldOn();
-                    demons.SmoothUpdateFieldOn();
-
-                    // Attach a per-iteration callback so the user sees forward motion.
-                    // Note: GetRMSChange() always returns 0.0 from within the command
-                    // callback in SimpleITK's .NET binding (the filter's internal metric
-                    // state is not exposed during execution). Report iteration count only
-                    // and let the post-Execute summary carry the final RMS.
-                    uint iterCount = 0;
-                    var iterCmd = new ActionCommand(() =>
-                    {
-                        iterCount++;
-                        if (iterCount % 5 == 0)
-                            Report(progress, $"  Level {lvl + 1}/{numLevels} — iteration {iterCount}/{iters}...");
-                    });
-                    demons.AddCommand(EventEnum.sitkIterationEvent, iterCmd);
-
-                    SitkImage newField = initField != null
-                        ? demons.Execute(shrunkFixed, shrunkMoving, initField)
-                        : demons.Execute(shrunkFixed, shrunkMoving);
-
-                    // GetRMSChange() IS valid after Execute() returns.
-                    double finalRms = demons.GetRMSChange();
-                    initField?.Dispose();
-                    if (sf > 1) { shrunkFixed.Dispose(); shrunkMoving.Dispose(); }
-                    string rmsText = finalRms > 0.0 ? $", final RMS: {finalRms:F6}" : string.Empty;
-                    string convergenceNote = iterCount < (uint)iters ? " (converged early)" : string.Empty;
-                    Report(progress, $"  Level {lvl + 1} complete — {iterCount}/{iters} iterations{rmsText}{convergenceNote}.");
-                    currentDispField = newField;
-                }
-
-                // ---- Upsample final field to full fixed-CT resolution -----------
                 SitkImage fullResField;
-                if (currentDispField != null)
+                if (runSurfaceStage)
                 {
-                    var upsampleFinal = new ResampleImageFilter();
-                    upsampleFinal.SetReferenceImage(fixedCT);
-                    upsampleFinal.SetInterpolator(InterpolatorEnum.sitkLinear);
-                    upsampleFinal.SetOutputPixelType(currentDispField.GetPixelID());
-                    fullResField = upsampleFinal.Execute(currentDispField);
-                    currentDispField.Dispose();
+                    Report(progress, "Surface stage: matching body contours via signed distance maps...");
+                    using (var movMaskOnFixed = ResampleMaskToFixedGrid(preAlignedMovingMask, fixedCT))
+                    using (var fixedSdt  = BuildSignedDistanceMap(fixedMask))
+                    using (var movingSdt = BuildSignedDistanceMap(movMaskOnFixed))
+                    {
+                        // Stage 1 — surface (SDT): long capture range, compresses the bodies together.
+                        SitkImage surfaceField = RunDemonsMultiResolution(
+                            fixedSdt, movingSdt, shrinkFactors, smoothSigmas, maxIterPerLevel,
+                            stdDevs, maxStepLength, null, fixedCT, "Surface", progress);
+
+                        // Stage 2 — intensity (masked CT) seeded with the surface field; refines the
+                        // internal tissue match.  RunDemonsMultiResolution CONSUMES surfaceField.
+                        Report(progress, "Intensity stage: refining tissue match inside the body...");
+                        fullResField = RunDemonsMultiResolution(
+                            normFixed, normMoving, shrinkFactors, smoothSigmas, maxIterPerLevel,
+                            stdDevs, maxStepLength, surfaceField, fixedCT, "Intensity", progress);
+                    }
                 }
                 else
                 {
-                    // Degenerate path — return identity displacement field.
-                    var t2d = new TransformToDisplacementFieldFilter();
-                    t2d.SetReferenceImage(fixedCT);
-                    var identity = new AffineTransform(3);
-                    fullResField = t2d.Execute(identity);
+                    // Single intensity stage (no masks, or surface stage disabled).
+                    fullResField = RunDemonsMultiResolution(
+                        normFixed, normMoving, shrinkFactors, smoothSigmas, maxIterPerLevel,
+                        stdDevs, maxStepLength, null, fixedCT, "Demons", progress);
                 }
 
                 // ---- Compute rigid-only displacement field (used for blending below) ----
@@ -1272,7 +1190,8 @@ namespace DoseConverter
                     SitkImage flatField = flattenFilter.Execute(tempComposite);
                     fullResField.Dispose();
                     fullResField = flatField;
-                    // rigidAffine is now baked in; don't use CompositeTransform below.
+                    // The rigid is now baked into fullResField, so the final transform is just the
+                    // (blended) displacement field — no further composition is applied below.
                     rigidAffine = null;
                 }
 
@@ -1349,21 +1268,11 @@ namespace DoseConverter
                 var dispTransform = new DisplacementFieldTransform(fullResField);
                 fullResField.Dispose();
 
-                if (rigidAffine != null)
-                {
-                    // No mask was set, so the flatten-and-blend block above was skipped.
-                    // rigidAffine(dispTransform(x)): SimpleITK applies the LAST-added first, so
-                    // add rigid first (outer) and the demons field second (inner).
-                    var composite = new CompositeTransform(3);
-                    composite.AddTransform(rigidAffine);
-                    composite.AddTransform(dispTransform);
-                    Helpers.SeriLog.LogInfo("Diffeomorphic demons registration complete (rigid + deformable).");
-                    LogTransformDiagnostics("Demons + rigid (final)", composite, fixedCT, fixedMask, progress);
-                    return composite;
-                }
-
-                // Either no rigid pre-alignment, or it was already baked into the
-                // displacement field by the flatten step above.
+                // The rigid pre-alignment (if any) was already baked into the displacement field by
+                // the flatten step above (which sets rigidAffine = null), so this field IS the full
+                // rigid + deformable composite over the whole grid.  (A former `if (rigidAffine != null)`
+                // branch here that re-composed the rigid was DEAD CODE — the flatten always nulls
+                // rigidAffine before this point — and has been removed.)
                 Helpers.SeriLog.LogInfo("Diffeomorphic demons registration complete.");
                 LogTransformDiagnostics("Demons (final)", dispTransform, fixedCT, fixedMask, progress);
                 return dispTransform;
@@ -1378,6 +1287,159 @@ namespace DoseConverter
                 if (disposePreAlignedMovingMask && !ReferenceEquals(preAlignedMovingMask, movingMask))
                     preAlignedMovingMask?.Dispose();
             }
+        }
+
+        /// <summary>
+        /// Runs a multi-resolution diffeomorphic demons registration on a pair of same-grid images
+        /// (CT-vs-CT for the intensity stage, or signed-distance-map-vs-SDT for the surface stage) and
+        /// returns the full-resolution displacement field on <paramref name="finalGridRef"/>.
+        /// <paramref name="initialField"/>, when supplied, SEEDS the pyramid — e.g. the surface stage's
+        /// field initialises the intensity stage so the two compose — and is CONSUMED (disposed) here.
+        /// <paramref name="stageLabel"/> only prefixes the progress messages.
+        /// </summary>
+        private static SitkImage RunDemonsMultiResolution(
+            SitkImage normFixed, SitkImage normMoving,
+            uint[] shrinkFactors, double[] smoothSigmas, uint[] maxIterPerLevel,
+            double[] stdDevs, double maxStepLength,
+            SitkImage initialField, SitkImage finalGridRef,
+            string stageLabel, IProgress<string> progress)
+        {
+            int numLevels = shrinkFactors.Length;
+            SitkImage currentDispField = initialField; // may be null; consumed by the loop below
+
+            for (int lvl = 0; lvl < numLevels; lvl++)
+            {
+                uint sf      = shrinkFactors[lvl];
+                double sigma = smoothSigmas.Length > lvl ? smoothSigmas[lvl] : 0.0;
+                uint iters   = maxIterPerLevel[lvl];
+                double stdDev = stdDevs.Length > lvl ? stdDevs[lvl] : stdDevs[stdDevs.Length - 1];
+
+                Report(progress, $"{stageLabel} level {lvl + 1}/{numLevels} (shrink×{sf}, σ={sigma:F1} mm, {iters} iters, field σ={stdDev:F1})...");
+
+                // Smooth + downsample both inputs independently (they share the same grid).
+                SitkImage shrunkFixed, shrunkMoving;
+                if (sf > 1)
+                {
+                    var smoother = new SmoothingRecursiveGaussianImageFilter();
+                    smoother.SetSigma(sigma);
+                    using (var smoothedFixed  = smoother.Execute(normFixed))
+                    using (var smoothedMoving = smoother.Execute(normMoving))
+                    {
+                        var shrinker  = new ShrinkImageFilter();
+                        var shrinkVec = new VectorUInt32(new uint[] { sf, sf, sf });
+                        shrinker.SetShrinkFactors(shrinkVec);
+                        shrunkFixed  = shrinker.Execute(smoothedFixed);
+                        shrunkMoving = shrinker.Execute(smoothedMoving);
+                    }
+                }
+                else
+                {
+                    shrunkFixed  = normFixed;
+                    shrunkMoving = normMoving;
+                }
+
+                // Upsample previous displacement field to current resolution (seed for this level).
+                SitkImage initField = null;
+                if (currentDispField != null)
+                {
+                    var upsampleFilter = new ResampleImageFilter();
+                    upsampleFilter.SetReferenceImage(shrunkFixed);
+                    upsampleFilter.SetInterpolator(InterpolatorEnum.sitkLinear);
+                    upsampleFilter.SetOutputPixelType(currentDispField.GetPixelID());
+                    initField = upsampleFilter.Execute(currentDispField);
+                    currentDispField.Dispose();
+                }
+
+                var demons = new DiffeomorphicDemonsRegistrationFilter();
+                demons.SetNumberOfIterations(iters);
+                demons.SetStandardDeviations(stdDev);
+                demons.SetMaximumUpdateStepLength(maxStepLength);
+                demons.SetMaximumRMSError(1e-4);   // stop early when RMS drops below this
+                demons.SmoothDisplacementFieldOn();
+                demons.SmoothUpdateFieldOn();
+
+                // Per-iteration callback so the user sees forward motion. GetRMSChange() returns 0.0
+                // from inside the callback in SimpleITK's .NET binding, so report the count only.
+                uint iterCount = 0;
+                var iterCmd = new ActionCommand(() =>
+                {
+                    iterCount++;
+                    if (iterCount % 5 == 0)
+                        Report(progress, $"  {stageLabel} level {lvl + 1}/{numLevels} — iteration {iterCount}/{iters}...");
+                });
+                demons.AddCommand(EventEnum.sitkIterationEvent, iterCmd);
+
+                SitkImage newField = initField != null
+                    ? demons.Execute(shrunkFixed, shrunkMoving, initField)
+                    : demons.Execute(shrunkFixed, shrunkMoving);
+
+                double finalRms = demons.GetRMSChange();
+                initField?.Dispose();
+                if (sf > 1) { shrunkFixed.Dispose(); shrunkMoving.Dispose(); }
+                string rmsText = finalRms > 0.0 ? $", final RMS: {finalRms:F6}" : string.Empty;
+                string convergenceNote = iterCount < (uint)iters ? " (converged early)" : string.Empty;
+                Report(progress, $"  {stageLabel} level {lvl + 1} complete — {iterCount}/{iters} iterations{rmsText}{convergenceNote}.");
+                currentDispField = newField;
+            }
+
+            // Upsample the final field to full resolution on the reference grid.
+            SitkImage fullResField;
+            if (currentDispField != null)
+            {
+                var upsampleFinal = new ResampleImageFilter();
+                upsampleFinal.SetReferenceImage(finalGridRef);
+                upsampleFinal.SetInterpolator(InterpolatorEnum.sitkLinear);
+                upsampleFinal.SetOutputPixelType(currentDispField.GetPixelID());
+                fullResField = upsampleFinal.Execute(currentDispField);
+                currentDispField.Dispose();
+            }
+            else
+            {
+                // Degenerate path — return an identity displacement field.
+                var t2d = new TransformToDisplacementFieldFilter();
+                t2d.SetReferenceImage(finalGridRef);
+                var identity = new AffineTransform(3);
+                fullResField = t2d.Execute(identity);
+            }
+            return fullResField;
+        }
+
+        /// <summary>
+        /// Builds a signed Maurer distance map (mm; inside negative, outside positive) from a binary
+        /// body mask, as a Float32 image on the mask's grid.  The smooth, surface-pointing gradient of
+        /// the SDT gives the demons surface stage a long capture range for matching body surfaces
+        /// across large gaps (e.g. shoulder repositioning).
+        /// </summary>
+        private static SitkImage BuildSignedDistanceMap(SitkImage binaryMask)
+        {
+            using (var u8 = SimpleITK.Cast(binaryMask, PixelIDValueEnum.sitkUInt8))
+            {
+                var sdf = new SignedMaurerDistanceMapImageFilter();
+                sdf.SetInsideIsPositive(false);
+                sdf.SetSquaredDistance(false);
+                sdf.SetUseImageSpacing(true);
+                SitkImage sdt = sdf.Execute(u8);
+                if (sdt.GetPixelID() != PixelIDValueEnum.sitkFloat32)
+                {
+                    using (sdt)
+                        return SimpleITK.Cast(sdt, PixelIDValueEnum.sitkFloat32);
+                }
+                return sdt;
+            }
+        }
+
+        /// <summary>
+        /// Resamples a binary mask onto the fixed-CT grid with nearest-neighbour interpolation.
+        /// (The source body mask is only pre-resampled to the fixed grid when a rigid start was used;
+        /// without a rigid it is still on the moving grid, so resample unconditionally before use.)
+        /// </summary>
+        private static SitkImage ResampleMaskToFixedGrid(SitkImage mask, SitkImage fixedGridRef)
+        {
+            var rsmp = new ResampleImageFilter();
+            rsmp.SetReferenceImage(fixedGridRef);
+            rsmp.SetInterpolator(InterpolatorEnum.sitkNearestNeighbor);
+            rsmp.SetDefaultPixelValue(0);
+            return rsmp.Execute(mask);
         }
 
         // -----------------------------------------------------------------------
