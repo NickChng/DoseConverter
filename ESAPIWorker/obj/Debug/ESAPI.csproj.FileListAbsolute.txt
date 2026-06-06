@@ -36,7 +36,6 @@ C:\users\nickc\source\repos\nickchng\doseconverter\ESAPIWorker\obj\Debug\ESAPIWo
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\bin\Debug\ESAPIWorker.pdb
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\bin\Debug\VMS.TPS.Common.Model.API.dll
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\bin\Debug\VMS.TPS.Common.Model.Types.dll
-\\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\bin\Debug\VMS.TPS.Common.Model.Interface.dll
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\bin\Debug\VMS.TPS.Common.Model.API.xml
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\bin\Debug\VMS.TPS.Common.Model.Types.xml
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\Debug\ESAPI.csproj.AssemblyReference.cache
