@@ -137,6 +137,10 @@ namespace DoseConverter
             public string SourceCourseId;
             public string SourcePlanId;
 
+            /// <summary>Treatment machine of the source plan; used as the dummy-beam machine name in the
+            /// exported RTPLAN so it imports against a real machine. Null/empty falls back to "DIR".</summary>
+            public string SourceMachineName;
+
             // --- Relational DICOM tags captured from the TARGET image (preserved on export) ---
             public string PatientId;
             public string PatientName;
@@ -184,6 +188,9 @@ namespace DoseConverter
             // Source plan fractionation (used for the output verification plan prescription).
             int sourceFractions = 0;
             VMS.TPS.Common.Model.Types.DoseValue sourceDosePerFraction = default;
+            // Treatment machine of the source plan — used as the dummy-beam machine name in the
+            // exported RTPLAN so the deformed-dose plan imports against a real machine.
+            string sourceMachineName = null;
 
             // Mask buffers (null = full-image registration)
             byte[] movingMaskBuffer = null, fixedMaskBuffer = null;
@@ -254,6 +261,20 @@ namespace DoseConverter
                     // Capture source fractionation for the output verification plan.
                     sourceFractions = (int)(sourcePlan.NumberOfFractions ?? 1);
                     sourceDosePerFraction = sourcePlan.DosePerFraction;
+
+                    // Capture the source plan's treatment machine (first beam with a treatment unit)
+                    // to use as the dummy-beam machine name on DICOM export.
+                    try
+                    {
+                        sourceMachineName = sourcePlan.Beams?
+                            .Where(b => !b.IsSetupField && b.TreatmentUnit != null)
+                            .Select(b => b.TreatmentUnit.Id)
+                            .FirstOrDefault(id => !string.IsNullOrWhiteSpace(id));
+                    }
+                    catch (Exception exMach)
+                    {
+                        Helpers.SeriLog.LogError("Could not read source plan treatment machine", exMach);
+                    }
 
                     // Find a context plan for writing the output deformed-dose plan:
                     // first active ExternalPlanSetup that references the target SS and has dose.
@@ -401,6 +422,7 @@ namespace DoseConverter
                                     Direction = (double[])fixedCTDirection.Clone(),
                                     SourceCourseId      = sourceCourseId,
                                     SourcePlanId        = sourcePlanId,
+                                    SourceMachineName   = sourceMachineName,
                                     PatientId           = patientId,
                                     PatientName         = patientName,
                                     PatientBirthDate    = patientBirthDate,

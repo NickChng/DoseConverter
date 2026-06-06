@@ -489,8 +489,14 @@ target grid as the deformed CT, already body-masked per Entry 14) and `DicomExpo
 a minimal **RTPLAN** (no beams, references the RTSTRUCT) + a multi-frame 16-bit **RTDOSE**
 (`DoseUnits=GY`, `DoseSummationType=PLAN`, `GridFrameOffsetVector`, `DoseGridScaling = max/60000`)
 referencing the plan, on the deformed-CT grid/FoR. Import CT + RTSTRUCT + RTPLAN + RTDOSE → deformed
-dose on the target even with no plan. ⚠️ The minimal RTPLAN is the part most likely to need
-site/Eclipse-version tweaks to import cleanly (e.g. a dummy beam) — verify on import.
+dose on the target even with no plan. UPDATE: the first import warned "missing Beam Sequence" (a
+zero-beam plan), so the RTPLAN now writes a single **STATIC dummy photon beam** (2 control points,
+10×10 open jaws, isocentre = dose-grid centre) + PatientSetup + a FractionGroup ReferencedBeam. The
+beam is only there to satisfy the importer — the dose is supplied by the RTDOSE, not computed from
+it. The beam's `TreatmentMachineName` now defaults to the **source plan's machine** (first non-setup
+beam's `TreatmentUnit.Id`, captured during extraction → `DirExportData.SourceMachineName`; falls back
+to "DIR"). ⚠️ Still the most import-fragile part; if a given Eclipse version rejects it, tweak the
+remaining beam fields (energy, MU/meterset) to match a real machine.
 
 **(b) DICOM export runtime crash: `Could not load System.Memory 4.0.2.0`.** Root cause: this is a
 legacy **packages.config** project, where **transitive** NuGet deps are NOT auto-referenced. fo-dicom's

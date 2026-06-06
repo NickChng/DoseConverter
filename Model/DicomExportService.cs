@@ -214,12 +214,86 @@ namespace DoseConverter
                 rss.AddOrUpdate(DicomTag.ReferencedSOPInstanceUID, structSetUid);
                 pl.Add(new DicomSequence(DicomTag.ReferencedStructureSetSequence, rss));
             }
-            // One fraction group, no beams — the dose is supplied externally, not calculated.
+            // Patient setup (referenced by the beam).
+            var setup = new DicomDataset();
+            setup.AddOrUpdate(DicomTag.PatientSetupNumber, "1");
+            setup.AddOrUpdate(DicomTag.PatientPosition, "HFS");
+            pl.Add(new DicomSequence(DicomTag.PatientSetupSequence, setup));
+
+            // A single STATIC dummy beam. The deformed dose is supplied externally (not computed from
+            // this beam), but Eclipse requires a BeamSequence for the plan to import — a plan with zero
+            // beams warns "missing Beam Sequence". Isocentre = geometric centre of the dose grid.
+            double[] o = export.Origin;
+            double cx = o[0] + 0.5 * (nx - 1) * sx * iop[0] + 0.5 * (ny - 1) * sy * iop[3] + 0.5 * (nz - 1) * sz * zx;
+            double cy = o[1] + 0.5 * (nx - 1) * sx * iop[1] + 0.5 * (ny - 1) * sy * iop[4] + 0.5 * (nz - 1) * sz * zy;
+            double cz = o[2] + 0.5 * (nx - 1) * sx * iop[2] + 0.5 * (ny - 1) * sy * iop[5] + 0.5 * (nz - 1) * sz * zz;
+
+            // Two control points (start + end) with an open 10×10 cm aperture.
+            var cp0 = new DicomDataset();
+            cp0.AddOrUpdate(DicomTag.ControlPointIndex, "0");
+            cp0.AddOrUpdate(DicomTag.NominalBeamEnergy, FormatDs(6));
+            cp0.AddOrUpdate(DicomTag.GantryAngle, FormatDs(0));
+            cp0.AddOrUpdate(DicomTag.GantryRotationDirection, "NONE");
+            cp0.AddOrUpdate(DicomTag.BeamLimitingDeviceAngle, FormatDs(0));
+            cp0.AddOrUpdate(DicomTag.BeamLimitingDeviceRotationDirection, "NONE");
+            cp0.AddOrUpdate(DicomTag.PatientSupportAngle, FormatDs(0));
+            cp0.AddOrUpdate(DicomTag.PatientSupportRotationDirection, "NONE");
+            cp0.AddOrUpdate(DicomTag.TableTopEccentricAngle, FormatDs(0));
+            cp0.AddOrUpdate(DicomTag.TableTopEccentricRotationDirection, "NONE");
+            cp0.AddOrUpdate(DicomTag.IsocenterPosition, new[] { FormatDs(cx), FormatDs(cy), FormatDs(cz) });
+            cp0.AddOrUpdate(DicomTag.SourceToSurfaceDistance, FormatDs(900));
+            cp0.AddOrUpdate(DicomTag.CumulativeMetersetWeight, FormatDs(0));
+            var jawX = new DicomDataset();
+            jawX.AddOrUpdate(DicomTag.RTBeamLimitingDeviceType, "ASYMX");
+            jawX.AddOrUpdate(DicomTag.LeafJawPositions, new[] { FormatDs(-50), FormatDs(50) });
+            var jawY = new DicomDataset();
+            jawY.AddOrUpdate(DicomTag.RTBeamLimitingDeviceType, "ASYMY");
+            jawY.AddOrUpdate(DicomTag.LeafJawPositions, new[] { FormatDs(-50), FormatDs(50) });
+            cp0.Add(new DicomSequence(DicomTag.BeamLimitingDevicePositionSequence, jawX, jawY));
+
+            var cp1 = new DicomDataset();
+            cp1.AddOrUpdate(DicomTag.ControlPointIndex, "1");
+            cp1.AddOrUpdate(DicomTag.CumulativeMetersetWeight, FormatDs(1));
+
+            var beam = new DicomDataset();
+            beam.AddOrUpdate(DicomTag.BeamNumber, "1");
+            beam.AddOrUpdate(DicomTag.BeamName, "DIR");
+            beam.AddOrUpdate(DicomTag.BeamType, "STATIC");
+            beam.AddOrUpdate(DicomTag.RadiationType, "PHOTON");
+            // Default the dummy-beam machine to the source plan's machine so the plan imports against
+            // a real machine; fall back to "DIR" only if the source machine was unavailable.
+            beam.AddOrUpdate(DicomTag.TreatmentMachineName,
+                string.IsNullOrWhiteSpace(export.SourceMachineName) ? "DIR" : export.SourceMachineName);
+            beam.AddOrUpdate(DicomTag.PrimaryDosimeterUnit, "MU");
+            beam.AddOrUpdate(DicomTag.SourceAxisDistance, FormatDs(1000));
+            beam.AddOrUpdate(DicomTag.TreatmentDeliveryType, "TREATMENT");
+            beam.AddOrUpdate(DicomTag.ReferencedPatientSetupNumber, "1");
+            beam.AddOrUpdate(DicomTag.NumberOfWedges, "0");
+            beam.AddOrUpdate(DicomTag.NumberOfCompensators, "0");
+            beam.AddOrUpdate(DicomTag.NumberOfBoli, "0");
+            beam.AddOrUpdate(DicomTag.NumberOfBlocks, "0");
+            beam.AddOrUpdate(DicomTag.FinalCumulativeMetersetWeight, FormatDs(1));
+            beam.AddOrUpdate(DicomTag.NumberOfControlPoints, "2");
+            var bldX = new DicomDataset();
+            bldX.AddOrUpdate(DicomTag.RTBeamLimitingDeviceType, "ASYMX");
+            bldX.AddOrUpdate(DicomTag.NumberOfLeafJawPairs, "1");
+            var bldY = new DicomDataset();
+            bldY.AddOrUpdate(DicomTag.RTBeamLimitingDeviceType, "ASYMY");
+            bldY.AddOrUpdate(DicomTag.NumberOfLeafJawPairs, "1");
+            beam.Add(new DicomSequence(DicomTag.BeamLimitingDeviceSequence, bldX, bldY));
+            beam.Add(new DicomSequence(DicomTag.ControlPointSequence, cp0, cp1));
+            pl.Add(new DicomSequence(DicomTag.BeamSequence, beam));
+
+            // One fraction group referencing the dummy beam.
+            var refBeam = new DicomDataset();
+            refBeam.AddOrUpdate(DicomTag.ReferencedBeamNumber, "1");
+            refBeam.AddOrUpdate(DicomTag.BeamMeterset, FormatDs(1));
             var fg = new DicomDataset();
             fg.AddOrUpdate(DicomTag.FractionGroupNumber, "1");
             fg.AddOrUpdate(DicomTag.NumberOfFractionsPlanned, "1");
-            fg.AddOrUpdate(DicomTag.NumberOfBeams, "0");
+            fg.AddOrUpdate(DicomTag.NumberOfBeams, "1");
             fg.AddOrUpdate(DicomTag.NumberOfBrachyApplicationSetups, "0");
+            fg.Add(new DicomSequence(DicomTag.ReferencedBeamSequence, refBeam));
             pl.Add(new DicomSequence(DicomTag.FractionGroupSequence, fg));
             new DicomFile(pl).Save(Path.Combine(outputDirectory, "RP_Deformed.dcm"));
 
