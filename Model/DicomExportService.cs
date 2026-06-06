@@ -150,12 +150,158 @@ namespace DoseConverter
             }
 
             // ---- RT Structure Set ----
+            string structSetUid = null;
             if (structures != null && structures.Count > 0)
             {
                 progress?.Report("Writing RT structure set...");
-                WriteStructureSet(export, structures, sliceSopUids, studyUid, forUid, ctSeriesUid,
+                structSetUid = WriteStructureSet(export, structures, sliceSopUids, studyUid, forUid, ctSeriesUid,
                     nowDate, nowTime, outputDirectory);
             }
+
+            // ---- RT Plan (minimal) + RT Dose ----
+            // ESAPI cannot create a dose on a structure set that has no existing dose, so the deformed
+            // dose is exported here as an RTDOSE (plus a minimal RTPLAN it references) on the SAME grid
+            // as the deformed CT. Importing CT + RTSTRUCT + RTPLAN + RTDOSE yields the deformed dose on
+            // the target image even when the target has no plan.
+            if (export.DeformedDoseGy != null)
+            {
+                WriteDose(export, structSetUid, studyUid, forUid,
+                    iop, zx, zy, zz, sx, sy, sz, nx, ny, nz, nowDate, nowTime, outputDirectory, progress);
+            }
+        }
+
+        /// <summary>
+        /// Writes a minimal RT Plan and the deformed dose as an RTDOSE (multi-frame, 16-bit unsigned)
+        /// on the deformed-CT grid.  The RTDOSE references the RTPLAN (DoseSummationType PLAN); the
+        /// RTPLAN references the structure set when one was written.  NOTE: the minimal RTPLAN
+        /// (no beams) is the part most likely to need site-specific tweaks for a given Eclipse version
+        /// to accept the import — see DIR_troubleshooting.md.
+        /// </summary>
+        private static void WriteDose(
+            DeformableRegistrationService.DirExportData export,
+            string structSetUid,
+            string studyUid, string forUid,
+            double[] iop, double zx, double zy, double zz,
+            double sx, double sy, double sz,
+            int nx, int ny, int nz,
+            string nowDate, string nowTime,
+            string outputDirectory,
+            IProgress<string> progress)
+        {
+            // ---- Minimal RT Plan so the dose imports as a plan ----
+            string planSeriesUid = DicomUIDGenerator.GenerateDerivedFromUUID().UID;
+            string planSopUid     = DicomUIDGenerator.GenerateDerivedFromUUID().UID;
+
+            var pl = new DicomDataset();
+            AddPatientStudyTags(pl, export, studyUid, nowDate, nowTime);
+            pl.AddOrUpdate(DicomTag.Modality, "RTPLAN");
+            pl.AddOrUpdate(DicomTag.SeriesInstanceUID, planSeriesUid);
+            pl.AddOrUpdate(DicomTag.SeriesNumber, "3");
+            pl.AddOrUpdate(DicomTag.SeriesDescription, "Deformed dose plan (DIR)");
+            pl.AddOrUpdate(DicomTag.SOPClassUID, DicomUID.RTPlanStorage);
+            pl.AddOrUpdate(DicomTag.SOPInstanceUID, planSopUid);
+            pl.AddOrUpdate(DicomTag.InstanceNumber, "1");
+            pl.AddOrUpdate(DicomTag.FrameOfReferenceUID, forUid);
+            pl.AddOrUpdate(DicomTag.RTPlanLabel, "DIR_Deformed");
+            pl.AddOrUpdate(DicomTag.RTPlanName, "Deformed dose (DIR)");
+            pl.AddOrUpdate(DicomTag.RTPlanDate, nowDate);
+            pl.AddOrUpdate(DicomTag.RTPlanTime, nowTime);
+            pl.AddOrUpdate(DicomTag.RTPlanGeometry, string.IsNullOrEmpty(structSetUid) ? "TREATMENT_DEVICE" : "PATIENT");
+            if (!string.IsNullOrEmpty(structSetUid))
+            {
+                var rss = new DicomDataset();
+                rss.AddOrUpdate(DicomTag.ReferencedSOPClassUID, DicomUID.RTStructureSetStorage);
+                rss.AddOrUpdate(DicomTag.ReferencedSOPInstanceUID, structSetUid);
+                pl.Add(new DicomSequence(DicomTag.ReferencedStructureSetSequence, rss));
+            }
+            // One fraction group, no beams — the dose is supplied externally, not calculated.
+            var fg = new DicomDataset();
+            fg.AddOrUpdate(DicomTag.FractionGroupNumber, "1");
+            fg.AddOrUpdate(DicomTag.NumberOfFractionsPlanned, "1");
+            fg.AddOrUpdate(DicomTag.NumberOfBeams, "0");
+            fg.AddOrUpdate(DicomTag.NumberOfBrachyApplicationSetups, "0");
+            pl.Add(new DicomSequence(DicomTag.FractionGroupSequence, fg));
+            new DicomFile(pl).Save(Path.Combine(outputDirectory, "RP_Deformed.dcm"));
+
+            // ---- RT Dose (multi-frame, deformed-CT grid, references the plan) ----
+            progress?.Report("Writing RT dose...");
+            float[] dose = export.DeformedDoseGy;
+            double maxGy = 0.0;
+            for (int i = 0; i < dose.Length; i++) if (dose[i] > maxGy) maxGy = dose[i];
+            // 16-bit unsigned storage; scale so the max maps near 60000 (headroom below 65535).
+            double doseGridScaling = maxGy > 0 ? maxGy / 60000.0 : 1.0;
+
+            string doseSeriesUid = DicomUIDGenerator.GenerateDerivedFromUUID().UID;
+            string doseSopUid     = DicomUIDGenerator.GenerateDerivedFromUUID().UID;
+
+            var ds = new DicomDataset();
+            AddPatientStudyTags(ds, export, studyUid, nowDate, nowTime);
+            ds.AddOrUpdate(DicomTag.Modality, "RTDOSE");
+            ds.AddOrUpdate(DicomTag.SeriesInstanceUID, doseSeriesUid);
+            ds.AddOrUpdate(DicomTag.SeriesNumber, "4");
+            ds.AddOrUpdate(DicomTag.SeriesDescription, "Deformed dose (DIR)");
+            ds.AddOrUpdate(DicomTag.SOPClassUID, DicomUID.RTDoseStorage);
+            ds.AddOrUpdate(DicomTag.SOPInstanceUID, doseSopUid);
+            ds.AddOrUpdate(DicomTag.InstanceNumber, "1");
+            ds.AddOrUpdate(DicomTag.FrameOfReferenceUID, forUid);
+
+            var refPlan = new DicomDataset();
+            refPlan.AddOrUpdate(DicomTag.ReferencedSOPClassUID, DicomUID.RTPlanStorage);
+            refPlan.AddOrUpdate(DicomTag.ReferencedSOPInstanceUID, planSopUid);
+            ds.Add(new DicomSequence(DicomTag.ReferencedRTPlanSequence, refPlan));
+
+            // Geometry — same grid as the deformed CT.
+            ds.AddOrUpdate(DicomTag.ImageOrientationPatient, iop.Select(FormatDs).ToArray());
+            ds.AddOrUpdate(DicomTag.ImagePositionPatient,
+                new[] { FormatDs(export.Origin[0]), FormatDs(export.Origin[1]), FormatDs(export.Origin[2]) });
+            ds.AddOrUpdate(DicomTag.PixelSpacing, new[] { FormatDs(sy), FormatDs(sx) });
+            ds.AddOrUpdate(DicomTag.SliceThickness, FormatDs(sz));
+
+            ds.AddOrUpdate(DicomTag.SamplesPerPixel, (ushort)1);
+            ds.AddOrUpdate(DicomTag.PhotometricInterpretation, "MONOCHROME2");
+            ds.AddOrUpdate(DicomTag.NumberOfFrames, nz.ToString(CultureInfo.InvariantCulture));
+            ds.AddOrUpdate(DicomTag.FrameIncrementPointer, DicomTag.GridFrameOffsetVector);
+            ds.AddOrUpdate(DicomTag.Rows, (ushort)ny);
+            ds.AddOrUpdate(DicomTag.Columns, (ushort)nx);
+            ds.AddOrUpdate(DicomTag.BitsAllocated, (ushort)16);
+            ds.AddOrUpdate(DicomTag.BitsStored, (ushort)16);
+            ds.AddOrUpdate(DicomTag.HighBit, (ushort)15);
+            ds.AddOrUpdate(DicomTag.PixelRepresentation, (ushort)0);
+            ds.AddOrUpdate(DicomTag.DoseUnits, "GY");
+            ds.AddOrUpdate(DicomTag.DoseType, "PHYSICAL");
+            ds.AddOrUpdate(DicomTag.DoseSummationType, "PLAN");
+            ds.AddOrUpdate(DicomTag.DoseGridScaling, FormatDs(doseGridScaling));
+            // GridFrameOffsetVector: relative offset of each frame along the slice axis (0, sz, 2·sz, …).
+            string[] gfov = new string[nz];
+            for (int z = 0; z < nz; z++) gfov[z] = FormatDs(sz * z);
+            ds.AddOrUpdate(DicomTag.GridFrameOffsetVector, gfov);
+
+            var pixelData = DicomPixelData.Create(ds, true);
+            for (int z = 0; z < nz; z++)
+            {
+                if ((z % 10) == 0) progress?.Report($"Writing dose frame {z + 1}/{nz}...");
+                pixelData.AddFrame(new MemoryByteBuffer(BuildDoseFrame(dose, nx, ny, z, doseGridScaling)));
+            }
+
+            new DicomFile(ds).Save(Path.Combine(outputDirectory, "RD_Deformed.dcm"));
+        }
+
+        /// <summary>Packs one Z slice of dose (Gy) into a little-endian unsigned 16-bit buffer using the grid scaling.</summary>
+        private static byte[] BuildDoseFrame(float[] dose, int nx, int ny, int z, double doseGridScaling)
+        {
+            byte[] bytes = new byte[nx * ny * 2];
+            long baseIdx = (long)z * nx * ny;
+            for (int i = 0; i < nx * ny; i++)
+            {
+                double gy = dose[baseIdx + i];
+                int stored = (gy > 0 && doseGridScaling > 0) ? (int)Math.Round(gy / doseGridScaling) : 0;
+                if (stored < 0) stored = 0;
+                if (stored > ushort.MaxValue) stored = ushort.MaxValue;
+                ushort v = (ushort)stored;
+                bytes[i * 2]     = (byte)(v & 0xFF);
+                bytes[i * 2 + 1] = (byte)((v >> 8) & 0xFF);
+            }
+            return bytes;
         }
 
         /// <summary>Packs a single Z slice of HU values into a little-endian unsigned 16-bit pixel buffer.</summary>
@@ -175,7 +321,7 @@ namespace DoseConverter
             return bytes;
         }
 
-        private static void WriteStructureSet(
+        private static string WriteStructureSet(
             DeformableRegistrationService.DirExportData export,
             List<DeformableRegistrationService.DeformedStructure> structures,
             string[] sliceSopUids,
@@ -298,6 +444,7 @@ namespace DoseConverter
 
             var file = new DicomFile(ds);
             file.Save(Path.Combine(outputDirectory, "RS_Deformed.dcm"));
+            return structSetUid;
         }
 
         private static void AddPatientStudyTags(

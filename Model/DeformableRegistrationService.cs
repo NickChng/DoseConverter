@@ -119,6 +119,14 @@ namespace DoseConverter
             public double[] Direction;         // row-major 3x3 direction cosines
 
             /// <summary>
+            /// Deformed dose (Gy) on the SAME fixed grid as <see cref="DeformedCtHu"/>
+            /// (Size/Spacing/Origin/Direction), already restricted to the target body. Written as an
+            /// RTDOSE (with a minimal RTPLAN) so the deformed dose can be imported onto the target
+            /// even when the target structure set has no plan. Null if dose was unavailable.
+            /// </summary>
+            public float[] DeformedDoseGy;
+
+            /// <summary>
             /// Displacement field on the fixed CT grid, interleaved [dx, dy, dz] per voxel in
             /// [x + y*nx + z*nx*ny] order (length = 3 * nx * ny * nz).  Units: mm.  Maps a fixed
             /// (output) voxel back to its location in the moving image (SimpleITK transform sense).
@@ -492,6 +500,9 @@ namespace DoseConverter
                                         doseOnCt = maskedDoseOnCt;
                                     }
                                     reviewData.DeformedDoseGy = ImageToBuffer(doseOnCt);
+                                    // Same fixed-grid, body-masked dose is retained for RTDOSE export.
+                                    if (exportData != null)
+                                        exportData.DeformedDoseGy = reviewData.DeformedDoseGy;
                                     // Find max for slider initialisation
                                     float doseMax = 0f;
                                     foreach (float v in reviewData.DeformedDoseGy)
@@ -598,7 +609,7 @@ namespace DoseConverter
             else
             {
                 Helpers.SeriLog.LogInfo("No active plan with dose found for target SS — skipping Eclipse plan write. " +
-                    "Use DICOM export to retrieve the deformed image and structures.");
+                    "Use DICOM export to retrieve the deformed image, structures, and deformed dose (RTDOSE).");
             }
 
             string successMsg = $"Deformable registration complete - please go to DIR Quality Review.";
@@ -788,7 +799,8 @@ namespace DoseConverter
                 return (ScriptStatus.Error, $"Failed to write DICOM files: {ex.Message}");
             }
 
-            string msg = $"Exported deformed CT ({export.Size[2]} slices) and {deformedStructures.Count} structure(s) to: {outputDirectory}";
+            string doseNote = export.DeformedDoseGy != null ? " + deformed dose (RTDOSE)" : string.Empty;
+            string msg = $"Exported deformed CT ({export.Size[2]} slices), {deformedStructures.Count} structure(s){doseNote} to: {outputDirectory}";
             Helpers.SeriLog.LogInfo(msg);
             Report(progress, msg);
             return (ScriptStatus.Complete, msg);

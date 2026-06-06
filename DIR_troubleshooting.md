@@ -475,6 +475,36 @@ Inside the body the dose is unchanged (it already tracked the DIR); only the out
 removed. It is a HARD cut at the body contour — build-up dose just under the skin is inside the body
 so it is kept; only dose in air/bolus beyond the External is zeroed. No target mask → dose unchanged.
 
+### Entry 15 — Deformed-dose persistence on a planless target (RTDOSE export) + a dependency-deployment root cause
+**Two issues from testing.**
+
+**(a) Verification plan not created on a CBCT/target SS with no plan.** Root cause is an ESAPI
+limitation, not a bug: `Model.CreateDeformedDosePlan` writes dose by `CopyEvaluationDose(existingDose)`
+then overwriting voxels — ESAPI's *only* way to place arbitrary dose on a plan. That needs a real
+`Dose` already in the **target** frame of reference, which only a context plan provides. A bare
+target SS has none, and you can't scaffold from the *source* dose (wrong frame). So the in-script
+verification plan fundamentally requires a context plan with dose.
+**Fix = RTDOSE DICOM export.** Added the deformed dose (`DirExportData.DeformedDoseGy`, same fixed/
+target grid as the deformed CT, already body-masked per Entry 14) and `DicomExportService.WriteDose`:
+a minimal **RTPLAN** (no beams, references the RTSTRUCT) + a multi-frame 16-bit **RTDOSE**
+(`DoseUnits=GY`, `DoseSummationType=PLAN`, `GridFrameOffsetVector`, `DoseGridScaling = max/60000`)
+referencing the plan, on the deformed-CT grid/FoR. Import CT + RTSTRUCT + RTPLAN + RTDOSE → deformed
+dose on the target even with no plan. ⚠️ The minimal RTPLAN is the part most likely to need
+site/Eclipse-version tweaks to import cleanly (e.g. a dummy beam) — verify on import.
+
+**(b) DICOM export runtime crash: `Could not load System.Memory 4.0.2.0`.** Root cause: this is a
+legacy **packages.config** project, where **transitive** NuGet deps are NOT auto-referenced. fo-dicom's
+runtime deps (`System.Memory`, `System.Buffers`, `System.Numerics.Vectors`, `System.Runtime.CompilerServices.Unsafe`,
+`System.Text.*`, `Microsoft.Bcl.*`, `Microsoft.Extensions.*`) are in `packages.config` (restored) but
+have NO `<Reference>` in the `.csproj`, so they're never copied to output → Costura never embeds them
+→ they fail to load the first time fo-dicom touches them at RUNTIME. It compiles because the compiler
+only needs the *direct* reference (`fo-dicom.core`), not the transitive runtime closure.
+**Durable fix:** migrate the project from **packages.config → PackageReference** (VS: right-click
+packages.config → *Migrate…*). PackageReference flows transitive deps automatically (copy-local →
+Costura embeds them), so this class of "builds but fails at runtime" disappears and there's no manual
+reference list to forget. Quick unblock without migrating: copy the missing DLLs next to
+`DoseConverter.esapi.dll`, or `Update-Package -reinstall fo-dicom`.
+
 ---
 
 ## Current state (pending the next test run)
