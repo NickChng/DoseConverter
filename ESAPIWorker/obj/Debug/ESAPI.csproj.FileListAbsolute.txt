@@ -29,6 +29,9 @@ Z:\DoseConverter\ESAPIWorker\bin\Debug\VMS.TPS.Common.Model.Types.xml
 Z:\DoseConverter\ESAPIWorker\obj\Debug\ESAPI.csproj.Up2Date
 Z:\DoseConverter\ESAPIWorker\obj\Debug\ESAPIWorker.dll
 Z:\DoseConverter\ESAPIWorker\obj\Debug\ESAPIWorker.pdb
+C:\users\nickc\source\repos\nickchng\doseconverter\ESAPIWorker\obj\Debug\ESAPI.csproj.AssemblyReference.cache
+C:\users\nickc\source\repos\nickchng\doseconverter\ESAPIWorker\obj\Debug\ESAPI.csproj.CoreCompileInputs.cache
+C:\users\nickc\source\repos\nickchng\doseconverter\ESAPIWorker\obj\Debug\ESAPIWorker.dll
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\bin\Debug\ESAPIWorker.dll
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\bin\Debug\ESAPIWorker.pdb
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\bin\Debug\VMS.TPS.Common.Model.API.dll
@@ -41,6 +44,3 @@ Z:\DoseConverter\ESAPIWorker\obj\Debug\ESAPIWorker.pdb
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\Debug\ESAPI.csproj.Up2Date
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\Debug\ESAPIWorker.dll
 \\spvaimapcn\data$\Apps\DoseConverter\ESAPIWorker\obj\Debug\ESAPIWorker.pdb
-C:\users\nickc\source\repos\nickchng\doseconverter\ESAPIWorker\obj\Debug\ESAPI.csproj.AssemblyReference.cache
-C:\users\nickc\source\repos\nickchng\doseconverter\ESAPIWorker\obj\Debug\ESAPI.csproj.CoreCompileInputs.cache
-C:\users\nickc\source\repos\nickchng\doseconverter\ESAPIWorker\obj\Debug\ESAPIWorker.dll
