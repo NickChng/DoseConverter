@@ -499,11 +499,19 @@ runtime deps (`System.Memory`, `System.Buffers`, `System.Numerics.Vectors`, `Sys
 have NO `<Reference>` in the `.csproj`, so they're never copied to output → Costura never embeds them
 → they fail to load the first time fo-dicom touches them at RUNTIME. It compiles because the compiler
 only needs the *direct* reference (`fo-dicom.core`), not the transitive runtime closure.
-**Durable fix:** migrate the project from **packages.config → PackageReference** (VS: right-click
-packages.config → *Migrate…*). PackageReference flows transitive deps automatically (copy-local →
-Costura embeds them), so this class of "builds but fails at runtime" disappears and there's no manual
-reference list to forget. Quick unblock without migrating: copy the missing DLLs next to
-`DoseConverter.esapi.dll`, or `Update-Package -reinstall fo-dicom`.
+**Applied fix:** added explicit `<Reference>` items for all ~22 fo-dicom transitive deps
+(System.Memory, System.Buffers, System.Numerics.Vectors, System.Runtime.CompilerServices.Unsafe,
+System.Threading.*, System.Text.*, Microsoft.Bcl.*, Microsoft.Extensions.*, CommunityToolkit.HighPerformance)
+to `DoseConverter.csproj`, with HintPaths verified against the `packages\` folder (all `lib\net462`
+except CommunityToolkit → `lib\netstandard2.0`). Being referenced makes them copy-local → Costura
+embeds them → they load at runtime.
+
+⚠️ **DO NOT use VS's RMB "Migrate packages.config to PackageReference"** — it half-ran (stripped the
+`<Reference>` items and replaced packages.config with a 1-package stub but never added
+`<PackageReference>`s, leaving `RestoreProjectStyle=PackagesConfig`), and the broken state got
+committed (`2170778`). Recovery: `git checkout e1d59d2 -- DoseConverter.csproj packages.config`
+(last known-good build files; code in `.cs` files was unaffected). A PackageReference migration is
+still the cleaner long-term model but must be done deliberately/verified, not via that one-click tool.
 
 ---
 

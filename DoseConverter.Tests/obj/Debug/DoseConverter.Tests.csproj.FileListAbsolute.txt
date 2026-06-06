@@ -24,3 +24,5 @@
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\SimpleITKCSharpManaged.dll
 \\spvaimapcn\data$\Apps\DoseConverter\DoseConverter.Tests\bin\Debug\SimpleITKCSharpManaged.xml
 C:\users\nickc\source\repos\nickchng\doseconverter\DoseConverter.Tests\obj\Debug\DoseConverter.Tests.dll
+C:\Users\nickc\source\repos\NickChng\DoseConverter\DoseConverter.Tests\obj\Debug\DoseConverter.Tests.csproj.AssemblyReference.cache
+C:\Users\nickc\source\repos\NickChng\DoseConverter\DoseConverter.Tests\obj\Debug\DoseConverter.Tests.csproj.CoreCompileInputs.cache
